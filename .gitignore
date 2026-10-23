@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+build/
+.dart_tool/
+.pub-cache/
+.pub/
+*.apk
+*.aab
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+!deploy/.env.production.example
+firebase-key.json
+*firebase-adminsdk*.json
+*.pem
+*.key
+
+# IDE & OS
+.DS_Store
+.idea/
+*.iml
+*.log
+*.tmp
+
+# Cloud credentials and key downloads - never commit
+*_access_Keys*.csv
+*accessKeys*.csv
+*access_keys*.csv
+rootkey.csv
+*credentials*.csv
+.aws/
+*.key
+*.p12
+*.pfx
+
+# Exported chat transcripts (contain pasted secrets)
+ANTIGRAVITY_FULL_CHAT_TRANSCRIPT.md
+KRAVEO_CHATGPT_CODEX_FULL_CHAT_TRANSCRIPT.md
+*FULL_CHAT_TRANSCRIPT*.md
+
+# Local credential notes (never commit)
+*.local.md
+*.local.txt
+DEMO_ACCOUNTS*
+
+# Local Android Kotlin compiler state
+**/.kotlin/
+
+# Production credentials and database backup archives
+.env.production
+deploy/secrets/
+*.dump
+*.dump.sha256
+*.jks
+*.keystore
+
+# Supply owned Firebase client configuration locally. Never add server keys to apps.
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Generated local pilot credentials and uploaded images
+backend/var/
+
+# Reproducible QA evidence is intentionally versioned; other logs remain ignored.
+!Docs/qa/backend-full-run.log
+!Docs/qa/backend-initial-attempt.log
+!Docs/clerk/evidence/*-native-compile.log
+__pycache__/
+
+# Clerk regression evidence (synthetic fixtures and isolated local databases only).
+!Docs/clerk/evidence/backend-full/backend-full-run.log
+!Docs/clerk/evidence/backend-final/backend-full-run.log
+!Docs/clerk/evidence/backend-handover/backend-full-run.log
+!Docs/clerk/evidence/backend-release/backend-full-run.log
+!Docs/clerk/evidence/clerk-targeted-final/backend-full-run.log
+!Docs/clerk/evidence/android/*-build.log
+**/.flutter-plugins-dependencies

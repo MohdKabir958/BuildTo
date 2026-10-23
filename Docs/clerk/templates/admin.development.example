@@ -1,0 +1,5 @@
+# Vite public configuration only. Production activation needs explicit approval.
+VITE_AUTH_MODE=clerk-test
+VITE_CLERK_PUBLISHABLE_KEY=
+VITE_API_BASE_URL=https://YOUR-API-DOMAIN
+VITE_SOCKET_URL=https://YOUR-API-DOMAIN

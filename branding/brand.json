@@ -1,0 +1,16 @@
+{
+  "name": "Buildto",
+  "customerName": "Buildto",
+  "vendorName": "Grozo Vendor",
+  "driverName": "Grozo Delivery",
+  "primary": "#002B5B",
+  "accent": "#F59E0B",
+  "logoAsset": "assets/brand/buildto-logo.png",
+  "applicationIds": {
+    "customer": "in.buildto.customer",
+    "vendor": "in.grozo.vendor",
+    "driver": "in.grozo.driver"
+  },
+  "supportEmail": "support@buildto.in",
+  "tagline": "Building Made Easy."
+}

@@ -1,0 +1,38 @@
+Hosted deployment preparation and access verification
+
+Git remote: https://github.com/MohdKabir958/bilnkit-clone.git
+Initial push: rejected with HTTP 403 for connected identity Kabir191.
+After user granted collaborator access: feature/india-grocery-platform pushed successfully.
+GitHub API: direct gh API user request returned Forbidden; no release/Actions API operations claimed.
+Hosting: active tool registry exposes no Render/Neon/Vercel tools; no corresponding API credentials were present.
+Secure optional API token requirements saved to cloud draft: RENDER_API_KEY -> api.render.com; NEON_API_KEY -> console.neon.tech; VERCEL_TOKEN -> api.vercel.com. Draft save requires review/save/publication; it does not deploy resources or activate secrets.
+No hosted Neon database, Render API service or Vercel admin project was provisioned in this session.
+
+Local checks completed:
+- Render Blueprint and Android preview workflow YAML parsed and structural checks passed.
+- Node migration/startup/admin configurator syntax checks passed.
+- Phone preview shell syntax passed.
+- Hosted migration wrapper used MIGRATION_DATABASE_URL while DATABASE_URL deliberately pointed to an unreachable host.
+- New isolated UTF-8 database: safe bootstrap/21 migrations passed; repeated migration passed with none pending; isolated database removed.
+- Render startup wrapper: actual API health, database-backed readiness and 401 unauthenticated admin rejection passed in local development mode; test server stopped.
+- Admin TypeScript/Vite build passed.
+- Vercel configurator rejected missing/HTTP/credential-bearing/path/query origins without modifying configuration; valid HTTPS input produced exact HTTPS/WSS CSP origins with no inherited API rewrite; temporary example configuration restored.
+- Phone build script rejected missing/insecure/credential-bearing/example backend origins before compilation.
+- Shared Grozo brand generator check and Git whitespace check passed.
+
+Remaining external validation:
+- Render plan/pricing and provider-side Blueprint validation; persistent upload disk and real restart behavior.
+- Owned Neon TLS/pool/direct access and hosted migration/readiness checks.
+- Exact Render/Vercel origins, CORS/WSS/CSP/browser checks and API-based admin functionality.
+- Real Razorpay TEST credentials/webhook, owned Google OAuth and matching Firebase clients.
+- Personal-device networking/authentication/notifications/location acceptance with APKs rebuilt against the actual deployed origin.
+
+Immediate phone-preview handover:
+- Customer/vendor/driver split ARM64 profile builds passed with explicit Firebase bypass.
+- APK ZIP CRC integrity, apksigner verification and in.grozo role IDs passed.
+- Published on separate artifacts/grozo-android-preview branch, commit 6d585e36a1ef2e38ffc911660d33f46267cd0943.
+- Three direct GitHub raw download URLs checked: HTTP 206, 4-byte response, APK ZIP signature PK\x03\x04.
+- These UI-only snapshots retain the emulator API address; no connected server behavior or physical-device test is claimed.
+- Grozo-Customer-arm64-preview.apk: 37832830 bytes; sha256 04c89f3dbebd062ae8684f6efe2c3a2d31c97d114fa950c13e7ef400ff5f7c43
+- Grozo-Vendor-arm64-preview.apk: 36330072 bytes; sha256 6a2e0aed82ba81140b2ca572f3b5c64e5b0cb956584ce6ed0f51d758bbc680bd
+- Grozo-Delivery-arm64-preview.apk: 36129345 bytes; sha256 68b878380bd401753571cc82de2875c8d05241eb5819b01417d9cb137a3bf32c

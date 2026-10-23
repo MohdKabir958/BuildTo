@@ -1,0 +1,6 @@
+{
+  "AUTH_MODE": "clerk-test",
+  "AUTH_PREVIEW": "false",
+  "API_BASE_URL": "https://YOUR-API-DOMAIN/api",
+  "SOCKET_URL": "https://YOUR-API-DOMAIN"
+}

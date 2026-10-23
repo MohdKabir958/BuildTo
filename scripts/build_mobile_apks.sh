@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUTPUT_DIR="$ROOT_DIR/build/apks"
+: "${API_BASE_URL:?Set an owned HTTPS API_BASE_URL including /api}"
+[[ "$API_BASE_URL" == https://*/api ]] || { echo 'API_BASE_URL must use HTTPS and end in /api.' >&2; exit 1; }
+: "${GOOGLE_SERVER_CLIENT_ID:?Set the owned Google web OAuth client ID for customer sign-in}"
+: "${SOCKET_URL:?Set an owned HTTPS SOCKET_URL}"
+[[ "$SOCKET_URL" == https://* ]] || exit 1
+mkdir -p "$OUTPUT_DIR"
+python3 "$ROOT_DIR/scripts/configure_brand.py" --check
+BRAND_NAME="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' "$ROOT_DIR/branding/brand.json")"
+
+build_app() {
+  local app_dir="$1"
+  local artifact_prefix="$2"
+  local raw_version version build_number release_label source_apk target_apk
+
+  raw_version="$(sed -n 's/^version: //p' "$ROOT_DIR/$app_dir/pubspec.yaml" | head -n 1)"
+  version="${raw_version%%+*}"
+  build_number="${raw_version##*+}"
+  if [[ "$build_number" == "$raw_version" ]]; then
+    build_number="1"
+  fi
+  release_label="v${version}-build${build_number}"
+
+  (
+    cd "$ROOT_DIR/$app_dir"
+    flutter build apk --release --dart-define="API_BASE_URL=$API_BASE_URL" --dart-define="SOCKET_URL=$SOCKET_URL" --dart-define="GOOGLE_SERVER_CLIENT_ID=$GOOGLE_SERVER_CLIENT_ID"
+  )
+
+  source_apk="$ROOT_DIR/$app_dir/build/app/outputs/flutter-apk/app-release.apk"
+  target_apk="$OUTPUT_DIR/${artifact_prefix}-${release_label}-release.apk"
+  cp "$source_apk" "$target_apk"
+  printf 'Created %s\n' "$target_apk"
+}
+
+build_app "apps/customer_app" "$BRAND_NAME-Customer"
+build_app "apps/vendor_app" "$BRAND_NAME-Vendor"
+build_app "apps/driver_app" "$BRAND_NAME-Delivery"
