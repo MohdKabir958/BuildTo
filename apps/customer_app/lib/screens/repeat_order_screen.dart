@@ -202,8 +202,7 @@ class RepeatOrderScreen extends StatelessWidget {
                           width: 64,
                           height: 64,
                           color: BuildtoColors.surfaceLight,
-                          child: KImage(
-                            url: item['image'] as String,
+                          child: KImage(item['image'] as String,
                             fit: BoxFit.cover,
                           ),
                         ),

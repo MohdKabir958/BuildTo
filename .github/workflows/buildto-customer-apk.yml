@@ -1,0 +1,67 @@
+name: Buildto Customer Android Demo APK
+on:
+  push:
+    branches:
+      - demo/buildto-customer-apk
+    paths:
+      - '.github/workflows/buildto-customer-apk.yml'
+      - 'apps/customer_app/**'
+      - 'packages/**'
+      - 'branding/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-demo-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      ORG_GRADLE_PROJECT_disableFirebase: 'true'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve customer Flutter packages
+        working-directory: apps/customer_app
+        run: flutter pub get --enforce-lockfile
+      - name: Check for customer Dart compiler errors
+        working-directory: apps/customer_app
+        run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+      - name: Build offline customer demo for Android ARM64
+        working-directory: apps/customer_app
+        run: |
+          flutter build apk --debug --split-per-abi --target-platform android-arm64 --no-pub \
+            --dart-define=BUILDTO_OFFLINE_DEMO=true
+      - name: Prepare installable artifact
+        run: |
+          mkdir -p build/buildto-demo
+          cp apps/customer_app/build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk build/buildto-demo/Buildto-Customer-Demo.apk
+          cd build/buildto-demo
+          sha256sum Buildto-Customer-Demo.apk > SHA256SUMS.txt
+          cat > INSTALL.txt <<'EOF'
+          Buildto Customer Android Demo
+          Package: in.buildto.customer
+          ARM64 Android debug APK, development-signed.
+          Install Buildto-Customer-Demo.apk on an ARM64 Android phone.
+          This is Flutter code, not the HTML prototype.
+          Build-time BUILDTO_OFFLINE_DEMO=true opens the app without real sign-in.
+          Product catalog and order history are sample/demo data.
+          Real payments, orders, messages, and notifications are not enabled.
+          Not a production or Play Store release.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Buildto-Customer-Demo-Android-ARM64
+          path: build/buildto-demo/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

@@ -265,8 +265,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> with SingleTickerProvid
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(BuildtoRadius.sm),
-                          child: KImage(
-                            url: it['image'] as String,
+                          child: KImage(it['image'] as String,
                             fit: BoxFit.cover,
                           ),
                         ),

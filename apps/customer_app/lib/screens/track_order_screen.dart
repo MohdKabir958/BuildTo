@@ -366,8 +366,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${order.deliveryAddress}
-Note: ${order.siteNotes}',
+                          '${order.deliveryAddress}\nNote: ${order.siteNotes}',
                           style: const TextStyle(fontSize: 12, color: BuildtoColors.textMuted, height: 1.4),
                         ),
                       ],
@@ -498,7 +497,7 @@ Note: ${order.siteNotes}',
           child: SizedBox(
             width: 44,
             height: 44,
-            child: KImage(url: imageUrl, fit: BoxFit.cover),
+            child: KImage(imageUrl, fit: BoxFit.cover),
           ),
         ),
         const SizedBox(width: 12),

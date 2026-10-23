@@ -200,7 +200,7 @@ class ViewCartScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   ListView.separated(
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollUri(),
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
@@ -222,8 +222,7 @@ class ViewCartScreen extends StatelessWidget {
                                 width: 64,
                                 height: 64,
                                 color: BuildtoColors.surfaceLight,
-                                child: KImage(
-                                  url: item.imageUrl ?? 'assets/products/ultratech_cement.jpg',
+                                child: KImage(item.imageUrl ?? 'assets/products/ultratech_cement.jpg',
                                   fit: BoxFit.cover,
                                 ),
                               ),

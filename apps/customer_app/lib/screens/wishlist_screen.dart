@@ -190,8 +190,7 @@ class WishlistScreen extends StatelessWidget {
                             width: 70,
                             height: 70,
                             color: BuildtoColors.surfaceLight,
-                            child: KImage(
-                              url: product.imageUrl,
+                            child: KImage(product.imageUrl,
                               fit: BoxFit.cover,
                             ),
                           ),

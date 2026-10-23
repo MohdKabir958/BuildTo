@@ -119,8 +119,7 @@ class OrderPlacedScreen extends StatelessWidget {
                         child: SizedBox(
                           height: 130,
                           width: double.infinity,
-                          child: KImage(
-                            url: 'assets/images/delivery_truck_illustration.jpg',
+                          child: KImage('assets/images/delivery_truck_illustration.jpg',
                             fit: BoxFit.contain,
                           ),
                         ),
