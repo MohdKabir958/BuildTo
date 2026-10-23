@@ -24,7 +24,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      # Ubuntu GitHub runners already provide Android SDK; avoid obsolete sdkmanager 'tools'.
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.9'
