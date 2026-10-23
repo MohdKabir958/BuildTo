@@ -80,7 +80,7 @@ class CartProvider with ChangeNotifier {
   /// True when a dish of [dhabaId] can be added without replacing or refusing anything.
   bool canAddRestaurant(String dhabaId) =>
       _restaurantIds.isEmpty ||
-      _restaurantIds.contains(effectiveDhabaId) ||
+      _restaurantIds.contains(dhabaId) ||
       (_maxRestaurants > 1 && _restaurantIds.length < _maxRestaurants);
 
   /// Adding from [dhabaId] would replace the cart (the combined-order feature is off).
@@ -264,7 +264,7 @@ class CartProvider with ChangeNotifier {
       if (subtotal < 150) {
         _appliedCouponCode = null;
         _couponDiscountAmount = 0.0;
-        _couponError = f'Minimum subtotal of ₹150 required for {cleanCode}';
+        _couponError = 'Minimum subtotal of ₹150 required for $cleanCode';
         notifyListeners();
         return false;
       }

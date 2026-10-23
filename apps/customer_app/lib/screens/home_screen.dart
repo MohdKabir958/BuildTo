@@ -360,8 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: KImage(
-                          url: 'assets/images/construction_hero_banner.jpg',
+                        child: KImage('assets/images/construction_hero_banner.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -502,8 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: SizedBox(
                         width: 70,
                         height: 70,
-                        child: KImage(
-                          url: 'assets/images/construction_engineer.jpg',
+                        child: KImage('assets/images/construction_engineer.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -661,8 +659,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 42,
                     height: 42,
                     color: BuildtoColors.surfaceLight,
-                    child: KImage(
-                      url: supplier.bannerUrl,
+                    child: KImage(supplier.bannerUrl,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -831,8 +828,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 110,
                     width: double.infinity,
                     color: BuildtoColors.surfaceLight,
-                    child: KImage(
-                      url: product.imageUrl,
+                    child: KImage(product.imageUrl,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -900,8 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             final qty = product.minOrder > 0 ? product.minOrder : 1;
-                            cart.addItem(
-                              product,
+                            cart.addItem(item: product,
                               dhabaName: 'Shree Shyam Enterprises',
                               quantity: qty,
                             );

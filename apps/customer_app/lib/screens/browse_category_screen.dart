@@ -384,8 +384,7 @@ class _BrowseCategoryScreenState extends State<BrowseCategoryScreen> {
                     color: BuildtoColors.surfaceLight,
                     child: Hero(
                       tag: 'prod_${product.id}',
-                      child: KImage(
-                        url: product.imageUrl,
+                      child: KImage(product.imageUrl,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -538,8 +537,7 @@ class _BrowseCategoryScreenState extends State<BrowseCategoryScreen> {
                             child: ElevatedButton(
                               onPressed: () {
                                 final qty = product.minOrder > 0 ? product.minOrder : 1;
-                                cart.addItem(
-                                  product,
+                                cart.addItem(item: product,
                                   dhabaName: 'Shree Shyam Enterprises',
                                   quantity: qty,
                                 );

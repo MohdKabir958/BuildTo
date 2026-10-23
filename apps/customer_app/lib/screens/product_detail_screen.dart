@@ -149,8 +149,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 borderRadius: BorderRadius.circular(BuildtoRadius.lg),
                 child: Hero(
                   tag: 'prod_${product.id}',
-                  child: KImage(
-                    url: product.imageUrl,
+                  child: KImage(product.imageUrl,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -195,7 +194,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             const Icon(LucideIcons.check, size: 12, color: BuildtoColors.successGreen),
                             const SizedBox(width: 4),
                             Text(
-                              'In Stock (${product.stockQty > 0 ? product.stockQty : 250} ${product.unit}s)',
+                              'In Stock (${(product.stockQty ?? 0) > 0 ? product.stockQty : 250} ${product.unit}s)',
                               style: const TextStyle(
                                 color: BuildtoColors.successGreen,
                                 fontSize: 11,
@@ -278,10 +277,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (product.mrpPaise > 0) ...[
+                      if ((product.mrpPaise ?? 0) > 0) ...[
                         const SizedBox(width: 10),
                         Text(
-                          '₹${(product.mrpPaise / 100).toStringAsFixed(0)}',
+                          '₹${((product.mrpPaise ?? 0) / 100).toStringAsFixed(0)}',
                           style: const TextStyle(
                             fontSize: 14,
                             color: BuildtoColors.textLight,
