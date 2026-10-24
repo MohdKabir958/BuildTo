@@ -131,7 +131,7 @@ class DemoOrdersProvider with ChangeNotifier {
   static const String _prefsKey = 'buildto_demo_orders_v2';
   static int _orderCounter = 12457;
 
-  final List<BuildtoOrder> _orders = [];
+  final List<BuildtoOrder> _orders = _initialSeedOrders();
 
   DemoOrdersProvider() {
     _loadFromPrefs();
@@ -280,10 +280,10 @@ class DemoOrdersProvider with ChangeNotifier {
       debugPrint('Error loading demo orders from prefs: $e');
     }
 
-    // Default seed fallback
-    _orders.clear();
-    _orders.addAll(_initialSeedOrders());
-    notifyListeners();
+    if (_orders.isEmpty) {
+      _orders.addAll(_initialSeedOrders());
+      notifyListeners();
+    }
   }
 
   Future<void> _saveToPrefs() async {

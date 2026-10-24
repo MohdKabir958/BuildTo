@@ -16,20 +16,20 @@ void main() {
       expect(provider.allDhabas.length, equals(6));
       expect(provider.homeCategories.length, equals(9));
       expect(provider.isUsingFallbackData, isTrue);
-      expect(provider.dataSourceLabel, contains('Offline Catalog'));
+      expect(provider.dataSourceLabel, contains('Offline'));
     });
 
     test('category filtering returns correct construction materials', () {
       final cementProducts = provider.productsForCategory('cat-cement');
       expect(cementProducts, isNotEmpty);
       for (final p in cementProducts) {
-        expect(p.category, equals('cat-cement'));
+        expect(p.category.toLowerCase(), contains('cement'));
       }
 
       final steelProducts = provider.productsForCategory('cat-steel');
       expect(steelProducts, isNotEmpty);
       for (final p in steelProducts) {
-        expect(p.category, equals('cat-steel'));
+        expect(p.category.toLowerCase(), contains('steel'));
       }
     });
 

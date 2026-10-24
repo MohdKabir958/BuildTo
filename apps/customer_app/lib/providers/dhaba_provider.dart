@@ -385,13 +385,15 @@ class DhabaProvider with ChangeNotifier {
 
   /// Products matching a category name, or all products if 'all'.
   List<MenuItemModel> productsForCategory(String category) {
-    if (category.trim().toLowerCase() == 'all' || category.trim().isEmpty) {
+    final clean = category.trim().toLowerCase();
+    if (clean == 'all' || clean.isEmpty) {
       return allProducts;
     }
-    final wanted = category.trim().toLowerCase();
-    return allProducts
-        .where((p) => p.category.trim().toLowerCase() == wanted)
-        .toList();
+    final key = clean.startsWith('cat-') ? clean.substring(4) : clean;
+    return allProducts.where((p) {
+      final pCat = p.category.trim().toLowerCase();
+      return pCat == clean || pCat.contains(key) || (key.isNotEmpty && pCat.startsWith(key));
+    }).toList();
   }
 
   /// Resolves the supplier/dhaba associated with a product.
