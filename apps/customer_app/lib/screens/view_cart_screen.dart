@@ -27,9 +27,11 @@ class ViewCartScreen extends StatelessWidget {
         ? session.addressText
         : '4891/1C Lal Bihara, Near Metro Pillar 42, New Delhi - 110001';
 
-    final subtotal = cart.subtotal;
-    const deliveryFee = 150.0;
-    final grandTotal = subtotal > 0 ? subtotal + deliveryFee : 0.0;
+    final quote = cart.quote;
+    final subtotal = quote.subtotal;
+    final deliveryFee = quote.deliveryFee;
+    final discount = quote.discount;
+    final grandTotal = quote.grandTotal;
 
     return Scaffold(
       backgroundColor: BuildtoColors.surfaceLight,
@@ -334,10 +336,17 @@ class ViewCartScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         _buildBillRow('Item Total', '₹${subtotal.toStringAsFixed(0)}'),
+                        if (discount > 0) ...[
+                          const SizedBox(height: 8),
+                          _buildBillRow('Bulk / Coupon Discount', '-₹${discount.toStringAsFixed(0)}', isDiscount: true),
+                        ],
                         const SizedBox(height: 8),
-                        _buildBillRow('Site Logistics / Delivery', '₹${deliveryFee.toStringAsFixed(0)}'),
+                        _buildBillRow(
+                          'Site Logistics / Delivery',
+                          deliveryFee == 0 ? 'FREE (Orders ≥ ₹25,000)' : '₹${deliveryFee.toStringAsFixed(0)}',
+                        ),
                         const SizedBox(height: 8),
-                        _buildBillRow('GST (18% / 28%)', 'Included in item prices'),
+                        _buildBillRow('GST (18% / 28%)', 'Included in wholesale catalog'),
                         const Divider(height: 24, color: BuildtoColors.cardBorder),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -450,7 +459,7 @@ class ViewCartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBillRow(String label, String value) {
+  Widget _buildBillRow(String label, String value, {bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -460,10 +469,10 @@ class ViewCartScreen extends StatelessWidget {
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: BuildtoColors.textDark,
+            color: isDiscount ? BuildtoColors.successGreen : BuildtoColors.textDark,
           ),
         ),
       ],

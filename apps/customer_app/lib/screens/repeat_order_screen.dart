@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/buildto_theme.dart';
 import '../models/sample_construction_data.dart';
 import '../providers/cart_provider.dart';
+import '../providers/dhaba_provider.dart';
 import '../widgets/ui/k_image.dart';
 import '../widgets/ui/snack.dart';
 import 'my_orders_screen.dart';
@@ -24,12 +25,13 @@ class RepeatOrderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final demoOrders = context.watch<DemoOrdersProvider>();
+    final dhaba = context.watch<DhabaProvider>();
     final orderedList = demoOrders.frequentlyOrderedItems;
 
     final repeatItems = orderedList.isNotEmpty
         ? orderedList.map((it) {
             return {
-              'id': it.name.toLowerCase().contains('cement') ? 'prod-cem-ultratech' : (it.name.toLowerCase().contains('tmt') ? 'prod-stl-tata-12' : 'prod-brk-red-clay'),
+              'id': it.productId ?? (it.name.toLowerCase().contains('cement') ? 'prod-cem-ultratech' : (it.name.toLowerCase().contains('tmt') ? 'prod-stl-tata-12' : 'prod-brk-red-clay')),
               'name': it.name,
               'price': it.price > 0 ? (it.qty > 0 ? it.price / it.qty : it.price) : 390.0,
               'unit': it.unit,
@@ -245,12 +247,27 @@ class RepeatOrderScreen extends StatelessWidget {
                       // Button
                       ElevatedButton(
                         onPressed: () {
-                          final product = getSampleProductById(item['id'] as String);
-                          if (product != null) {
-                            cart.addItem(item: product, dhabaName: 'Shree Shyam Enterprises', quantity: 1);
-                            showKSnack(context, 'Added ${item['name']} to Cart');
+                          final prodId = item['id'] as String;
+                          final product = dhaba.productById(prodId) ?? getSampleProductById(prodId);
+                          if (product == null) {
+                            showKSnack(context, '${item['name']} is currently unavailable');
+                            return;
+                          }
+                          if (product.isOutOfStock) {
+                            showKSnack(context, '${item['name']} is currently out of stock');
+                            return;
+                          }
+                          final supplierName = dhaba.supplierNameForProduct(product);
+                          final moq = product.minOrder > 0 ? product.minOrder : 1;
+                          final added = cart.addItem(
+                            item: product,
+                            dhabaName: supplierName,
+                            quantity: moq,
+                          );
+                          if (added) {
+                            showKSnack(context, 'Added $moq ${product.unit} of ${product.name} to Cart');
                           } else {
-                            showKSnack(context, 'Added ${item['name']} to Cart');
+                            showKSnack(context, 'Unable to add ${product.name} (Max stock reached)');
                           }
                         },
                         style: ElevatedButton.styleFrom(

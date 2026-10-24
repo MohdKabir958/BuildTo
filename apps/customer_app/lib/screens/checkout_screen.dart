@@ -47,9 +47,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ? session.addressText
         : '4891/1C Lal Bihara, Near Metro Pillar 42, New Delhi - 110001';
 
-    final subtotal = widget.customAmount ?? cart.subtotal;
-    const deliveryFee = 150.0;
-    final grandTotal = subtotal > 0 ? subtotal + (widget.customAmount != null ? 0 : deliveryFee) : 1650.0;
+    final quote = cart.quote;
+    final subtotal = widget.customAmount != null
+        ? (cart.items.isNotEmpty ? cart.subtotal : widget.customAmount!)
+        : quote.subtotal;
+    final deliveryFee = widget.customAmount != null
+        ? (cart.items.isNotEmpty ? quote.deliveryFee : 0.0)
+        : quote.deliveryFee;
+    final discount = cart.items.isNotEmpty ? quote.discount : 0.0;
+    final grandTotal = widget.customAmount ?? (cart.items.isNotEmpty ? quote.grandTotal : 0.0);
+    final isCartEmpty = cart.items.isEmpty && widget.customAmount == null;
 
     return Scaffold(
       backgroundColor: BuildtoColors.surfaceLight,
@@ -75,6 +82,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top Demo Safety Banner
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: BuildtoColors.infoBg,
+                borderRadius: BorderRadius.circular(BuildtoRadius.md),
+                border: Border.all(color: BuildtoColors.infoBlue.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(LucideIcons.shieldCheck, size: 18, color: BuildtoColors.infoBlue),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Demo Mode: Simulated Checkout • No real payments will be charged to your card or account.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: BuildtoColors.infoBlue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // 3-Step Progress Indicator
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -297,12 +331,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       Text('₹${subtotal.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                     ],
                   ),
+                  if (discount > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Bulk / Coupon Discount', style: TextStyle(fontSize: 12, color: BuildtoColors.successGreen)),
+                        Text('-₹${discount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: BuildtoColors.successGreen)),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 8),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Site Unloading / Logistics', style: TextStyle(fontSize: 12, color: BuildtoColors.textMuted)),
-                      Text('₹150', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      const Text('Site Unloading / Logistics', style: TextStyle(fontSize: 12, color: BuildtoColors.textMuted)),
+                      Text(
+                        deliveryFee == 0 ? 'FREE (≥ ₹25k)' : '₹${deliveryFee.toStringAsFixed(0)}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
                   const Divider(height: 20, color: BuildtoColors.cardBorder),
@@ -333,7 +380,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _isPlacingOrder
+                onPressed: (_isPlacingOrder || isCartEmpty)
                     ? null
                     : () async {
                         setState(() => _isPlacingOrder = true);

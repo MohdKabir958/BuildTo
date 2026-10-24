@@ -394,6 +394,41 @@ class DhabaProvider with ChangeNotifier {
         .toList();
   }
 
+  /// Resolves the supplier/dhaba associated with a product.
+  Dhaba? supplierForProduct(MenuItemModel product) {
+    if (product.vendorId.isNotEmpty) {
+      final s = byId(product.vendorId);
+      if (s != null) return s;
+    }
+    for (final entry in _menuItems.entries) {
+      if (entry.value.any((item) => item.id == product.id)) {
+        return byId(entry.key);
+      }
+    }
+    return allDhabas.isNotEmpty ? allDhabas.first : null;
+  }
+
+  /// Returns the resolved supplier name for a product.
+  String supplierNameForProduct(MenuItemModel product) {
+    final s = supplierForProduct(product);
+    if (s != null && s.name.isNotEmpty) return s.name;
+    return product.brand.isNotEmpty ? product.brand : 'Verified Depot';
+  }
+
+  /// Finds a product by ID across all loaded stores.
+  MenuItemModel? productById(String id) {
+    for (final items in _menuItems.values) {
+      for (final p in items) {
+        if (p.id == id) return p;
+      }
+    }
+    return null;
+  }
+
+  /// The list of managed construction categories.
+  List<FoodCategory> get homeCategories =>
+      _homeCategories.isNotEmpty ? _homeCategories : sampleConstructionCategories();
+
   /// Loads the authoritative catalog (`GET /vendors`): real database menu ids, open/closed state
   /// and sold-out dishes. Concurrent calls share one request. Returns true when the server
   /// answered. A failed refresh keeps what is already on screen; only a failed first load

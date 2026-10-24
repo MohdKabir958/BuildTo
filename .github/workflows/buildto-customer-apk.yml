@@ -36,6 +36,13 @@ jobs:
       - name: Check for customer Dart compiler errors
         working-directory: apps/customer_app
         run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+      - name: Run Buildto automated tests
+        working-directory: apps/customer_app
+        run: |
+          flutter test test/catalog_test.dart \
+                       test/cart_moq_pricing_test.dart \
+                       test/checkout_order_test.dart \
+                       test/order_management_test.dart
       - name: Build offline customer demo for Android ARM64
         working-directory: apps/customer_app
         run: |
@@ -48,19 +55,21 @@ jobs:
           cd build/buildto-demo
           sha256sum Buildto-Customer-Demo.apk > SHA256SUMS.txt
           cat > INSTALL.txt <<'EOF'
-          Buildto Customer Android Demo
+          Buildto Construction Materials Marketplace Customer App
           Package: in.buildto.customer
+          Version: 1.9.0+15 (Demo Fixed Build)
           ARM64 Android debug APK, development-signed.
           Install Buildto-Customer-Demo.apk on an ARM64 Android phone.
           This is Flutter code, not the HTML prototype.
-          Build-time BUILDTO_OFFLINE_DEMO=true opens the app without real sign-in.
-          Product catalog and order history are sample/demo data.
-          Real payments, orders, messages, and notifications are not enabled.
+          Build-time BUILDTO_OFFLINE_DEMO=true opens the app with verified demo session.
+          Catalog contains 54 verified construction materials across 9 categories.
+          Dynamic depot supplier mapping, inventory checks, MOQ enforcement, and realistic order lifecycle.
+          Real payments, banking transactions, and cellular SMS are simulated.
           Not a production or Play Store release.
           EOF
       - uses: actions/upload-artifact@v4
         with:
-          name: Buildto-Customer-Demo-Android-ARM64
+          name: Buildto-Customer-Demo-Fixed-Android-ARM64
           path: build/buildto-demo/
           if-no-files-found: error
           retention-days: 14

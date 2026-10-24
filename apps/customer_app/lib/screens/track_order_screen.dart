@@ -24,15 +24,70 @@ class TrackOrderScreen extends StatefulWidget {
 class _TrackOrderScreenState extends State<TrackOrderScreen> {
   final List<String> _stages = [
     'Confirmed',
-    'Packed',
-    'Out for Delivery',
+    'Yard Allocation',
+    'Dispatched',
     'Delivered',
   ];
 
   @override
   Widget build(BuildContext context) {
     final demoOrders = context.watch<DemoOrdersProvider>();
-    final order = demoOrders.getOrderById(widget.orderId) ?? demoOrders.orders.first;
+    final order = demoOrders.getOrderById(widget.orderId);
+
+    if (order == null) {
+      return Scaffold(
+        backgroundColor: BuildtoColors.surfaceLight,
+        appBar: AppBar(
+          backgroundColor: BuildtoColors.bgWhite,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.arrowLeft, color: BuildtoColors.primaryNavy),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Track Order',
+            style: TextStyle(
+              color: BuildtoColors.primaryNavy,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(LucideIcons.packageX, size: 56, color: BuildtoColors.textMuted),
+                const SizedBox(height: 16),
+                Text(
+                  'Order "${widget.orderId}" Not Found',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: BuildtoColors.textDark),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'This order could not be located in your active demonstration session.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: BuildtoColors.textMuted),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BuildtoColors.primaryNavy,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Back to Orders'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final currentStage = order.stage >= 0 ? order.stage : 0;
     final isCancelled = order.statusCode == 'cancelled';
 
@@ -252,7 +307,13 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                         Text(
                           isCancelled
                               ? (order.cancelReason != null ? 'Reason: ${order.cancelReason}' : 'This order was cancelled prior to dispatch.')
-                              : 'Materials dispatched from ${order.supplier}. Loaded on flatbed vehicle.',
+                              : (order.stage == 0
+                                  ? 'Order confirmed with depot. Preparing materials for yard loading.'
+                                  : (order.stage == 1
+                                      ? 'Yard crane loading in progress at ${order.supplier}.'
+                                      : (order.stage == 2
+                                          ? 'Materials dispatched from ${order.supplier}. Loaded on flatbed vehicle.'
+                                          : 'Materials delivered to site. Unloading challan verified.'))),
                           style: const TextStyle(
                             fontSize: 12,
                             color: BuildtoColors.textMuted,
@@ -435,8 +496,8 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Cancel Order Action (if order is active)
-            if (!isCancelled && order.statusCode == 'processing')
+            // Cancel Order Action (if order is active and not yet dispatched)
+            if (!isCancelled && order.stage <= 1)
               SizedBox(
                 width: double.infinity,
                 height: 46,

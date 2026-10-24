@@ -40,6 +40,11 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final demoOrders = context.watch<DemoOrdersProvider>();
+    final order = demoOrders.getOrderById(widget.orderId);
+    final isCancelled = order?.statusCode == 'cancelled';
+    final isDispatched = (order?.stage ?? 0) > 1 || order?.statusCode == 'delivered';
+
     return Scaffold(
       backgroundColor: BuildtoColors.surfaceLight,
       appBar: AppBar(
@@ -59,7 +64,39 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: order == null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(LucideIcons.packageX, size: 56, color: BuildtoColors.textMuted),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Order "${widget.orderId}" Not Found',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: BuildtoColors.textDark),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'This order cannot be cancelled because it was not found in your session.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: BuildtoColors.textMuted),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BuildtoColors.primaryNavy,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Back to Orders'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,12 +268,57 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
             ),
             const SizedBox(height: 30),
 
+            if (isCancelled)
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: BuildtoColors.errorBg,
+                  borderRadius: BorderRadius.circular(BuildtoRadius.md),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(LucideIcons.info, size: 18, color: BuildtoColors.errorRed),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'This order has already been cancelled.',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: BuildtoColors.errorRed),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (isDispatched)
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: BuildtoColors.warningBg,
+                  borderRadius: BorderRadius.circular(BuildtoRadius.md),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(LucideIcons.alertTriangle, size: 18, color: BuildtoColors.warningAmber),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Materials have already been dispatched or delivered from the depot. Automated cancellation is closed. Contact site support desk for unloading adjustments.',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: BuildtoColors.warningAmber, height: 1.3),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Action Buttons
             SizedBox(
               width: double.infinity,
               height: 48,
               child: OutlinedButton(
-                onPressed: () {
+                onPressed: (isCancelled || isDispatched)
+                    ? null
+                    : () {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
