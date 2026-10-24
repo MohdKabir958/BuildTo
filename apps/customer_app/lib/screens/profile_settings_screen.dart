@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../config/buildto_theme.dart';
-const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: true);
 import '../providers/cart_provider.dart';
 import '../providers/demo_orders_provider.dart';
 import '../providers/session_provider.dart';
@@ -15,6 +14,8 @@ import 'notifications_screen.dart';
 import 'repeat_order_screen.dart';
 import 'support_help_screen.dart';
 import 'wishlist_screen.dart';
+
+const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: true);
 
 /// Screen 13 — Profile / Settings
 /// Contractor profile information, account management, saved addresses, and preferences.

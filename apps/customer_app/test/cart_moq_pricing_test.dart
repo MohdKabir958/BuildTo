@@ -45,7 +45,7 @@ void main() {
       );
       expect(success, isFalse);
       expect(cart.items, isEmpty);
-      expect(cart.totalCount, equals(0));
+      expect(cart.itemCount, equals(0));
     });
 
     test('initial add enforces Minimum Order Quantity (MOQ)', () {
@@ -98,7 +98,7 @@ void main() {
       // Decrementing below MOQ (10) should cleanly remove the line item
       cart.decrementItem(lineItemId);
       expect(cart.items, isEmpty);
-      expect(cart.totalCount, equals(0));
+      expect(cart.itemCount, equals(0));
     });
 
     test('pricing quote calculates standard delivery and free delivery over threshold', () {
