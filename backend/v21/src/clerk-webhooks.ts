@@ -1,3 +1,4 @@
+import {serializable} from './transaction';
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
@@ -56,7 +57,7 @@ export async function synchronizeClerkWebhook(db:PrismaClient,verified:VerifiedC
  Promise<{duplicate:boolean;action:string}> {
   const {event,messageId,digest}=verified;
   const eventKey='clerk.receipt:'+createHash('sha256').update(messageId).digest('hex');
-  return db.$transaction(async tx=>{
+  return serializable(db,async tx=>{
     // Distributed race protection for provider retries and out-of-order updates per subject.
     await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${event.subject}, 18371)) IS NULL AS locked`);
     const previous=await tx.outboxEvent.findUnique({where:{eventKey},select:{payload:true}});
@@ -107,5 +108,5 @@ export async function synchronizeClerkWebhook(db:PrismaClient,verified:VerifiedC
       action,entityType:'User',entityId:userId,actorUserId:null,actorRole:'CLERK_SIGNED_WEBHOOK',
     }});
     return {duplicate:false,action};
-  },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:5000,timeout:10000});
+  });
 }

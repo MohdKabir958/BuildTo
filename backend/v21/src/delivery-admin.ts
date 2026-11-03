@@ -1,3 +1,4 @@
+import {serializable} from './transaction';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {requireAdminPermission,requireSupplierPermission} from './permissions';
@@ -5,8 +6,7 @@ import {record,requiredString,uuid,integer,boolean,cityCode,stateCode,pins,
  centerCoordinates,radiusKm,assertAreaShape,minimumPaise,feePaise} from './delivery-validation';
 
 type Tx=Prisma.TransactionClient;
-const serial=<T>(db:PrismaClient,fn:(tx:Tx)=>Promise<T>)=>
- db.$transaction(fn,{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:5000,timeout:10000});
+const serial=serializable;
 async function admin(tx:Tx,userId:string) {
  await tx.$queryRaw(Prisma.sql`SELECT "userId" FROM "AdminMembership" WHERE "userId"=${userId}::uuid FOR SHARE`);
  await requireAdminPermission(tx,userId,'SERVICE_AREA_MANAGE');

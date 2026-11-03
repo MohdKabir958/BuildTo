@@ -1,10 +1,10 @@
+import {serializable} from './transaction';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {record,requiredString,uuid,boolean,postalCode,phoneE164,coordinates,optionalNonemptyString} from './delivery-validation';
 
 type Tx=Prisma.TransactionClient;
-const serial=<T>(db:PrismaClient,fn:(tx:Tx)=>Promise<T>)=>
- db.$transaction(fn,{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:5000,timeout:10000});
+const serial=serializable;
 const selected={
  id:true,cityId:true,label:true,recipientName:true,phoneE164:true,
  line1:true,line2:true,locality:true,postalCode:true,latitude:true,longitude:true,

@@ -1,3 +1,4 @@
+import {serializable} from './transaction';
 import {randomUUID} from 'node:crypto';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
@@ -17,8 +18,7 @@ async function audit(tx:Tx,actorUserId:string,entityType:string,entityId:string,
   await publishOutbox(tx,{eventKey:'catalog:'+randomUUID(),aggregateType:entityType,
     aggregateId:entityId,eventType:action,payload:{entityId,entityType}});
 }
-const serial=<T>(db:PrismaClient,fn:(tx:Tx)=>Promise<T>)=>
- db.$transaction(fn,{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:5000,timeout:10000});
+const serial=serializable;
 
 export async function createCategory(db:PrismaClient,actor:string,input:unknown) {
  const o=record(input,['slug','name','parentId','displayOrder']);
