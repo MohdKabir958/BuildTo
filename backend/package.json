@@ -24,7 +24,9 @@
     "db:v21:status": "node scripts/v21/manage-baseline.mjs status",
     "db:v21:baseline:resolve": "node scripts/v21/manage-baseline.mjs resolve-existing",
     "db:v21:deploy-empty": "node scripts/v21/manage-baseline.mjs deploy-empty",
-    "test:v21:contract": "node --test test/v21SchemaContract.test.cjs"
+    "test:v21:contract": "node --test test/v21SchemaContract.test.cjs",
+    "build:v21": "npm run db:v21:generate && tsc -p v21/tsconfig.json",
+    "test:v21:api": "node --test v21/test/*.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.1106.0",

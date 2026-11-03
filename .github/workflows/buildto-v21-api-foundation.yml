@@ -1,0 +1,57 @@
+name: Buildto V2.1 API foundation tests
+on:
+  push:
+    branches: [backend/v21-02-api-foundation]
+  pull_request:
+    paths:
+      - 'backend/v21/**'
+      - 'backend/prisma/v21/**'
+      - 'backend/package.json'
+      - '.github/workflows/buildto-v21-api-foundation.yml'
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: buildto_v21_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d buildto_v21_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test
+      NODE_ENV: test
+      BUILDTO_V21_BASELINE_CONFIRM: ci-test
+      BUILDTO_V21_ENV: local
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Install isolated V2.1 schema into disposable PostgreSQL
+        run: npm run db:v21:deploy-empty
+      - name: Compile standalone V2.1 platform
+        run: npm run build:v21
+      - name: Exercise API and transactional PostgreSQL foundation tests
+        run: npm run test:v21:api
+      - name: Confirm legacy backend still builds separately
+        run: |
+          npx prisma generate
+          npm run build
+      - name: Confirm no legacy runtime promotion
+        run: |
+          test -f v21/dist/server.js
+          test -f v21/openapi.json
