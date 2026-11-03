@@ -101,6 +101,6 @@ test('config refuses production, unrelated Neon databases and wildcard CORS',()=
 });
 test('documented OpenAPI includes exactly implemented routes',()=>{
  const spec=require('../openapi.json');
- assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready'].sort());
+ assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready','/api/v2/me','/api/v2/admin/access','/api/v2/suppliers/{supplierId}/access','/api/v2/webhooks/clerk'].sort());
  assert.equal(spec.openapi,'3.0.3');
 });
