@@ -17,7 +17,7 @@
 | Detected schema | Legacy migration | Legacy API startup |
 | --- | --- | --- |
 | Empty public schema | Allowed to bootstrap legacy schema | Blocked |
-| Complete legacy signature | Allowed | Allowed |
+| Complete legacy signature **with `_prisma_migrations`** | Allowed | Allowed |
 | Any V2.1 model marker | **Blocked** | **Blocked** |
 | Mixed/partial/unknown schema | **Blocked** | **Blocked** |
 | Metadata inspection error | **Blocked** | **Blocked** |
