@@ -7,9 +7,6 @@ export interface V21Config {
   databaseUrl: string;
   corsOrigins: string[];
   proxyHops: number;
-  redisRestUrl: string | null;
-  redisRestToken: string | null;
-  rateLimitHashKey: string | null;
   clerkIssuer: string | null;
   clerkAuthorizedParties: string[];
   clerkSecretKey: string | null;
@@ -49,14 +46,6 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   if (environment === 'staging' && (corsOrigins.length === 0 || corsOrigins.some(x => !x.startsWith('https://')))) {
     throw new Error('V21_CORS_REQUIRED: staging needs explicit HTTPS origins.');
   }
-  const redisRestUrl = env.BUILDTO_V21_REDIS_REST_URL?.trim() || null;
-  const redisRestToken = env.BUILDTO_V21_REDIS_REST_TOKEN?.trim() || null;
-  const rateLimitHashKey = env.BUILDTO_V21_RATE_LIMIT_HMAC_KEY?.trim() || null;
-  if (environment === 'staging' && (!redisRestUrl || !redisRestToken || !rateLimitHashKey || rateLimitHashKey.length < 32)) {
-    throw new Error('V21_RATE_LIMIT_CONFIG_REQUIRED: staging needs central rate limiting and keyed IP hashing.');
-  }
-  if (redisRestUrl && !redisRestUrl.startsWith('https://')) throw new Error('V21_REDIS_URL_INVALID');
-  if ((redisRestUrl === null) !== (redisRestToken === null)) throw new Error('V21_REDIS_CONFIG_INCOMPLETE');
   const clerkIssuer=env.CLERK_ISSUER?.trim()||null;
   const clerkSecretKey=env.CLERK_SECRET_KEY?.trim()||null;
   const clerkJwtKey=env.CLERK_JWT_KEY?.trim()||null;
@@ -78,8 +67,5 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
     databaseUrl: env.DATABASE_URL!,
     corsOrigins,
     proxyHops,
-    redisRestUrl,
-    redisRestToken,
-    rateLimitHashKey,
   };
 }

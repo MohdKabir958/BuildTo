@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const request=require('supertest');
 const {createV21App}=require('../dist/app.js');
-const {InMemoryTestLimiter,RedisRestRateLimiter}=require('../dist/rateLimit.js');
+const {InMemoryTestLimiter,SingleInstanceRateLimiter}=require('../dist/rateLimit.js');
 const {paiseString,parsePaise,decimalString,utcTimestamp,publicMoneyDTO,stableRequestHash}=require('../dist/contracts.js');
 const {readConfig}=require('../dist/config.js');
 const {ApiError}=require('../dist/errors.js');
@@ -54,20 +54,31 @@ test('CORS is exact-match, OPTIONS safe and default response secure',async()=>{
  assert(!bad.headers['access-control-allow-origin']);
  assert.equal((await request(app).options('/api/v2/system').set('Origin','https://staging.buildto.test')).status,204);
 });
-test('Redis rate limiter runs an atomic script and hashes sensitive subjects',async()=>{
- const redis=new RedisRestRateLimiter('https://redis.example','secret','unique-hmac',async(_,options)=>{
-   assert.equal(options.headers.Authorization,'Bearer secret');
-   const command=JSON.parse(options.body);
-   assert.equal(command[0],'EVAL');
-   assert(!options.body.includes('private-ip-or-account'));
-   return {ok:true,json:async()=>({result:1})};
+test('in-process limiter enforces limits without external services',async()=>{
+ let now=0;
+ const limiter=new SingleInstanceRateLimiter(20,()=>now);
+ assert.deepEqual(await limiter.check('office-ip',2,60),{remaining:1});
+ assert.deepEqual(await limiter.check('office-ip',2,60),{remaining:0});
+ await assert.rejects(limiter.check('office-ip',2,60),e=>e.status===429);
+ now=61000;
+ assert.deepEqual(await limiter.check('office-ip',2,60),{remaining:1});
+});
+test('rate limiter bounds memory and fails closed when full',async()=>{
+ const limiter=new SingleInstanceRateLimiter(10,()=>0);
+ for(let i=0;i<10;i++)await limiter.check('subject:'+i,20,60);
+ await assert.rejects(limiter.check('eleventh',20,60),e=>e.status===503);
+});
+test('signed Clerk webhooks have a separate request budget',async()=>{
+ const calls=[];
+ const app=createV21App({
+  db:{$queryRaw:async()=>[{one:1}]},limiter:{check:async(subject,max)=>{calls.push({subject,max});return {remaining:1};}},
+  allowedOrigins:[],proxyHops:0,log:()=>{},clerkWebhookSecret:'whsec_fake',
  });
- const r=await redis.check('private-ip-or-account',2,60);
- assert.deepEqual(r,{remaining:1});
- const exhausted=new RedisRestRateLimiter('https://redis.example','secret','unique-hmac',async()=>({ok:true,json:async()=>({result:3})}));
- await assert.rejects(exhausted.check('ip',2,60),e=>e instanceof ApiError&&e.status===429);
- const broken=new RedisRestRateLimiter('https://redis.example','secret','unique-hmac',async()=>{throw new Error('private connection details');});
- await assert.rejects(broken.check('ip',2,60),e=>e.status===503&&!e.message.includes('private'));
+ await request(app).get('/api/v2/system');
+ await request(app).post('/api/v2/webhooks/clerk').set('Content-Type','application/json').send('{}');
+ assert.equal(calls[0].max,300);
+ assert.equal(calls[1].max,240);
+ assert.notEqual(calls[0].subject,calls[1].subject);
 });
 test('app maps expected limiter failure to 429',async()=>{
  const app=appWith({limiter:{check:async()=>{throw new ApiError(429,'RATE_LIMITED','Too many requests.');}}});

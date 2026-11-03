@@ -44,17 +44,19 @@ export function createV21App(deps:AppDependencies) {
     next();
   });
   // Provider webhooks must use original bytes; register before the JSON parser.
-  // Scope a separate rate limit because raw webhook requests bypass express.json.
-  const apiLimit:import('express').RequestHandler=async(req,res,next)=>{
+  // Signed provider events use a separate budget from normal app navigation.
+  const makeLimit=(bucket:string,max:number):import('express').RequestHandler=>async(req,res,next)=>{
     try {
-      const subject='public:'+req.ip+':'+req.method+':/api/v2'; // shared route-class budget; IDs cannot create unlimited buckets
-      const rate=await deps.limiter.check(subject,60,60);
+      const subject=bucket+':'+req.ip+':'+req.method;
+      const rate=await deps.limiter.check(subject,max,60);
       res.setHeader('X-RateLimit-Remaining',String(rate.remaining));
       next();
     }catch(error){next(error);}
   };
+  const apiLimit=makeLimit('api',300);
+  const webhookLimit=makeLimit('clerk-webhook',240);
   if(deps.clerkWebhookSecret){
-    app.post('/api/v2/webhooks/clerk',apiLimit,express.raw({type:'application/json',limit:'64kb'}),async(req,res,next)=>{
+    app.post('/api/v2/webhooks/clerk',webhookLimit,express.raw({type:'application/json',limit:'64kb'}),async(req,res,next)=>{
       try{
         const header=(name:string)=>req.header('svix-'+name)||req.header('webhook-'+name);
         const verified=verifyClerkWebhook(req.body,{

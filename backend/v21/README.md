@@ -12,7 +12,7 @@ This is a **separate, deliberately restricted Express API**, not the legacy Krav
 - At startup, the PR 01 inspector checks tables, enum types, columns, indexes, constraints, PostGIS, triggers and the presence of the Prisma migration ledger. If the ledger is missing, **the HTTP port does not open**.
 - Request IDs, request-body-free JSON logging, strict CORS origins, security headers, 64 KB JSON body limit and safe standardized errors.
 - Decimal money values and paise are JSON decimal strings, never floats; all DTOs are explicitly allowlisted.
-- Staging rate limits use a central Redis REST endpoint with an atomic Lua fixed-window counter and HMAC-hashed identity keys; unavailable Redis **fails closed**. In-memory limits are only allowed in local development/tests.
+- Rate limiting is bounded and **in-process** for a single API instance, with a separate Clerk webhook budget. No Redis. Add shared limits only if deploying multiple API replicas.
 - No private media uploads or Socket.IO rooms exist yet. These require authenticated storage and permissions first.
 
 ## Transactional infrastructure
@@ -32,7 +32,7 @@ npm run build:v21
 npm run test:v21:api
 ```
 
-For a staging server, configure `BUILDTO_V21_ENV=staging`, the allowlisted staging `DATABASE_URL`, `BUILDTO_V21_CORS_ORIGINS` (HTTPS exact origin), `BUILDTO_V21_REDIS_REST_URL`, `BUILDTO_V21_REDIS_REST_TOKEN`, and a unique 32+ character `BUILDTO_V21_RATE_LIMIT_HMAC_KEY`, then use `node v21/dist/server.js`.
+For a staging server, configure `BUILDTO_V21_ENV=staging`, the allowlisted staging `DATABASE_URL`, `BUILDTO_V21_CORS_ORIGINS` (HTTPS exact origin), then use `node v21/dist/server.js`.
 
 ### Staging migration history blocker
 
