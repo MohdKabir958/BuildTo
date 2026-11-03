@@ -109,8 +109,14 @@ test('pricing rejects floats, missing keys, unsupported fields, cross supplier a
  assert.equal(replay.body.data.id,created.body.data.id);
  const changed=await send('post',url,'seller',{...base,unitPrice:'290.0000'},{'Idempotency-Key':idempotency});
  assert.equal(changed.status,409);
- const privateOther=await send('get','/api/v2/suppliers/'+store.otherSupplier.id+'/listings/'+store.listingId,'seller');
+ const privateOther=await send('patch','/api/v2/suppliers/'+store.otherSupplier.id+'/listings/'+store.listingId,'seller',{
+   expectedVersion:0,unitPrice:'1.0000'
+ });
  assert.equal(privateOther.status,404);
+ const outsiderEdit=await send('patch','/api/v2/suppliers/'+store.supplier.id+'/listings/'+store.listingId,'outsider',{
+   expectedVersion:0,unitPrice:'1.0000'
+ });
+ assert.equal(outsiderEdit.status,404);
  const listingPublic=await http.get('/api/v2/catalog/listings?productId='+store.productId);
  assert.equal(listingPublic.status,200);assert.equal(listingPublic.body.data.length,0);
 });
