@@ -170,6 +170,13 @@ CREATE TRIGGER buildto_ledger_posting_guard BEFORE UPDATE OF "postedAt" ON "Ledg
 CREATE FUNCTION buildto_guard_ledger_lines() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE journal_id uuid; is_posted timestamptz;
 BEGIN
+ -- Never allow an UPDATE to move a line OUT of an already-posted journal.
+ IF TG_OP = 'UPDATE' THEN
+   SELECT "postedAt" INTO is_posted FROM "LedgerJournal" WHERE id=OLD."journalId" FOR UPDATE;
+   IF is_posted IS NOT NULL THEN
+     RAISE EXCEPTION 'Posted ledger lines cannot be moved or edited' USING ERRCODE = '23514';
+   END IF;
+ END IF;
  journal_id := CASE WHEN TG_OP = 'DELETE' THEN OLD."journalId" ELSE NEW."journalId" END;
  SELECT "postedAt" INTO is_posted FROM "LedgerJournal" WHERE id=journal_id FOR UPDATE;
  IF is_posted IS NOT NULL THEN
@@ -186,6 +193,97 @@ BEGIN RAISE EXCEPTION 'Append-only audit / stock-movement records cannot be modi
 CREATE TRIGGER buildto_audit_immutable BEFORE UPDATE OR DELETE ON "AuditEvent"
  FOR EACH ROW EXECUTE FUNCTION buildto_append_only();
 CREATE TRIGGER buildto_stock_movement_immutable BEFORE UPDATE OR DELETE ON "StockMovement"
+ FOR EACH ROW EXECUTE FUNCTION buildto_append_only();
+
+
+-- Financial operations must not bypass approval by inserting an already-posted journal.
+CREATE FUNCTION buildto_block_preposted_journal() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW."postedAt" IS NOT NULL THEN
+   RAISE EXCEPTION 'Journal cannot be inserted as posted' USING ERRCODE = '23514';
+ END IF;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_new_journal_unposted BEFORE INSERT ON "LedgerJournal"
+ FOR EACH ROW EXECUTE FUNCTION buildto_block_preposted_journal();
+
+CREATE FUNCTION buildto_guard_posted_journal_immutability() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF OLD."postedAt" IS NOT NULL AND NEW IS DISTINCT FROM OLD THEN
+    RAISE EXCEPTION 'Posted journal header is immutable' USING ERRCODE = '23514';
+ END IF;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_posted_journal_immutable BEFORE UPDATE ON "LedgerJournal"
+ FOR EACH ROW EXECUTE FUNCTION buildto_guard_posted_journal_immutability();
+
+-- Core ownership identifiers cannot be moved to a different supplier after creation.
+CREATE FUNCTION buildto_immutable_supplier_owner() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW."supplierId" IS DISTINCT FROM OLD."supplierId" THEN
+   RAISE EXCEPTION 'Supplier ownership cannot be reassigned' USING ERRCODE = '23514';
+ END IF;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_listing_owner_immutable BEFORE UPDATE OF "supplierId" ON "SupplierListing"
+ FOR EACH ROW EXECUTE FUNCTION buildto_immutable_supplier_owner();
+CREATE TRIGGER buildto_warehouse_owner_immutable BEFORE UPDATE OF "supplierId" ON "Warehouse"
+ FOR EACH ROW EXECUTE FUNCTION buildto_immutable_supplier_owner();
+CREATE TRIGGER buildto_supplier_order_owner_immutable BEFORE UPDATE OF "supplierId" ON "SupplierOrder"
+ FOR EACH ROW EXECUTE FUNCTION buildto_immutable_supplier_owner();
+CREATE TRIGGER buildto_shipment_owner_immutable BEFORE UPDATE OF "supplierId" ON "Shipment"
+ FOR EACH ROW EXECUTE FUNCTION buildto_immutable_supplier_owner();
+CREATE TRIGGER buildto_invoice_owner_immutable BEFORE UPDATE OF "supplierId" ON "TaxInvoice"
+ FOR EACH ROW EXECUTE FUNCTION buildto_immutable_supplier_owner();
+CREATE TRIGGER buildto_quote_owner_immutable BEFORE UPDATE OF "supplierId" ON "SupplierQuote"
+ FOR EACH ROW EXECUTE FUNCTION buildto_immutable_supplier_owner();
+
+-- Refund requests lock the captured payment and reserve refund budget even before the gateway confirms.
+-- This prevents two simultaneous refund requests from allocating more than captured funds.
+CREATE FUNCTION buildto_guard_refund_budget() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE captured bigint; allocated numeric;
+BEGIN
+ IF TG_OP = 'UPDATE' AND (NEW."paymentAttemptId" IS DISTINCT FROM OLD."paymentAttemptId" OR NEW."purchaseOrderId" IS DISTINCT FROM OLD."purchaseOrderId") THEN
+   RAISE EXCEPTION 'Refund ownership is immutable' USING ERRCODE = '23514';
+ END IF;
+ SELECT "capturedPaise" INTO captured FROM "PaymentAttempt" WHERE id=NEW."paymentAttemptId" FOR UPDATE;
+ IF captured IS NULL THEN RAISE EXCEPTION 'Refund requires existing payment' USING ERRCODE = '23514'; END IF;
+ SELECT coalesce(sum("amountPaise"),0) INTO allocated FROM "RefundRequest"
+  WHERE "paymentAttemptId"=NEW."paymentAttemptId" AND "id"<>NEW.id AND "status" NOT IN ('REJECTED','FAILED');
+ IF NEW."status" NOT IN ('REJECTED','FAILED') THEN allocated := allocated + NEW."amountPaise"; END IF;
+ IF allocated > captured THEN
+   RAISE EXCEPTION 'Refund requests exceed confirmed captured amount' USING ERRCODE = '23514';
+ END IF;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_refund_budget_guard BEFORE INSERT OR UPDATE ON "RefundRequest"
+ FOR EACH ROW EXECUTE FUNCTION buildto_guard_refund_budget();
+
+CREATE FUNCTION buildto_captured_amount_non_decreasing() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW."capturedPaise" < OLD."capturedPaise" THEN
+   RAISE EXCEPTION 'Verified captured amount cannot decrease' USING ERRCODE = '23514';
+ END IF;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_payment_capture_monotonic BEFORE UPDATE OF "capturedPaise" ON "PaymentAttempt"
+ FOR EACH ROW EXECUTE FUNCTION buildto_captured_amount_non_decreasing();
+
+CREATE FUNCTION buildto_guard_invoice_supplier() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE order_supplier uuid;
+BEGIN
+ SELECT "supplierId" INTO order_supplier FROM "SupplierOrder" WHERE id=NEW."supplierOrderId";
+ IF order_supplier IS DISTINCT FROM NEW."supplierId" THEN
+   RAISE EXCEPTION 'Invoice supplier does not own supplier order' USING ERRCODE = '23514';
+ END IF;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_invoice_supplier_guard BEFORE INSERT OR UPDATE ON "TaxInvoice"
+ FOR EACH ROW EXECUTE FUNCTION buildto_guard_invoice_supplier();
+
+CREATE TRIGGER buildto_supplier_status_events_immutable BEFORE UPDATE OR DELETE ON "SupplierOrderEvent"
+ FOR EACH ROW EXECUTE FUNCTION buildto_append_only();
+CREATE TRIGGER buildto_shipment_status_events_immutable BEFORE UPDATE OR DELETE ON "ShipmentEvent"
  FOR EACH ROW EXECUTE FUNCTION buildto_append_only();
 
 COMMIT;
