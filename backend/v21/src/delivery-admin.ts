@@ -151,11 +151,32 @@ export async function configureFlatDeliveryFee(db:PrismaClient,userId:string,sup
   });
   if(!association?.active||!association.area.active||!association.area.city.active)
    throw new ApiError(409,'COVERAGE_NOT_ACTIVE','Enable supplier coverage before configuring the delivery fee.');
-  const now=new Date();
-  await tx.supplierDeliveryRate.updateMany({
-    where:{supplierId,areaId,active:true},
-    data:{active:false,effectiveTo:now},
+  const current=await tx.supplierDeliveryRate.findMany({
+    where:{supplierId,areaId,active:true,effectiveTo:null},
+    select:{id:true,supplierId:true,areaId:true,active:true,baseFeePaise:true,
+      handlingFeePaise:true,freeAbovePaise:true,effectiveFrom:true,
+      perKmPaise:true,perTonneKmPaise:true,perCubicMetreKmPaise:true},
+    take:3,
   });
+  if(current.length===1) {
+    const old=current[0];
+    const brackets=await tx.supplierFreightBracket.count({where:{deliveryRateId:old.id,active:true}});
+    if(!brackets&&old.baseFeePaise===base&&old.handlingFeePaise===handling&&
+       old.freeAbovePaise===freeAbove&&old.perKmPaise===0n&&
+       old.perTonneKmPaise===0n&&old.perCubicMetreKmPaise===0n){
+      // PUT is repeatable: a retry of the same settings does not create a new rate row.
+      return {id:old.id,supplierId,areaId,active:true,
+        baseFeePaise:base.toString(),handlingFeePaise:handling.toString(),
+        freeAbovePaise:freeAbove?.toString()??null,effectiveFrom:old.effectiveFrom};
+    }
+  }
+  const now=new Date();
+  await tx.$executeRaw(Prisma.sql`
+    UPDATE "SupplierDeliveryRate"
+       SET active=false,
+           "effectiveTo"=GREATEST(NOW(), "effectiveFrom"+INTERVAL '1 millisecond')
+     WHERE "supplierId"=${supplierId}::uuid AND "areaId"=${areaId}::uuid AND active=true
+  `);
   const row=await tx.supplierDeliveryRate.create({data:{
     supplierId,areaId,active:true,baseFeePaise:base,handlingFeePaise:handling,
     freeAbovePaise:freeAbove,perKmPaise:0n,perTonneKmPaise:0n,perCubicMetreKmPaise:0n,
