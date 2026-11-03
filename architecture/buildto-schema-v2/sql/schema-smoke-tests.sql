@@ -48,4 +48,35 @@ DO $$ BEGIN
     RAISE NOTICE 'PASS: incorrect total rejected';
   END;
 END; $$;
+
+-- Double-entry journal cannot be preposted, posted while unbalanced, or changed after posting.
+DO $$ BEGIN
+ BEGIN
+   INSERT INTO "LedgerJournal"("id","referenceKey","eventType","postedAt") VALUES
+    ('90000000-0000-4000-8000-000000000001','SMOKE-BAD-JOURNAL','SMOKE',now());
+   RAISE EXCEPTION 'Inserted a preposted journal';
+ EXCEPTION WHEN check_violation THEN RAISE NOTICE 'PASS: preposted journal rejected'; END;
+END; $$;
+INSERT INTO "LedgerJournal"("id","referenceKey","eventType") VALUES
+ ('90000000-0000-4000-8000-000000000002','SMOKE-GOOD-JOURNAL','SMOKE');
+DO $$ BEGIN
+ BEGIN
+   UPDATE "LedgerJournal" SET "postedAt"=now() WHERE id='90000000-0000-4000-8000-000000000002';
+   RAISE EXCEPTION 'Posted an unbalanced journal';
+ EXCEPTION WHEN check_violation THEN RAISE NOTICE 'PASS: unbalanced journal rejected'; END;
+END; $$;
+INSERT INTO "LedgerAccount"("id","code","name") VALUES
+ ('a0000000-0000-4000-8000-000000000001','SMOKE-RECEIVABLE','SMOKE receivable'),
+ ('a0000000-0000-4000-8000-000000000002','SMOKE-CLEARING','SMOKE clearing');
+INSERT INTO "LedgerLine"("journalId","lineNumber","accountId","debitPaise","creditPaise") VALUES
+ ('90000000-0000-4000-8000-000000000002',1,'a0000000-0000-4000-8000-000000000001',1000,0),
+ ('90000000-0000-4000-8000-000000000002',2,'a0000000-0000-4000-8000-000000000002',0,1000);
+UPDATE "LedgerJournal" SET "postedAt"=now() WHERE id='90000000-0000-4000-8000-000000000002';
+DO $$ BEGIN
+ BEGIN
+   UPDATE "LedgerLine" SET "debitPaise"=3000 WHERE "journalId"='90000000-0000-4000-8000-000000000002' AND "lineNumber"=1;
+   RAISE EXCEPTION 'Modified posted journal line';
+ EXCEPTION WHEN check_violation THEN RAISE NOTICE 'PASS: posted journal immutable'; END;
+END; $$;
+
 ROLLBACK;
