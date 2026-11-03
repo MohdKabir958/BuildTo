@@ -4,7 +4,7 @@
 
 This is a **separate, deliberately restricted Express API**, not the legacy Kraveo/Grozo API. It builds from `backend/v21/src` into `backend/v21/dist`, using the isolated `backend/generated/buildto-v21` Prisma client created in PR 01. No legacy route, migration, or rider worker is imported.
 
-**Not yet production-ready.** The only public routes are `GET /health`, `GET /ready`, and `GET /api/v2/system`. OpenAPI describes those three routes. No customer, supplier, financial, or admin API is available before Clerk + database RBAC in PR 03.
+**Not yet production-ready.** The V2.1 service now includes PR 03 Clerk-secured identity/RBAC, PR 04 construction catalog and supplier pricing, and PR 05 cities/addresses/delivery-area previews. OpenAPI lists the implemented routes. Inventory, checkout, finance and payment APIs remain disabled until their domain PRs.
 
 ## Enterprise safeguards
 
