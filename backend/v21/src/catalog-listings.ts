@@ -154,14 +154,14 @@ export async function replacePriceTiers(db:PrismaClient,actorId:string,supplierI
   await seller(tx,actorId,supplierId);
   const row=await findListing(tx,supplierId,id);
   if(row.version!==version)throw new ApiError(409,'LISTING_VERSION_CONFLICT','Refresh listing before replacing tiers.');
-  if(!['DRAFT','REJECTED','APPROVED'].includes(row.status))
+  if(!['DRAFT','REJECTED','APPROVED','PENDING'].includes(row.status))
    throw new ApiError(409,'LISTING_LOCKED','Tier prices cannot change in this state.');
   if(tiers.length&&tiers[0].pricePerUnit.gt(row.unitPrice))
    throw new ApiError(400,'INVALID_PRICE_TIERS','Tier price cannot exceed base unit price.');
   for(const tier of tiers)if(tier.minQty.lt(row.minOrderQty))
    throw new ApiError(400,'INVALID_PRICE_TIERS','Tier minimum below listing minimum order.');
   await casUpdate(tx,id,version,{
-   status:row.status==='APPROVED'?'PENDING':'DRAFT',active:false,publishedAt:null,
+   status:row.status==='APPROVED'||row.status==='PENDING'?'PENDING':'DRAFT',active:false,publishedAt:null,
   });
   // Preserve formerly published tier history, but remove unapproved staged tiers.
   await tx.supplierPriceTier.deleteMany({where:{listingId:id,active:false,effectiveUntil:null}});
@@ -210,6 +210,15 @@ export async function reviewListing(db:PrismaClient,actor:string,id:string,paylo
     throw new ApiError(409,'SUPPLIER_NOT_APPROVED','Supplier approval required.');
    await assertCatalogReady(tx,row.productId,row.unitCode);
    if(row.unitPrice.lte(0))throw new ApiError(422,'INVALID_PUBLIC_PRICE','Unit price must be positive.');
+   const currentTiers=[...row.priceTiers].sort((a,b)=>a.minQty.cmp(b.minQty));
+   for(let i=0;i<currentTiers.length;i++){
+     const tier=currentTiers[i];
+     if(tier.minQty.lt(row.minOrderQty)||tier.pricePerUnit.gt(row.unitPrice)||tier.pricePerUnit.lte(0))
+       throw new ApiError(422,'INVALID_PRICE_TIERS','Existing quantity tiers must match the submitted base price and minimum order.');
+     if(i>0 && (tier.minQty.lte(currentTiers[i-1].minQty)||
+       tier.pricePerUnit.gt(currentTiers[i-1].pricePerUnit)))
+       throw new ApiError(422,'INVALID_PRICE_TIERS','Quantity-tier prices must decrease as quantity increases.');
+   }
    await tx.supplierPriceTier.updateMany({where:{listingId:id,active:false,effectiveUntil:null},
     data:{active:true}});
   }
