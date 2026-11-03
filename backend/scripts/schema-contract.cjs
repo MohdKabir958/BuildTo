@@ -25,7 +25,7 @@ function classifyDatabaseTables(tables) {
 
   // Any V2.1 marker wins: mixed/partial installations must not be operated by legacy code.
   if (hasV21) return hasLegacy ? 'mixed' : 'v2.1';
-  if (LEGACY_SIGNATURE.every(name => names.has(name))) return 'legacy';
+  if (LEGACY_SIGNATURE.every(name => names.has(name)) && names.has('_prisma_migrations')) return 'legacy';
   if (names.size === 0) return 'empty';
   return 'unknown';
 }
