@@ -46,7 +46,7 @@ export function createV21App(deps:AppDependencies) {
   // Scope a separate rate limit because raw webhook requests bypass express.json.
   const apiLimit:import('express').RequestHandler=async(req,res,next)=>{
     try {
-      const subject='public:'+req.ip+':'+req.method+':'+req.path;
+      const subject='public:'+req.ip+':'+req.method+':/api/v2'; // shared route-class budget; IDs cannot create unlimited buckets
       const rate=await deps.limiter.check(subject,60,60);
       res.setHeader('X-RateLimit-Remaining',String(rate.remaining));
       next();
