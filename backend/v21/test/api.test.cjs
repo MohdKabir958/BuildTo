@@ -121,3 +121,11 @@ test('rate limits use a shared budget even when a caller changes the supplier ID
  assert.equal(subjects.length,2);
  assert.equal(subjects[0],subjects[1]);
 });
+
+test('serialization conflicts are safe 409s rather than unknown 500s',()=>{
+ const {normalizeError}=require('../dist/errors.js');
+ const err=normalizeError({code:'P2034',message:'private query metadata'});
+ assert.equal(err.status,409);
+ assert.equal(err.code,'CONCURRENT_MODIFICATION');
+ assert(!err.message.includes('private'));
+});
