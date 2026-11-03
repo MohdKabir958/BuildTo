@@ -3,6 +3,8 @@ import {readConfig} from './config';
 import {createV21App} from './app';
 import {RedisRestRateLimiter,InMemoryTestLimiter} from './rateLimit';
 import {jsonLogger} from './logging';
+import {assertV21BaselineApplied} from './baseline';
+
 import {PrismaClient} from '../../generated/buildto-v21';
 
 // Shared baseline schema inspector (PR 01), which includes PostGIS, tables,
@@ -18,6 +20,7 @@ async function main() {
     const schema=await verifyExistingSchema(db);
     if(!schema.migrationHistoryExists)
       throw new Error('V21_MIGRATION_LEDGER_REQUIRED: complete staging Prisma baseline before API startup.');
+    await assertV21BaselineApplied(db);
     const limiter=config.redisRestUrl&&config.redisRestToken&&config.rateLimitHashKey
       ? new RedisRestRateLimiter(config.redisRestUrl,config.redisRestToken,config.rateLimitHashKey)
       : config.environment==='local' ? new InMemoryTestLimiter()
