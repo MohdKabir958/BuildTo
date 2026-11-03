@@ -9,6 +9,7 @@ import {IdentityVerifier,requireIdentity} from './identity';
 import {requireAdminPermission,requireSupplierPermission,listOwnMemberships} from './permissions';
 import {verifyClerkWebhook,synchronizeClerkWebhook} from './clerk-webhooks';
 import {registerPublicCatalog,registerProtectedCatalog} from './catalog-routes';
+import {registerPublicDelivery,registerProtectedDelivery} from './delivery-routes';
 
 export interface AppDependencies {
   db:PrismaClient;
@@ -91,17 +92,19 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review'] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees'] as string[],
       },
       requestId:res.locals.requestId,
     });
   });
   registerPublicCatalog(app,deps.db);
+  registerPublicDelivery(app,deps.db);
   // These are identity/permission introspection endpoints only. No supplier/admin
   // mutation endpoints are exposed before domain-specific security tests.
   if(deps.identityVerifier){
     const auth=requireIdentity(deps.identityVerifier,deps.db);
     registerProtectedCatalog(app,deps.db,auth);
+    registerProtectedDelivery(app,deps.db,auth);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
       try{
         const principal=res.locals.principal as {id:string;displayName:string};
@@ -125,7 +128,7 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
-  // Only catalog mutations are available. Checkout, inventory and payments remain disabled.
+  // Checkout, inventory reservations and payment routes remain disabled until their domain PRs.
 
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);
