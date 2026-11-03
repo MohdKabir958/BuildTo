@@ -89,6 +89,12 @@ test('supplier configures only own area and fixed exact paise freight',async()=>
  });
  assert.equal(price.status,200,JSON.stringify(price.body));
  assert.equal(price.body.data.baseFeePaise,'9900');
+ const retry=await send('put',route+'/flat-rate','supplierOwner',{
+  baseFeePaise:'9900',handlingFeePaise:'1000',freeAbovePaise:'100000'
+ });
+ assert.equal(retry.status,200);
+ assert.equal(retry.body.data.id,price.body.data.id);
+ assert.equal(await db.supplierDeliveryRate.count({where:{supplierId:supplier,areaId:area,active:true}}),1);
  const coverage=await send('get','/api/v2/suppliers/'+supplier+'/delivery','supplierOwner');
  assert.equal(coverage.status,200);
  assert.equal(coverage.body.data.find(x=>x.areaId===area).rates[0].handlingFeePaise,'1000');
@@ -123,7 +129,9 @@ test('customer address ownership, PIN, coordinate pairing, default uniqueness an
  assert.equal((await send('delete','/api/v2/me/addresses/'+store.secondId,'outsider')).status,404);
  const removed=await send('delete','/api/v2/me/addresses/'+store.secondId,'customer');
  assert.equal(removed.status,200);
- assert.equal((await send('get','/api/v2/me/addresses','customer')).body.data.length,1);
+ const remaining=await send('get','/api/v2/me/addresses','customer');
+ assert.equal(remaining.body.data.length,1);
+ assert.equal(remaining.body.data[0].isDefault,true);
 });
 test('PIN-only zone returns clear fee preview, and never trusts customer subtotal',async()=>{
  const supplierId=store.supplier.id;
