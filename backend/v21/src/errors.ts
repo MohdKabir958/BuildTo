@@ -13,6 +13,7 @@ export function normalizeError(error:unknown):ApiError {
     const code=(error as {code?:unknown}).code;
     if (code==='P2002') return new ApiError(409,'RESOURCE_CONFLICT','Resource already exists.');
     if (code==='P2025') return new ApiError(404,'NOT_FOUND','Resource not found.');
+    if (code==='P2034') return new ApiError(409,'CONCURRENT_MODIFICATION','Concurrent update detected. Reload and retry.');
   }
   if (error && typeof error==='object' && 'type' in error) {
     if ((error as {type?:unknown}).type==='entity.too.large') return new ApiError(413,'PAYLOAD_TOO_LARGE','Request body exceeds the allowed size.');
