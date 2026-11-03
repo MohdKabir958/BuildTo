@@ -10,6 +10,13 @@ export interface V21Config {
   redisRestUrl: string | null;
   redisRestToken: string | null;
   rateLimitHashKey: string | null;
+  clerkIssuer: string | null;
+  clerkAuthorizedParties: string[];
+  clerkSecretKey: string | null;
+  clerkJwtKey: string | null;
+  clerkAudience: string | null;
+  clerkWebhookSecret: string | null;
+  clerkAllowNativeWithoutAzp: boolean;
 }
 const STAGING_HOST = 'ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech';
 export function readConfig(env: NodeJS.ProcessEnv): V21Config {
@@ -50,7 +57,22 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   }
   if (redisRestUrl && !redisRestUrl.startsWith('https://')) throw new Error('V21_REDIS_URL_INVALID');
   if ((redisRestUrl === null) !== (redisRestToken === null)) throw new Error('V21_REDIS_CONFIG_INCOMPLETE');
+  const clerkIssuer=env.CLERK_ISSUER?.trim()||null;
+  const clerkSecretKey=env.CLERK_SECRET_KEY?.trim()||null;
+  const clerkJwtKey=env.CLERK_JWT_KEY?.trim()||null;
+  const clerkAudience=env.CLERK_AUDIENCE?.trim()||null;
+  const clerkWebhookSecret=env.CLERK_WEBHOOK_SIGNING_SECRET?.trim()||null;
+  const clerkAuthorizedParties=(env.CLERK_AUTHORIZED_PARTIES||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const clerkAllowNativeWithoutAzp=env.CLERK_ALLOW_NATIVE_WITHOUT_AZP==='true';
+  if(clerkAuthorizedParties.some(x=>!/^https?:\/\//.test(x)||x.includes('*')))throw new Error('V21_CLERK_PARTIES_INVALID');
+  if(clerkAllowNativeWithoutAzp && !clerkAudience)throw new Error('V21_CLERK_NATIVE_AUDIENCE_REQUIRED');
+  if(environment==='staging' && (
+    !clerkIssuer?.startsWith('https://') || !clerkSecretKey || !clerkWebhookSecret?.startsWith('whsec_') ||
+    !clerkAuthorizedParties.length || clerkAuthorizedParties.some(x=>!x.startsWith('https://'))
+  ))throw new Error('V21_CLERK_CONFIG_REQUIRED: staging needs issuer, server key, signed webhook secret and HTTPS authorized parties.');
   return {
+    clerkIssuer,clerkAuthorizedParties,clerkSecretKey,clerkJwtKey,clerkAudience,clerkWebhookSecret,
+    clerkAllowNativeWithoutAzp,
     environment,
     port,
     databaseUrl: env.DATABASE_URL!,
