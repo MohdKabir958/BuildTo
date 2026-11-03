@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/buildto_v21_generation
 jobs:
   generate:
     runs-on: ubuntu-latest
