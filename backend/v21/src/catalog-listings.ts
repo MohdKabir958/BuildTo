@@ -13,7 +13,7 @@ const serial=<T>(db:PrismaClient,fn:(tx:Tx)=>Promise<T>)=>
 const select={
  id:true,productId:true,supplierId:true,sku:true,unitCode:true,packSize:true,
  minOrderQty:true,stepQty:true,maxOrderQty:true,unitPrice:true,mrpPaise:true,
- taxRateBps:true,taxInclusive:true,status:true,active:true,version:true,publishedAt:true,
+ taxRateBps:true,taxInclusive:true,status:true,active:true,version:true,publishedAt:true,deletedAt:true,
  priceTiers:{where:{effectiveUntil:null},select:{
    minQty:true,pricePerUnit:true,effectiveFrom:true,effectiveUntil:true
  },orderBy:{minQty:'asc' as const}},
@@ -221,7 +221,7 @@ export async function reviewListing(db:PrismaClient,actor:string,id:string,paylo
   if(decision!=='APPROVE')await tx.supplierPriceTier.updateMany({
    where:{listingId:id,active:true},data:{active:false}
   });
-  await audit(tx,actor,id,'ADMIN_LISTING_'+String(decision)+'D');
+  await audit(tx,actor,id,'ADMIN_LISTING_'+String(decision==='APPROVE'?'APPROVED':decision==='REJECT'?'REJECTED':'SUSPENDED'));
   return listingDTO((await tx.supplierListing.findUniqueOrThrow({where:{id},select})));
  });
 }
