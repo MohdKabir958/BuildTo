@@ -8,6 +8,7 @@ SET LOCAL statement_timeout='120s';
 -- Spatial indexes are not modeled by Prisma 5.22. Point fields are Unsupported("geography(...)").
 CREATE INDEX service_area_geocenter_gist ON "ServiceArea" USING GIST ("geoCenter") WHERE "geoCenter" IS NOT NULL;
 CREATE INDEX service_area_boundary_gist ON "ServiceArea" USING GIST ("geoBoundary") WHERE "geoBoundary" IS NOT NULL;
+CREATE INDEX address_geopoint_gist ON "Address" USING GIST ("geoPoint") WHERE "geoPoint" IS NOT NULL;
 -- Spatial data comes from validated coordinates, never trusted user-supplied geography JSON.
 CREATE FUNCTION buildto_sync_service_area_point() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -17,6 +18,15 @@ BEGIN
 END; $$;
 CREATE TRIGGER buildto_service_area_geopoint BEFORE INSERT OR UPDATE OF "centerLat","centerLng" ON "ServiceArea"
  FOR EACH ROW EXECUTE FUNCTION buildto_sync_service_area_point();
+
+CREATE FUNCTION buildto_sync_address_geopoint() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ NEW."geoPoint" := CASE WHEN NEW.latitude IS NULL OR NEW.longitude IS NULL THEN NULL
+ ELSE ST_SetSRID(ST_MakePoint(NEW.longitude::double precision,NEW.latitude::double precision),4326)::geography END;
+ RETURN NEW;
+END; $$;
+CREATE TRIGGER buildto_address_geopoint BEFORE INSERT OR UPDATE OF "latitude","longitude" ON "Address"
+ FOR EACH ROW EXECUTE FUNCTION buildto_sync_address_geopoint();
 
 ALTER TABLE "SupplierFreightBracket" ADD CONSTRAINT "freight_bracket_valid" CHECK (
  "dimension" IN ('MASS','VOLUME') AND "minQuantity" >= 0 AND ("maxQuantity" IS NULL OR "maxQuantity" > "minQuantity")
@@ -89,10 +99,10 @@ BEGIN
                             OLD."supplierOrderItemId" IS DISTINCT FROM NEW."supplierOrderItemId") THEN
    RAISE EXCEPTION 'Shipment line ownership is immutable' USING ERRCODE='23514';
   END IF;
-  SELECT status NOT IN ('CANCELLED','FAILED','RETURNED') INTO old_counted FROM "Shipment" WHERE id=OLD."shipmentId";
+  SELECT status NOT IN ('CANCELLED','FAILED','RETURNED') INTO old_counted FROM "Shipment" WHERE id=OLD."shipmentId" FOR UPDATE;
  END IF;
  IF TG_OP <> 'DELETE' THEN
-  SELECT status NOT IN ('CANCELLED','FAILED','RETURNED') INTO new_counted FROM "Shipment" WHERE id=NEW."shipmentId";
+  SELECT status NOT IN ('CANCELLED','FAILED','RETURNED') INTO new_counted FROM "Shipment" WHERE id=NEW."shipmentId" FOR UPDATE;
  END IF;
  IF old_counted THEN delta:=delta-OLD."quantity"; END IF;
  IF new_counted THEN delta:=delta+NEW."quantity"; END IF;

@@ -428,6 +428,8 @@ model Address {
   postalCode    String    @db.VarChar(6)
   latitude      Decimal?  @db.Decimal(10,7)
   longitude     Decimal?  @db.Decimal(10,7)
+  // PostGIS delivery site location derived from validated coordinates, not client WKT.
+  geoPoint      Unsupported("geography(Point,4326)")?
   instructions  String?
   isDefault     Boolean   @default(false)
   deletedAt     DateTime? @db.Timestamptz(3)

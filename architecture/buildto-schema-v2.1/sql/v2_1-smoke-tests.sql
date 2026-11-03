@@ -115,4 +115,33 @@ DO $$ BEGIN
   AND ST_DWithin(s."geoCenter",ST_SetSRID(ST_MakePoint(78.487,17.386),4326)::geography, s."radiusKm"*1000)) THEN
     RAISE EXCEPTION 'PostGIS radius query failed'; END IF;
 END $$;
+-- An additional supplier cash receipt cannot exceed amount due even when using a distinct idempotency key.
+DO $$ BEGIN
+ BEGIN
+  INSERT INTO "CodCollection"("id","supplierOrderId","supplierId","receiptNumber","idempotencyKey","collectedPaise") VALUES
+   ('76000000-0000-4000-8000-000000000003','71000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','SMOKE-OVER-COD','SMOKE-KEY-2',1);
+  RAISE EXCEPTION 'Over-collected COD wrongly accepted';
+ EXCEPTION WHEN check_violation THEN RAISE NOTICE 'PASS: COD overcollection rejected'; END;
+END $$;
+-- Freight bracket ranges for same rate/dimension must not overlap while active.
+INSERT INTO "SupplierDeliveryRate"("id","supplierId","areaId","perTonneKmPaise","active") VALUES
+ ('c2000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','c1000000-0000-4000-8000-000000000001',1200,true);
+INSERT INTO "SupplierFreightBracket"("id","deliveryRateId","dimension","minQuantity","maxQuantity","fixedFeePaise","active") VALUES
+ ('c3000000-0000-4000-8000-000000000001','c2000000-0000-4000-8000-000000000001','MASS',0,1000,20000,true);
+DO $$ BEGIN
+ BEGIN
+  INSERT INTO "SupplierFreightBracket"("id","deliveryRateId","dimension","minQuantity","maxQuantity","fixedFeePaise","active") VALUES
+   ('c3000000-0000-4000-8000-000000000002','c2000000-0000-4000-8000-000000000001','MASS',500,1500,25000,true);
+  RAISE EXCEPTION 'Overlapping freight rate tiers wrongly accepted';
+ EXCEPTION WHEN exclusion_violation THEN RAISE NOTICE 'PASS: overlapping freight brackets rejected'; END;
+END $$;
+-- Verify geocoded delivery address synchronizes its PostGIS point.
+INSERT INTO "Address"("id","userId","cityId","label","recipientName","phoneE164","line1","locality","postalCode","latitude","longitude","updatedAt") VALUES
+ ('c4000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001',
+  'SMOKE site','Tester','+919900000000','12 Test Road','HYD','500001',17.385,78.4867,now());
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM "Address" WHERE id='c4000000-0000-4000-8000-000000000001'
+   AND ST_DWithin("geoPoint",ST_SetSRID(ST_MakePoint(78.4867,17.385),4326)::geography,10)) THEN
+  RAISE EXCEPTION 'Address geography not synchronized'; END IF;
+END $$;
 ROLLBACK;
