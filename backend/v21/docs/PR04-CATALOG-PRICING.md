@@ -15,7 +15,7 @@ This module extends the isolated V2.1 API. The active legacy backend, live produ
 - Listing quantities, INR unit prices and discount tiers are **exact decimal strings** (not floating point); MRP is a **paise decimal integer string**. Tax is whole basis points.
 - New listings start `DRAFT` and hidden. Supplier must explicitly submit. Admin CATALOG/OWNER reviews a `PENDING` listing, approving or rejecting with optimistic version checks. Approved listings have `publishedAt` and become discoverable only while supplier, product, category and unit are active.
 - Changing a published price/quantity hides the listing and moves it to `PENDING` for reapproval. This is a deliberate fail-closed marketplace policy. `SUSPENDED` and `ARCHIVED` cannot be edited via the supplier API.
-- Quantity-tier replacement archives previously published tier periods (not deleting historical published prices), discards only unapproved staged tiers, and creates new staged tiers. The admin activates staged tiers on approval. Tiers are ascending in minimum quantity and cannot rise in price as quantity increases.
+- Quantity-tier replacement archives previously published tier periods (not deleting historical published prices), discards only unapproved staged tiers, and creates new staged tiers. The admin activates staged tiers on approval. Suppliers may revise their tiers while a listing is \`PENDING\`; each revision increments its version, so an administrator cannot accidentally approve a stale review. Tiers are ascending in minimum quantity and cannot rise in price as quantity increases.
 - Listing `version` uses compare-and-swap for every supplier edit, tier replacement, submission and admin review; stale concurrent requests receive `409 LISTING_VERSION_CONFLICT`. The transaction also writes a restricted `AuditEvent` and an outbox intent.
 - New listing creation requires an `Idempotency-Key` and uses the PR 02 transactional idempotency primitive; repeat requests return the original listing reference, while changed payloads conflict.
 
@@ -40,6 +40,7 @@ Supplier (authenticated and supplier-scoped):
 
 ## Limits and next PR
 - **No stock or availability promises:** warehouse stock, reservations and oversell prevention belong to inventory PR 06.
+- Admin approval verifies that every current quantity tier stays below the new base price and satisfies the minimum-order quantity, even after repricing an approved listing. Otherwise it refuses publication until the supplier resubmits valid tiers.
 - No freight or coverage promise: postcode/PostGIS serviceability and cargo freight come in PR 05.
 - No supplier self-enrollment/approval flow: supplier onboarding and member provisioning remain separately audited work.
 - No media upload, image hosting, checkout, payment, payout or tax-invoice API yet. All remain disabled.
