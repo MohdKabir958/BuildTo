@@ -20,6 +20,12 @@ import { initPushProvider, getPushProvider } from './services/push/provider';
 import { mountUploads } from './routes/uploads';
 import { jsonUnlessMenuImport } from './middleware/bodyLimits';
 
+// CommonJS guard is shared with migration scripts, including before TypeScript is built.
+// It inspects PostgreSQL catalog metadata only and refuses V2.1/unknown schemas.
+const { assertLegacyRuntimeContract } = require('../scripts/schema-contract.cjs') as {
+  assertLegacyRuntimeContract: (client: typeof prisma) => Promise<string>;
+};
+
 dotenv.config();
 if(process.env.NODE_ENV==='production')installStructuredLogging();
 
@@ -136,11 +142,27 @@ attachRealtime(io);
 server.on('error', guards.onListenError);
 
 // Bind IPv4 explicitly so Render's port scanner and container ingress can reach the API.
-server.listen(PORT, '0.0.0.0', () => {
-  if (usesClerk()) { const cleanup = setInterval(() => { retryClerkDeletions().catch(() => console.warn('Clerk deletion cleanup will retry.')); },60_000); cleanup.unref(); }
-  console.log(`🚀 ${brand.name} Backend Engine listening on http://0.0.0.0:${PORT}`);
-  console.log(`📡 WebSockets listening for real-time driver tracking & order alerts`);
-  // Order housekeeping every 60 s: expire unpaid orders, auto-cancel unaccepted paid orders, retry refunds.
-  // Started only once the port is really ours.
-  if (process.env.NODE_ENV !== 'test') startOrderMaintenance();
-});
+// Never open an HTTP port or start the legacy housekeeping worker against Buildto V2.1.
+// The V2.1 application will replace this guard with its own explicit schema version contract.
+async function startAfterDatabaseContractCheck() {
+  try {
+    await assertLegacyRuntimeContract(prisma);
+  } catch (error) {
+    const safeMessage = error instanceof Error && error.message.startsWith('DATABASE_SCHEMA_')
+      ? error.message
+      : 'DATABASE_SCHEMA_INSPECTION_FAILED: legacy backend cannot establish a safe schema contract.';
+    console.error('[FATAL] ' + safeMessage);
+    await prisma.$disconnect().catch(() => undefined);
+    process.exit(1);
+  }
+
+  server.listen(PORT, '0.0.0.0', () => {
+    if (usesClerk()) { const cleanup = setInterval(() => { retryClerkDeletions().catch(() => console.warn('Clerk deletion cleanup will retry.')); },60_000); cleanup.unref(); }
+    console.log(`🚀 ${brand.name} Backend Engine listening on http://0.0.0.0:${PORT}`);
+    console.log(`📡 WebSockets listening for real-time driver tracking & order alerts`);
+    // Order housekeeping every 60 s: expire unpaid orders, auto-cancel unaccepted paid orders, retry refunds.
+    // Started only once the port is really ours.
+    if (process.env.NODE_ENV !== 'test') startOrderMaintenance();
+  });
+}
+void startAfterDatabaseContractCheck();

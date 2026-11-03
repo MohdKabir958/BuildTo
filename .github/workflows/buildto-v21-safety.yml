@@ -1,0 +1,76 @@
+name: Buildto V2.1 — legacy backend database safety
+on:
+  push:
+    branches: [backend/v21-00-safety-baseline]
+  pull_request:
+    paths:
+      - 'backend/scripts/schema-contract.cjs'
+      - 'backend/scripts/check-schema-contract.mjs'
+      - 'backend/scripts/migrate.mjs'
+      - 'backend/src/index.ts'
+      - 'backend/test/schemaContract.test.cjs'
+      - 'backend/package.json'
+      - '.github/workflows/buildto-v21-safety.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: buildto_contract_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/buildto_contract_test
+      NODE_ENV: test
+      PGPASSWORD: postgres
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run test:schema-contract
+      - run: npx prisma generate
+      - name: V2.1 marker blocks legacy Prisma migration before writing
+        shell: bash
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE "Supplier" (id uuid PRIMARY KEY);'
+          if npm run db:deploy > /tmp/blocked-migration.log 2>&1; then
+            echo 'FAIL: legacy migration accepted a V2.1 marker'
+            exit 1
+          fi
+          grep -q 'DATABASE_SCHEMA_CONTRACT_MISMATCH' /tmp/blocked-migration.log
+          if npm run db:contract:check > /tmp/blocked-runtime.log 2>&1; then
+            echo 'FAIL: legacy API contract accepted a V2.1 marker'
+            exit 1
+          fi
+          grep -q 'DATABASE_SCHEMA_CONTRACT_MISMATCH' /tmp/blocked-runtime.log
+          test "$(psql "$DATABASE_URL" -At -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname='public' AND tablename='Supplier'")" = "1"
+          test "$(psql "$DATABASE_URL" -At -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname='public' AND tablename='MenuItem'")" = "0"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'DROP TABLE "Supplier";'
+      - name: Legacy bootstrap remains possible on an empty disposable database
+        run: |
+          npm run db:deploy
+          npm run db:contract:check
+      - name: New V2.1 marker blocks runtime even alongside old tables
+        shell: bash
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE TABLE "PurchaseOrder" (id uuid PRIMARY KEY);'
+          if npm run db:contract:check > /tmp/blocked-mixed.log 2>&1; then
+            echo 'FAIL: legacy runtime accepted a mixed schema'
+            exit 1
+          fi
+          grep -q 'DATABASE_SCHEMA_CONTRACT_MISMATCH' /tmp/blocked-mixed.log
+      - name: TypeScript compile has no new migration-guard errors
+        run: npm run build
