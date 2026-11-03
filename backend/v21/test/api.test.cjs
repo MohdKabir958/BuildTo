@@ -140,3 +140,19 @@ test('serialization conflicts are safe 409s rather than unknown 500s',()=>{
  assert.equal(err.code,'CONCURRENT_MODIFICATION');
  assert(!err.message.includes('private'));
 });
+
+test('staging boots its configuration without Redis credentials while keeping Clerk mandatory',()=>{
+ const config=readConfig({
+  BUILDTO_V21_ENV:'staging',
+  DATABASE_URL:'postgresql://app:placeholder@ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require',
+  BUILDTO_V21_CORS_ORIGINS:'https://staging.buildto.test',
+  CLERK_ISSUER:'https://example.clerk.accounts.dev',
+  CLERK_SECRET_KEY:'sk_test_config-only',
+  CLERK_WEBHOOK_SIGNING_SECRET:'whsec_placeholder',
+  CLERK_AUTHORIZED_PARTIES:'https://staging.buildto.test',
+ });
+ assert.equal(config.environment,'staging');
+ assert.equal(config.corsOrigins.length,1);
+ assert(!('redisRestUrl' in config));
+ assert(!('redisRestToken' in config));
+});
