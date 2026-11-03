@@ -25,6 +25,13 @@ test('complete legacy contract is accepted for migration and runtime', async () 
   assert.equal(await guard.assertLegacyRuntimeContract(db), 'legacy');
 });
 
+test('untracked legacy-looking tables are not trusted without Prisma migration history', async () => {
+  const db = prismaWith(['Vendor', 'MenuItem', 'Order']);
+  for (const operation of [guard.assertLegacyMigrationContract, guard.assertLegacyRuntimeContract]) {
+    await assert.rejects(operation(db), e => e.code === 'DATABASE_SCHEMA_CONTRACT_MISMATCH');
+  }
+});
+
 test('the V2.1 Supplier table alone blocks legacy migration and runtime', async () => {
   const db = prismaWith(['Supplier', 'spatial_ref_sys']);
   for (const operation of [guard.assertLegacyMigrationContract, guard.assertLegacyRuntimeContract]) {
