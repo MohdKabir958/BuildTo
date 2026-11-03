@@ -34,7 +34,7 @@ async function webhook(client,body,options={}) {
   const sig=signing(body,options.id,options.time);
   return client.post('/api/v2/webhooks/clerk').set('Content-Type','application/json')
     .set('svix-id',sig.id).set('svix-timestamp',sig.ts)
-    .set('svix-signature',options.signature||sig.sig).send(sig.raw);
+    .set('svix-signature',options.signature||sig.sig).send(sig.raw.toString('utf8'));
 }
 test('signed webhook creates identity; duplicate returns receipt without changes',async()=>{
   const actor=subject(),client=request(app({}));
@@ -48,7 +48,7 @@ test('signed webhook creates identity; duplicate returns receipt without changes
   // Verbatim provider retry is idempotent by signed message id, not just user id.
   const signed=signing({type:'user.updated',data:{id:actor,first_name:'New',last_name:'Name'}});
   const send=()=>client.post('/api/v2/webhooks/clerk').set('Content-Type','application/json')
-   .set('svix-id',signed.id).set('svix-timestamp',signed.ts).set('svix-signature',signed.sig).send(signed.raw);
+   .set('svix-id',signed.id).set('svix-timestamp',signed.ts).set('svix-signature',signed.sig).send(signed.raw.toString('utf8'));
   assert.equal((await send()).body.duplicate,false);
   assert.equal((await send()).body.duplicate,true);
   assert.equal((await db.user.findUniqueOrThrow({where:{id:stored.id}})).displayName,'New Name');
@@ -67,7 +67,7 @@ test('signature, timestamp and original payload are mandatory',async()=>{
   assert.equal((await request(app()).post('/api/v2/webhooks/clerk').set('Content-Type','application/json').send(JSON.stringify(payload))).status,401);
 });
 test('deleted identity is tombstoned and cannot regain permissions from stale updates',async()=>{
-  const actor=subject(),client=request(app());
+  const actor=subject(),client=request(app({valid:actor}));
   assert.equal((await webhook(client,{type:'user.created',data:{id:actor,first_name:'Before'}})).status,200);
   const user=await db.user.findUniqueOrThrow({where:{clerkUserId:actor}});
   const supplier=await db.supplier.create({data:supplierData()});
@@ -80,8 +80,9 @@ test('deleted identity is tombstoned and cannot regain permissions from stale up
   assert.equal((await db.adminMembership.findUniqueOrThrow({where:{userId:user.id}})).active,false);
   assert.equal((await webhook(client,{type:'user.updated',data:{id:actor,first_name:'Stale'}})).status,200);
   assert.equal((await db.user.findUniqueOrThrow({where:{id:user.id}})).status,'CLOSED');
-  const denied=await client.get('/api/v2/me').set('Authorization','Bearer identity').set('x-request-id','unit_test_123456');
-  assert.equal(denied.status,401);
+  const denied=await client.get('/api/v2/me').set('Authorization','Bearer valid').set('x-request-id','unit_test_123456');
+  assert.equal(denied.status,403);
+  assert.equal(denied.body.error.code,'ACCOUNT_SUSPENDED');
 });
 test('unknown token and missing DB identity are denied; no self-provisioning from token claims',async()=>{
  const actor=subject(),client=request(app({valid:actor}));
