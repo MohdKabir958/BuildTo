@@ -26,7 +26,7 @@ export async function executeIdempotently<T>(db:PrismaClient,command:IdempotentC
   const lockKey=command.actorId+':'+command.scope+':'+command.requestKey;
   return db.$transaction(async tx=>{
     // Advisory *transaction* lock makes repeated requests serialize even before the row exists.
-    await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`);
+    await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0)) IS NULL AS locked`);
     const where={actorId_scope_requestKey:{actorId:command.actorId,scope:command.scope,requestKey:command.requestKey}};
     const existing=await tx.idempotencyRecord.findUnique({where});
     if(existing && existing.expiresAt.getTime()>Date.now()) {
