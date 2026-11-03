@@ -10,27 +10,27 @@ BEGIN
   END IF;
 END; $$;
 -- Create two unrelated suppliers. A cross-supplier InventoryBalance must be rejected.
-INSERT INTO "Supplier" ("id","slug","legalName","displayName") VALUES
- ('20000000-0000-4000-8000-000000000001','smoke-supplier-a','SMOKE Supplier A','SMOKE A'),
- ('20000000-0000-4000-8000-000000000002','smoke-supplier-b','SMOKE Supplier B','SMOKE B');
-INSERT INTO "Product" ("id","code","categoryId","name","specification") VALUES
- ('30000000-0000-4000-8000-000000000001','SMOKE-PRODUCT','10000000-0000-4000-8000-000000000001','Test cement','{}'::jsonb);
-INSERT INTO "SupplierListing" ("id","supplierId","productId","sku","unitCode","unitPrice") VALUES
- ('40000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','SMOKE-SKU','BAG',390);
+INSERT INTO "Supplier" ("id","slug","legalName","displayName","updatedAt") VALUES
+ ('20000000-0000-4000-8000-000000000001','smoke-supplier-a','SMOKE Supplier A','SMOKE A',now()),
+ ('20000000-0000-4000-8000-000000000002','smoke-supplier-b','SMOKE Supplier B','SMOKE B',now());
+INSERT INTO "Product" ("id","code","categoryId","name","specification","updatedAt") VALUES
+ ('30000000-0000-4000-8000-000000000001','SMOKE-PRODUCT','10000000-0000-4000-8000-000000000001','Test cement','{}'::jsonb,now());
+INSERT INTO "SupplierListing" ("id","supplierId","productId","sku","unitCode","unitPrice","updatedAt") VALUES
+ ('40000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','SMOKE-SKU','BAG',390,now());
 INSERT INTO "Warehouse" ("id","supplierId","code","name") VALUES
  ('50000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002','SMOKE-W','Wrong Supplier Warehouse'),
  ('50000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','SMOKE-C','Correct Supplier Warehouse');
 DO $$ BEGIN
   BEGIN
-    INSERT INTO "InventoryBalance"("id","listingId","warehouseId") VALUES
-      ('60000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000001');
+    INSERT INTO "InventoryBalance"("id","listingId","warehouseId","updatedAt") VALUES
+      ('60000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000001',now());
     RAISE EXCEPTION 'Cross-supplier inventory was incorrectly accepted';
   EXCEPTION WHEN check_violation THEN
     RAISE NOTICE 'PASS: supplier mismatch rejected';
   END;
 END; $$;
-INSERT INTO "InventoryBalance"("id","listingId","warehouseId","onHandQty","reservedQty") VALUES
- ('60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000002',10,2);
+INSERT INTO "InventoryBalance"("id","listingId","warehouseId","onHandQty","reservedQty","updatedAt") VALUES
+ ('60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000002',10,2,now());
 DO $$ BEGIN
   BEGIN
     UPDATE "InventoryBalance" SET "reservedQty"=20 WHERE id='60000000-0000-4000-8000-000000000002';
@@ -41,8 +41,8 @@ DO $$ BEGIN
 END; $$;
 DO $$ BEGIN
   BEGIN
-    INSERT INTO "PurchaseOrder" ("id", "publicNumber", "customerId", "clientRequestId", "addressSnapshot", "subtotalPaise", "discountPaise", "taxPaise", "deliveryPaise", "totalPaise") VALUES
-      ('70000000-0000-4000-8000-000000000001','SMOKE-ORDER','80000000-0000-4000-8000-000000000001','REQ-1','{}'::jsonb,1000,0,0,150,1000);
+    INSERT INTO "PurchaseOrder" ("id", "publicNumber", "customerId", "clientRequestId", "addressSnapshot", "subtotalPaise", "discountPaise", "taxPaise", "deliveryPaise", "totalPaise", "updatedAt") VALUES
+      ('70000000-0000-4000-8000-000000000001','SMOKE-ORDER','80000000-0000-4000-8000-000000000001','REQ-1','{}'::jsonb,1000,0,0,150,1000,now());
     RAISE EXCEPTION 'Incorrect monetary total was accepted';
   EXCEPTION WHEN check_violation THEN
     RAISE NOTICE 'PASS: incorrect total rejected';
