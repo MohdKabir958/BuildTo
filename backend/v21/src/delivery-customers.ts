@@ -87,10 +87,16 @@ export async function deleteMyAddress(db:PrismaClient,userId:string,addressId:st
  uuid(addressId,'addressId');
  return serial(db,async tx=>{
   await lockUser(tx,userId);
-  const old=await tx.address.findFirst({where:{id:addressId,userId,deletedAt:null},select:{id:true}});
+  const old=await tx.address.findFirst({where:{id:addressId,userId,deletedAt:null},select:{id:true,isDefault:true}});
   if(!old)throw new ApiError(404,'NOT_FOUND','Address not found.');
-  // Do not cascade delete purchase orders/checkouts/relationships.
+  // Preserve references from previous orders; the address is soft-deleted.
   await tx.address.update({where:{id:addressId},data:{deletedAt:new Date(),isDefault:false}});
+  if(old.isDefault){
+    const replacement=await tx.address.findFirst({
+      where:{userId,deletedAt:null},orderBy:{createdAt:'desc'},select:{id:true}
+    });
+    if(replacement)await tx.address.update({where:{id:replacement.id},data:{isDefault:true}});
+  }
   return {deleted:true};
  });
 }
