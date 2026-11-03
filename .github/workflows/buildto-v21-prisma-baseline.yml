@@ -1,0 +1,79 @@
+name: Buildto backend V2.1 — Prisma baseline
+on:
+  push:
+    branches: [backend/v21-01-prisma-baseline]
+  pull_request:
+    paths:
+      - 'backend/prisma/v21/**'
+      - 'backend/scripts/v21/**'
+      - 'backend/test/v21SchemaContract.test.cjs'
+      - '.github/workflows/buildto-v21-prisma-baseline.yml'
+      - 'backend/package.json'
+      - 'architecture/buildto-schema-v2.1/**'
+permissions:
+  contents: read
+jobs:
+  prisma-v21:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: buildto_v21_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d buildto_v21_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test
+      PGPASSWORD: postgres
+      NODE_ENV: test
+      BUILDTO_V21_BASELINE_CONFIRM: ci-test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Verify schema equals approved architecture and baseline is reproducible
+        run: npm run db:v21:parity
+      - run: npm run db:v21:validate
+      - run: npm run test:v21:contract
+      - run: npm run db:v21:generate
+      - run: node scripts/v21/check-generated-client.mjs
+      - name: Deploy V2.1 via Prisma migration against empty PostgreSQL 16
+        run: npm run db:v21:deploy-empty
+      - name: Seed reference-only construction catalog
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/reference-seed.sql
+      - name: Verify V2.1 database contract and Prisma migration ledger
+        run: |
+          npm run db:v21:verify
+          npm run db:v21:status
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -At -c "SELECT migration_name, finished_at IS NOT NULL, rolled_back_at IS NULL FROM _prisma_migrations ORDER BY started_at"
+      - name: Source V2 and V2.1 SQL smoke tests
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/schema-smoke-tests.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/v2_1-smoke-tests.sql
+      - name: Rehearse baselining an existing V2.1 PostgreSQL database
+        shell: bash
+        run: |
+          createdb -h 127.0.0.1 -U postgres buildto_existing_test
+          export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/buildto_existing_test
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/v21/migrations/20261103_buildto_v21_initial/migration.sql
+          npm run db:v21:verify
+          npm run db:v21:baseline:resolve
+          npm run db:v21:status
+          count=$(psql "$DATABASE_URL" -At -c "SELECT count(*) FROM _prisma_migrations WHERE migration_name='20261103_buildto_v21_initial' AND finished_at IS NOT NULL")
+          test "$count" = "1"
+          npm run db:v21:verify
+      - name: Prove legacy client is still generated and legacy API compiles
+        run: |
+          npm run build
