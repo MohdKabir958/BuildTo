@@ -164,6 +164,41 @@ test('optimistic version conflict and repricing unpublish approved listing',asyn
  assert.equal(visible.body.data.length,1);
  assert.equal(visible.body.data[0].unitPrice,'305');
 });
+test('a lower base price cannot be approved with stale higher tiers; re-tier while pending',async()=>{
+ const url='/api/v2/suppliers/'+store.supplier.id+'/listings/'+store.listingId;
+ const current=await db.supplierListing.findUniqueOrThrow({where:{id:store.listingId}});
+ const changed=await send('patch',url,'seller',{
+   expectedVersion:current.version,unitPrice:'280.0000'
+ });
+ assert.equal(changed.status,200);
+ assert.equal(changed.body.data.status,'PENDING');
+ const rejected=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{
+   expectedVersion:changed.body.data.version,decision:'APPROVE'
+ });
+ assert.equal(rejected.status,422);
+ assert.equal(rejected.body.error.code,'INVALID_PRICE_TIERS');
+ const revised=await send('put',url+'/price-tiers','seller',{
+   expectedVersion:changed.body.data.version,
+   tiers:[{minQty:'5.000',pricePerUnit:'270.0000'},{minQty:'10.000',pricePerUnit:'260.0000'}]
+ });
+ assert.equal(revised.status,200,JSON.stringify(revised.body));
+ assert.equal(revised.body.data.status,'PENDING');
+ assert.equal(revised.body.data.version,changed.body.data.version+1);
+ const oldEdit=await send('patch',url,'seller',{
+   expectedVersion:changed.body.data.version,unitPrice:'280.0000'
+ });
+ assert.equal(oldEdit.status,409);
+ const approved=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{
+   expectedVersion:revised.body.data.version,decision:'APPROVE'
+ });
+ assert.equal(approved.status,200,JSON.stringify(approved.body));
+ const visible=await http.get('/api/v2/catalog/listings?productId='+store.productId);
+ const listing=visible.body.data.find(x=>x.id===store.listingId);
+ assert(listing);
+ assert.equal(listing.unitPrice,'280');
+ assert.deepEqual(listing.priceTiers.map(x=>x.pricePerUnit),['270','260']);
+});
+
 test('suspending supplier or listing makes it disappear from public catalog',async()=>{
  const row=await db.supplierListing.findUniqueOrThrow({where:{id:store.listingId}});
  const reject=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{
