@@ -1,0 +1,222 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Buildto V2 API — Foundation",
+    "version": "0.2.0",
+    "description": "Foundational public endpoints only; authenticated business APIs will be added after Clerk RBAC."
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getV21Liveness",
+        "summary": "Process liveness",
+        "responses": {
+          "200": {
+            "description": "Process available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "getV21Readiness",
+        "summary": "Database connectivity; full V2.1 schema checked at boot",
+        "responses": {
+          "200": {
+            "description": "Database ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ready"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/system": {
+      "get": {
+        "operationId": "getV21System",
+        "summary": "Public API metadata; no business endpoints enabled",
+        "responses": {
+          "200": {
+            "description": "API version and supported capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Rate limiter unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "requestId"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "enum": [
+              "buildto-v21-api"
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      },
+      "Ready": {
+        "type": "object",
+        "required": [
+          "ready",
+          "requestId"
+        ],
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      },
+      "SystemEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "apiVersion",
+              "currency",
+              "moneyFormat",
+              "releaseStage",
+              "capabilities"
+            ],
+            "properties": {
+              "apiVersion": {
+                "type": "string",
+                "enum": [
+                  "v2"
+                ]
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "INR"
+                ]
+              },
+              "moneyFormat": {
+                "type": "string",
+                "enum": [
+                  "decimal-string-paise"
+                ]
+              },
+              "releaseStage": {
+                "type": "string",
+                "enum": [
+                  "foundation"
+                ]
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "required": [
+          "error",
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
