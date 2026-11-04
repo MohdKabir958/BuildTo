@@ -182,7 +182,9 @@ export async function priceCheckout(tx:Tx,customerId:string,opts:{
  const portions=allocatePaise(discount,prices.map(x=>x.net));
  for(let i=0;i<prices.length;i++){
   const p=prices[i],portion=portions[i];
-  const tax=taxFor(p.net-portion,p.item.taxRateBps);
+  // For inclusive prices without a coupon, preserve exactly the original
+  // displayed gross amount after backing GST out (avoid double rounding).
+  const tax=portion===0n?p.tax:taxFor(p.net-portion,p.item.taxRateBps);
   const split=splitOrderGst(tax,p.gst,addr.city.stateCode);
   p.item.cgstPaise=split.cgstPaise.toString();p.item.sgstPaise=split.sgstPaise.toString();
   p.item.utgstPaise=split.utgstPaise.toString();p.item.igstPaise=split.igstPaise.toString();

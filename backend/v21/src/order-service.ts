@@ -73,6 +73,8 @@ async function outbox(tx:Tx,entityId:string,userId:string,eventType:string){
 }
 export async function previewCheckout(db:PrismaClient,userId:string,key:string,payload:unknown){
  const command=checkoutInput(payload);
+ // Do not let an old abandoned checkout make currently available stock appear sold out.
+ await recoverExpiredOrders(db,10);
  const saved=await executeIdempotently(db,{
   actorId:userId,scope:'checkout-preview',requestKey:key,requestPayload:payload,
   expiresAt:new Date(Date.now()+86400000),

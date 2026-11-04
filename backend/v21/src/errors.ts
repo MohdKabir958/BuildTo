@@ -22,8 +22,6 @@ export function normalizeError(error:unknown):ApiError {
   return new ApiError(500,'INTERNAL_ERROR','An unexpected server error occurred.');
 }
 export const errorHandler:ErrorRequestHandler=(error,req,res,_next)=>{
-  // CI-only diagnostics against synthetic, disposable test data.
-  if(process.env.NODE_ENV==='test')console.error('V21_TEST_INTERNAL',error);
   const mapped=normalizeError(error);
   const requestId=typeof res.locals.requestId==='string'?res.locals.requestId:'unknown';
   if (res.headersSent) return;
