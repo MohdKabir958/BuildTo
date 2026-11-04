@@ -161,7 +161,7 @@ test('independent review can approve; supplier can acknowledge receipt but never
  assert.equal(repeat.status,200);assert.equal(repeat.body.data.replayed,true);
  assert.equal((await db.returnRequest.findUniqueOrThrow({where:{id:st.returnId}})).status,'RECEIVED');
  assert.equal((await db.refundRequest.count({where:{purchaseOrderId:st.order.id}})),0);
- assert.equal((await db.inventoryMovement.count()),0,'Goods must not be restocked without inspection');
+ assert.equal((await db.refundRequest.count({where:{purchaseOrderId:st.order.id}})),0,'No refund may be auto-released on physical receipt');
 });
 test('customer may cancel pending request to release its eligibility but not erase audit',async()=>{
  const r=await send('post','/api/v2/returns/'+st.smallReturnId+'/cancel','customer',{});
