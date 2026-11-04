@@ -11856,7 +11856,11 @@
             "type": "string",
             "enum": [
               "NOT_DISBURSED",
-              "PAYOUT_RECORD_REQUIRES_RECONCILIATION"
+              "PAYOUT_INTENT_NOT_SENT",
+              "PROVIDER_PROCESSING",
+              "PROVIDER_PROCESSED_BANK_STATEMENT_NOT_API_VERIFIED",
+              "PAYOUT_EXCEPTION_MANUAL_REVIEW",
+              "DUPLICATE_PAYOUT_MANUAL_REVIEW"
             ]
           },
           "lines": {
