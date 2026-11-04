@@ -271,6 +271,10 @@ test('bank statement independently attested against exact provider UTR, never ca
  assert.equal(done.body.data.bankEvidenceType,'HUMAN_ATTESTATION');
  const again=await send('post',path,'bankAttestor',body);
  assert.equal(again.status,200);assert.equal(again.body.data.replayed,true);
+ const sameCaseFolded=await send('post',path,'bankAttestor',
+  {...body,bankStatementReference:body.bankStatementReference.toLowerCase()});
+ assert.equal(sameCaseFolded.status,200);
+ assert.equal(sameCaseFolded.body.data.replayed,true);
  assert.equal((await send('post',path,'bankAttestor',
   {...body,bankStatementReference:'BANK-CHANGED-REFERENCE-2026'})).status,409);
  const report=await send('get',admin('/payouts-reconciliation'),'checker');
