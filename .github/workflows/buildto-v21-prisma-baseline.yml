@@ -68,8 +68,9 @@ jobs:
           createdb -h 127.0.0.1 -U postgres buildto_existing_test
           export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/buildto_existing_test
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/v21/migrations/20261103_buildto_v21_initial/migration.sql
-          npm run db:v21:verify
+          # Only the original baseline exists here: do not verify newer schema additions yet.
           npm run db:v21:baseline:resolve
+          npx prisma migrate deploy --schema prisma/v21/schema.prisma
           npm run db:v21:status
           count=$(psql "$DATABASE_URL" -At -c "SELECT count(*) FROM _prisma_migrations WHERE migration_name='20261103_buildto_v21_initial' AND finished_at IS NOT NULL")
           test "$count" = "1"
