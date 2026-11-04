@@ -124,3 +124,34 @@ test('refund execute, payout send and production mutation routes are absent, not
   assert.equal(response.status,404);
  }
 });
+
+
+test('staging requires exact encrypted PostgreSQL DSN even for approved Neon host',()=>{
+ const base={BUILDTO_V21_ENV:'staging',
+  DATABASE_URL:'postgresql://user:placeholder@ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech/stagingdb',
+  BUILDTO_V21_CORS_ORIGINS:'https://staging.buildto.test'};
+ for(const url of [base.DATABASE_URL,base.DATABASE_URL+'?sslmode=disable',
+  base.DATABASE_URL+'?sslmode=prefer',
+  base.DATABASE_URL+'?sslmode=require&sslmode=disable'])
+  assert.throws(()=>readConfig({...base,DATABASE_URL:url}),/V21_STAGING_TLS_REQUIRED/);
+ assert.throws(()=>readConfig({...base,DATABASE_URL:base.DATABASE_URL+'?sslmode=require',
+  NODE_TLS_REJECT_UNAUTHORIZED:'0'}),/V21_STAGING_TLS_REQUIRED/);
+ assert.throws(()=>readConfig({...base,DATABASE_URL:base.DATABASE_URL+'?sslmode=require'}),
+  /V21_CLERK_CONFIG_REQUIRED/);
+});
+test('CORS and Clerk authorized origins cannot include credentials, paths or queries',()=>{
+ const root={BUILDTO_V21_ENV:'local',
+  DATABASE_URL:'postgresql://tester:placeholder@127.0.0.1:5432/buildto_v21_test'};
+ for(const invalid of ['https://allowed.example/path',
+  'https://allowed.example?session=secret',
+  'https://user:secret@allowed.example','https://allowed.example/',
+  'https://allowed.example#fragment','javascript:alert(1)']){
+  assert.throws(()=>readConfig({...root,BUILDTO_V21_CORS_ORIGINS:invalid}),
+   /V21_CORS_ORIGIN_INVALID/,invalid);
+  assert.throws(()=>readConfig({...root,CLERK_AUTHORIZED_PARTIES:invalid}),
+   /V21_CLERK_PARTIES_INVALID/,invalid);
+ }
+ assert.equal(readConfig({...root,BUILDTO_V21_CORS_ORIGINS:'http://localhost:5173',
+  CLERK_AUTHORIZED_PARTIES:'http://localhost:3000'})
+  .corsOrigins[0],'http://localhost:5173');
+});
