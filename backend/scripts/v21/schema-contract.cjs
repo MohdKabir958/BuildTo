@@ -47,7 +47,7 @@ const ADDITIONS={
  'TaxInvoice_sourceInvoiceId_idx'],
  triggers:['buildto_return_refund_guard','buildto_return_credit_note_guard']
 };
-const CATALOG={
+const LATEST={
  ...BASELINE,
  columns:BASELINE.columns.concat(ADDITIONS.columns),
  constraints:BASELINE.constraints.concat(ADDITIONS.constraints),
@@ -55,7 +55,8 @@ const CATALOG={
  triggers:BASELINE.triggers.concat(ADDITIONS.triggers)
 };
 
-async function verifyExistingSchema(prisma) {
+async function verifyExistingSchema(prisma,{baselineOnly=false}={}) {
+  const CATALOG=baselineOnly?BASELINE:LATEST;
   const query=async sql => {
     try{return await prisma.$queryRawUnsafe(sql);}catch {
       throw new Error('V21_SCHEMA_INSPECTION_FAILED: read-only PostgreSQL metadata query failed.');
