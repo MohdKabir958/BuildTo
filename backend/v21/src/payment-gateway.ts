@@ -4,7 +4,12 @@ import {ApiError} from './errors';
 export interface GatewayOrder {
  id:string;amount:bigint;currency:'INR';receipt:string;
 }
+export interface GatewayRefund {
+ id:string;paymentId:string;amount:bigint;currency:'INR';
+ status:'processed'|'pending'|'failed';
+}
 export interface PaymentGateway {
+ lookupRefund?(refundId:string):Promise<GatewayRefund>;
  readonly publicKey:string;
  createOrder(input:{amount:bigint;receipt:string}):Promise<GatewayOrder>;
  lookupOrderByReceipt?(receipt:string):Promise<GatewayOrder|null>;
@@ -53,6 +58,43 @@ export class RazorpayGateway implements PaymentGateway {
     BigInt(x.amount)!==input.amount)
    throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Payment provider order details did not match.');
   return {id:x.id,amount:input.amount,currency:'INR',receipt:input.receipt};
+ }
+ /**
+  * Read-only Razorpay refund reconciliation. This class does NOT issue refunds.
+  * No arbitrary host URL or response status becomes a financial success.
+  */
+ async lookupRefund(refundId:string):Promise<GatewayRefund>{
+  if(!/^rfnd_[A-Za-z0-9]{8,60}$/.test(refundId))
+   throw new ApiError(400,'INVALID_PROVIDER_REFUND_ID','Invalid Razorpay refund reference.');
+  let response:globalThis.Response;
+  try{
+   response=await fetch('https://api.razorpay.com/v1/refunds/'+
+    encodeURIComponent(refundId),{
+     headers:{Authorization:'Basic '+
+      Buffer.from(this.publicKey+':'+this.secretKey).toString('base64')},
+     signal:AbortSignal.timeout(7000)
+   });
+  }catch{
+   throw new ApiError(503,'REFUND_PROVIDER_UNAVAILABLE','Refund provider verification is unavailable.');
+  }
+  if(!response.ok)
+   throw new ApiError(503,'REFUND_PROVIDER_UNAVAILABLE','Refund provider verification failed.');
+  let payload:unknown;
+  try{payload=await response.json();}catch{
+   throw new ApiError(503,'REFUND_PROVIDER_INVALID','Invalid refund provider response.');
+  }
+  if(!payload||typeof payload!=='object'||Array.isArray(payload))
+   throw new ApiError(503,'REFUND_PROVIDER_INVALID','Invalid refund response structure.');
+  const p=payload as Record<string,unknown>;
+  if(p.id!==refundId||typeof p.payment_id!=='string'||
+   !/^pay_[A-Za-z0-9]{8,60}$/.test(p.payment_id)||
+   p.currency!=='INR'||typeof p.amount!=='number'||
+   !Number.isSafeInteger(p.amount)||p.amount<=0||
+   !['processed','pending','failed'].includes(String(p.status)))
+   throw new ApiError(503,'REFUND_PROVIDER_INVALID','Invalid amount or identity in refund evidence.');
+  return {id:refundId,paymentId:p.payment_id,
+   amount:BigInt(p.amount),currency:'INR',
+   status:p.status as GatewayRefund['status']};
  }
  // Lookup is read-only. It is used to reconcile an UNKNOWN create outcome;
  // never blindly issue another POST after a timeout or missing response.
