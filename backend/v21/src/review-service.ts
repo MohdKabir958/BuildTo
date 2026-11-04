@@ -101,7 +101,7 @@ export async function moderateReview(db:PrismaClient,adminId:string,reviewId:str
  uuid(reviewId);
  const input=record(body,['decision']);
  const decision=input.decision;
- if(!['PUBLISH','REJECT','HIDE'].includes(decision))
+ if(typeof decision!=='string'||!['PUBLISH','REJECT','HIDE'].includes(decision))
   throw new ApiError(400,'INVALID_REVIEW_DECISION','Use PUBLISH, REJECT or HIDE.');
  return serializable(db,async tx=>{
   await requireAdminPermission(tx,adminId,'SUPPORT_MANAGE');
