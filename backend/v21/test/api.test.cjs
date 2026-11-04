@@ -21,7 +21,7 @@ test('only safe public foundation routes are exposed',async()=>{
  assert.equal(ready.body.ready,true);
  const sys=await request(app).get('/api/v2/system');
  assert.equal(sys.status,200);
- assert.deepEqual(sys.body.data.capabilities,[]);
+ assert.deepEqual(sys.body.data.capabilities,['catalog.discovery','catalog.supplier','catalog.review']);
  assert.equal(sys.body.data.moneyFormat,'decimal-string-paise');
  assert.equal((await request(app).post('/api/v2/orders').send({})).status,404);
  assert.equal((await request(app).get('/api/v2/suppliers')).status,404);
@@ -101,7 +101,7 @@ test('config refuses production, unrelated Neon databases and wildcard CORS',()=
 });
 test('documented OpenAPI includes exactly implemented routes',()=>{
  const spec=require('../openapi.json');
- assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready','/api/v2/me','/api/v2/admin/access','/api/v2/suppliers/{supplierId}/access','/api/v2/webhooks/clerk'].sort());
+ assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready','/api/v2/me','/api/v2/admin/access','/api/v2/suppliers/{supplierId}/access','/api/v2/webhooks/clerk',...['categories','brands','units','products','listings'].map(s=>'/api/v2/catalog/'+s),'/api/v2/admin/catalog/categories','/api/v2/admin/catalog/categories/{categoryId}','/api/v2/admin/catalog/brands','/api/v2/admin/catalog/products','/api/v2/admin/catalog/products/{productId}','/api/v2/admin/catalog/products/{productId}/conversions','/api/v2/admin/catalog/listings/pending','/api/v2/admin/catalog/listings/{listingId}/review','/api/v2/suppliers/{supplierId}/listings','/api/v2/suppliers/{supplierId}/listings/{listingId}','/api/v2/suppliers/{supplierId}/listings/{listingId}/submit','/api/v2/suppliers/{supplierId}/listings/{listingId}/price-tiers'].sort());
  assert.equal(spec.openapi,'3.0.3');
 });
 
@@ -120,4 +120,12 @@ test('rate limits use a shared budget even when a caller changes the supplier ID
  await request(app).get('/api/v2/suppliers/'+uuid2+'/access').set('Authorization','Bearer invalid');
  assert.equal(subjects.length,2);
  assert.equal(subjects[0],subjects[1]);
+});
+
+test('serialization conflicts are safe 409s rather than unknown 500s',()=>{
+ const {normalizeError}=require('../dist/errors.js');
+ const err=normalizeError({code:'P2034',message:'private query metadata'});
+ assert.equal(err.status,409);
+ assert.equal(err.code,'CONCURRENT_MODIFICATION');
+ assert(!err.message.includes('private'));
 });
