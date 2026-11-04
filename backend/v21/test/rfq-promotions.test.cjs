@@ -252,16 +252,39 @@ test('fixed and free delivery promotion calculations are precise and never clien
   promoPayload('SHIP'+id().slice(0,10).toUpperCase(),'FREE_DELIVERY',{minCartPaise:'1000'}));
  assert.equal(free.status,201);
  await send('patch',endpoint+'/'+free.body.data.id,'admin',{active:true});
- const shipOrder=await makeOrder(store.customer.id,2500n,100000n,2500n);
+ // Shipping discounts reduce freight, not taxable item prices.
+ const city=await db.city.create({data:{
+  code:'HYD'+id().slice(0,12).toUpperCase(),name:'Hyderabad Test',stateCode:'TG',active:true
+ }});
+ const address=await db.address.create({data:{
+  userId:store.customer.id,cityId:city.id,label:'Test site',
+  recipientName:'Receiver',phoneE164:'+919876543210',line1:'Road 1',
+  locality:'Hyderabad',postalCode:'500001'
+ }});
+ const linkedQuote=async(discountPaise)=>{
+  const quote=await db.checkoutQuote.create({data:{
+   customerId:store.customer.id,addressId:address.id,
+   cartVersion:0,cartFingerprint:'0'.repeat(64),
+   addressSnapshot:{postalCode:'500001'},
+   quoteSnapshot:{promotionCode:free.body.data.code,promotionType:'FREE_DELIVERY',
+    deliveryBeforePromotionPaise:'2500',promotionAmountPaise:'2500'},
+   subtotalPaise:100000n,discountPaise:0n,taxPaise:0n,deliveryPaise:0n,totalPaise:100000n,
+   expiresAt:new Date(Date.now()+600000)
+  }});
+  const order=await makeOrder(store.customer.id,discountPaise,100000n,0n);
+  await db.purchaseOrder.update({where:{id:order.id},data:{checkoutQuoteId:quote.id}});
+  return order;
+ };
+ const shipOrder=await linkedQuote(0n);
  const shipped=await serializable(db,tx=>recordOrderPromotion(tx,{
   code:free.body.data.code,customerId:store.customer.id,orderId:shipOrder.id
  }));
  assert.equal(shipped.amountPaise,'2500');
- const invalidOrder=await makeOrder(store.customer.id,200n,100000n,2500n);
+ const invalidOrder=await linkedQuote(200n);
  await assert.rejects(serializable(db,tx=>recordOrderPromotion(tx,{
   code:free.body.data.code,customerId:store.customer.id,orderId:invalidOrder.id
  })),e=>e.code==='PROMOTION_TOTAL_MISMATCH');
- assert.equal((await send('get','/api/v2/promotions/preview','customer')).status,404);
+  assert.equal((await send('get','/api/v2/promotions/preview','customer')).status,404);
 });
 test('a cancelled or unapproved RFQ cannot be reopened or quoted',async()=>{
  const payload={
