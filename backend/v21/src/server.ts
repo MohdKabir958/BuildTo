@@ -20,33 +20,6 @@ async function main() {
   const db=new PrismaClient({datasources:{db:{url:config.databaseUrl}}});
   let server:http.Server|undefined;
   try {
-    // ONE-TIME STAGING OPERATIONS ONLY. Remove this block immediately after
-    // successful migration verification; never run against a production branch.
-    if(process.env.BUILDTO_V21_STAGING_MIGRATION_ONCE){
-      const expected='staging:br-noisy-water-b5gc1kgz';
-      if(config.environment!=='staging' ||
-        process.env.BUILDTO_V21_STAGING_MIGRATION_ONCE!==expected ||
-        process.env.BUILDTO_V21_BASELINE_CONFIRM!==expected ||
-        new URL(config.databaseUrl).hostname!=='ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech')
-        throw new Error('V21_STAGING_MIGRATION_TARGET_DENIED');
-      const {spawnSync}=require('node:child_process') as typeof import('node:child_process');
-      const path=require('node:path') as typeof import('node:path');
-      const backendRoot=path.resolve(__dirname,'../..');
-      const execute=(args:string[])=>{
-        const result=spawnSync(process.execPath,args,{cwd:backendRoot,env:process.env,stdio:'inherit'});
-        if(result.error || result.status!==0)
-          throw new Error('V21_STAGING_MIGRATION_COMMAND_FAILED');
-      };
-      const ledger=await db.$queryRawUnsafe<Array<{present:boolean}>>(
-        `SELECT EXISTS(SELECT 1 FROM pg_tables WHERE schemaname='public' AND tablename='_prisma_migrations') AS present`);
-      if(!ledger[0]?.present){
-        process.stdout.write('V21_STAGING_MIGRATION: official baseline resolve starting (verified existing schema).\\n');
-        execute(['scripts/v21/manage-baseline.mjs','resolve-existing']);
-      }
-      process.stdout.write('V21_STAGING_MIGRATION: deploying only reviewed pending Prisma migrations.\\n');
-      execute(['node_modules/prisma/build/index.js','migrate','deploy','--schema','prisma/v21/schema.prisma']);
-      process.stdout.write('V21_STAGING_MIGRATION: migration CLI completed, verifying full contract.\\n');
-    }
     const schema=await verifyExistingSchema(db);
     if(!schema.migrationHistoryExists)
       throw new Error('V21_MIGRATION_LEDGER_REQUIRED: complete staging Prisma baseline before API startup.');
