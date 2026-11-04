@@ -177,7 +177,7 @@ export async function adminReviewReturn(db:PrismaClient,adminId:string,returnId:
  uuid(returnId);
  const input=inputRecord(body,['decision','note']);
  const decision=input.decision;
- if(!['REVIEW','APPROVE','REJECT'].includes(decision))
+ if(typeof decision!=='string'||!['REVIEW','APPROVE','REJECT'].includes(decision))
   throw new ApiError(400,'INVALID_RETURN_DECISION','Use REVIEW, APPROVE or REJECT.');
  const note=text(input.note,12,500);
  return serializable(db,async tx=>{
