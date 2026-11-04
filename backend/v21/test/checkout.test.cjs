@@ -169,7 +169,7 @@ test('multi-supplier order placement is atomic, repeat-safe and never assumes pa
  const order=placed.body.data;
  assert.equal(order.suppliers.length,2);
  assert.equal(order.status,'PLACED');
- assert.equal(order.paymentStatus,'AWAITING_PAYMENT_INTEGRATION');
+ assert.equal(order.paymentStatus,'NOT_STARTED');
  assert.equal(order.totalPaise,'42100');
  assert(order.reservationExpiresAt);
  state.firstOrderId=order.id;
