@@ -57,7 +57,7 @@ async function ensureAnotherOwner(tx:Prisma.TransactionClient,member:{role:Admin
  }});
  if(owners<=1)throw new ApiError(409,'LAST_OWNER','At least one active owner must remain.');
 }
-const audit=(tx:Prisma.TransactionClient,actorId:string,targetId:string,action:string,before:object,after:object)=>
+const audit=(tx:Prisma.TransactionClient,actorId:string,targetId:string,action:string,before:Prisma.InputJsonObject,after:Prisma.InputJsonObject)=>
  tx.auditEvent.create({data:{
    actorUserId:actorId,actorRole:'ADMIN_OWNER',action,
    entityType:'AdminMembership',entityId:targetId,beforeState:before,afterState:after,
