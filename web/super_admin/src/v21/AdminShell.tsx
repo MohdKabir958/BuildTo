@@ -8,6 +8,7 @@ import {FEATURE_ORDER,SECTIONS} from './navigation';
 import {fetchPublicRelease,validateApiOrigin} from './publicRelease';
 import type {PublicRelease} from './publicRelease';
 import {canViewSection} from './auth/roles';
+import {TeamPanel} from './features/team/TeamPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -128,6 +129,8 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
           </div>
           {active==='overview'
             ? <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
+            : active==='team'&&administrator?.role==='OWNER'
+            ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
         </main>
         <footer className="mx-auto flex max-w-[1250px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
