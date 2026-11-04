@@ -27,7 +27,8 @@
     "test:v21:contract": "node --test test/v21SchemaContract.test.cjs",
     "build:v21": "npm run db:v21:generate && tsc -p v21/tsconfig.json",
     "test:v21:api": "node --test --test-concurrency=1 v21/test/*.test.cjs",
-    "test:v21:identity": "node --test v21/test/identity.test.cjs"
+    "test:v21:identity": "node --test v21/test/identity.test.cjs",
+    "release:v21:preflight": "node v21/scripts/release-preflight.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.1106.0",
