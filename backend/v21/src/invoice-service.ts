@@ -92,7 +92,7 @@ export async function issueSupplierInvoice(db:PrismaClient,userId:string,
     supplier:{select:{legalName:true,gstin:true,gstRegistration:true,verifiedAt:true,
      billingAddress:true,approval:true,suspendedAt:true}},
     purchaseOrder:{select:{id:true,status:true,currency:true,addressSnapshot:true,
-     publicNumber:true,payments:{select:{provider:true,paymentMethod:true,status:true}}}},
+     publicNumber:true,totalPaise:true,payments:{select:{provider:true,paymentMethod:true,status:true,capturedPaise:true,verifiedAt:true,providerPayRef:true}}}},
     items:{select:{id:true,skuSnapshot:true,nameSnapshot:true,hsnSnapshot:true,
      unitCode:true,quantity:true,unitPrice:true,taxRateBps:true,
      taxablePaise:true,discountPaise:true,taxPaise:true,
@@ -119,7 +119,10 @@ export async function issueSupplierInvoice(db:PrismaClient,userId:string,
   }
   if(order.purchaseOrder.currency!=='INR'||order.items.length===0)
    throw new ApiError(409,'INVOICE_ORDER_INVALID','Order currency or items are invalid.');
-  const verified=order.purchaseOrder.payments.some(p=>p.provider==='RAZORPAY'&&p.status==='CAPTURED');
+  const verified=order.purchaseOrder.payments.some(p=>
+   p.provider==='RAZORPAY'&&p.status==='CAPTURED'&&
+   p.capturedPaise===order.purchaseOrder.totalPaise&&
+   !!p.verifiedAt&&!!p.providerPayRef);
   const cod=order.purchaseOrder.payments.some(p=>
    p.provider==='MANUAL'&&p.paymentMethod==='COD'&&p.status==='PENDING');
   if(!verified&&!cod)
