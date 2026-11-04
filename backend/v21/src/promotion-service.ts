@@ -123,17 +123,20 @@ export async function recordOrderPromotion(tx:Tx,args:{
  const code=requiredString(args.code,'code',60).toUpperCase();
  if(!/^[A-Z0-9][A-Z0-9_-]{2,59}$/.test(code))
   throw new ApiError(400,'INVALID_PROMOTION_CODE','Invalid promotion code.');
- const now=args.now??new Date();
- const promotion=await findActivePromo(tx,code,now);
- const existing=await tx.promotionRedemption.findUnique({where:{orderId:args.orderId}});
- if(existing){
-  if(existing.customerId===args.customerId&&existing.promotionId===promotion.id)
-   return {amountPaise:existing.amountPaise.toString(),replayed:true};
-  throw new ApiError(409,'PROMOTION_ALREADY_USED','An order can apply only one promotion.');
- }
  const order=await tx.purchaseOrder.findFirst({where:{id:args.orderId,customerId:args.customerId},
   select:{id:true,subtotalPaise:true,deliveryPaise:true,discountPaise:true}});
  if(!order)throw new ApiError(404,'ORDER_NOT_FOUND','Customer order does not exist.');
+ // An already committed discount remains replayable after its expiry/deactivation.
+ // A new redemption must still lock the currently active promotion.
+ const existing=await tx.promotionRedemption.findUnique({where:{orderId:args.orderId},
+  select:{customerId:true,promotionId:true,amountPaise:true,promotion:{select:{code:true}}}});
+ if(existing){
+  if(existing.customerId===args.customerId&&existing.promotion.code===code)
+   return {amountPaise:existing.amountPaise.toString(),replayed:true};
+  throw new ApiError(409,'PROMOTION_ALREADY_USED','An order can apply only one promotion.');
+ }
+ const now=args.now??new Date();
+ const promotion=await findActivePromo(tx,code,now);
  const [globalUsed,customerUsed]=await Promise.all([
   tx.promotionRedemption.count({where:{promotionId:promotion.id}}),
   tx.promotionRedemption.count({where:{promotionId:promotion.id,customerId:args.customerId}})
