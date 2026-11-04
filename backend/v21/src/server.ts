@@ -1,6 +1,7 @@
 import http from 'node:http';
 import {readConfig} from './config';
 import {createV21App} from './app';
+import {createClerkIdentityVerifier} from './identity';
 import {RedisRestRateLimiter,InMemoryTestLimiter} from './rateLimit';
 import {jsonLogger} from './logging';
 import {assertV21BaselineApplied} from './baseline';
@@ -25,7 +26,16 @@ async function main() {
       ? new RedisRestRateLimiter(config.redisRestUrl,config.redisRestToken,config.rateLimitHashKey)
       : config.environment==='local' ? new InMemoryTestLimiter()
       : (()=>{throw new Error('V21_CENTRAL_RATE_LIMIT_REQUIRED');})();
-    const app=createV21App({db,limiter,log:jsonLogger,allowedOrigins:config.corsOrigins,proxyHops:config.proxyHops});
+    if(!config.clerkIssuer||!config.clerkSecretKey||!config.clerkAuthorizedParties.length||!config.clerkWebhookSecret)
+      throw new Error('V21_CLERK_CONFIG_REQUIRED: verified authentication and signed webhook config required.');
+    const identityVerifier=createClerkIdentityVerifier({
+      issuer:config.clerkIssuer,secretKey:config.clerkSecretKey,
+      jwtKey:config.clerkJwtKey||undefined,audience:config.clerkAudience||undefined,
+      authorizedParties:config.clerkAuthorizedParties,
+      allowNativeWithoutAzp:config.clerkAllowNativeWithoutAzp,
+    });
+    const app=createV21App({db,limiter,log:jsonLogger,allowedOrigins:config.corsOrigins,
+      proxyHops:config.proxyHops,identityVerifier,clerkWebhookSecret:config.clerkWebhookSecret});
     server=http.createServer(app);
     await new Promise<void>((resolve,reject)=>{
       server!.once('error',reject);

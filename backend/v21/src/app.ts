@@ -5,9 +5,14 @@ import {ApiError,errorHandler} from './errors';
 import {errorDTO} from './contracts';
 import {requestContext,LogWriter,jsonLogger} from './logging';
 import {RateLimiter} from './rateLimit';
+import {IdentityVerifier,requireIdentity} from './identity';
+import {requireAdminPermission,requireSupplierPermission,listOwnMemberships} from './permissions';
+import {verifyClerkWebhook,synchronizeClerkWebhook} from './clerk-webhooks';
 
 export interface AppDependencies {
-  db:Pick<PrismaClient,'$queryRaw'>;
+  db:PrismaClient;
+  identityVerifier?:IdentityVerifier;
+  clerkWebhookSecret?:string;
   limiter:RateLimiter;
   log?:LogWriter;
   allowedOrigins:string[];
@@ -37,6 +42,29 @@ export function createV21App(deps:AppDependencies) {
     if(req.method==='OPTIONS')return res.status(204).end();
     next();
   });
+  // Provider webhooks must use original bytes; register before the JSON parser.
+  // Scope a separate rate limit because raw webhook requests bypass express.json.
+  const apiLimit:import('express').RequestHandler=async(req,res,next)=>{
+    try {
+      const subject='public:'+req.ip+':'+req.method+':/api/v2'; // shared route-class budget; IDs cannot create unlimited buckets
+      const rate=await deps.limiter.check(subject,60,60);
+      res.setHeader('X-RateLimit-Remaining',String(rate.remaining));
+      next();
+    }catch(error){next(error);}
+  };
+  if(deps.clerkWebhookSecret){
+    app.post('/api/v2/webhooks/clerk',apiLimit,express.raw({type:'application/json',limit:'64kb'}),async(req,res,next)=>{
+      try{
+        const header=(name:string)=>req.header('svix-'+name)||req.header('webhook-'+name);
+        const verified=verifyClerkWebhook(req.body,{
+          id:header('id'),timestamp:header('timestamp'),signature:header('signature')
+        },deps.clerkWebhookSecret!);
+        if(!verified)return res.status(202).json({accepted:true,ignored:true,requestId:res.locals.requestId});
+        const applied=await synchronizeClerkWebhook(deps.db,verified);
+        return res.status(200).json({accepted:true,duplicate:applied.duplicate,requestId:res.locals.requestId});
+      }catch(error){next(error);}
+    });
+  }
   app.use(express.json({limit:'64kb',strict:true}));
   app.use((req,res,next)=>{
     if(['POST','PUT','PATCH'].includes(req.method) && req.path.startsWith('/api/v2/') &&
@@ -52,14 +80,7 @@ export function createV21App(deps:AppDependencies) {
       res.status(503).json(errorDTO('DATABASE_UNAVAILABLE','Service temporarily unavailable.',res.locals.requestId));
     }
   });
-  app.use('/api/v2',async(req:Request,res:Response,next:NextFunction)=>{
-    try {
-      const subject='public:'+req.ip+':'+req.method+':'+req.path;
-      const rate=await deps.limiter.check(subject,60,60);
-      res.setHeader('X-RateLimit-Remaining',String(rate.remaining));
-      next();
-    }catch(e){next(e);}
-  });
+  app.use('/api/v2',apiLimit);
   app.get('/api/v2/system',(_req,res)=>{
     res.status(200).json({
       data:{
@@ -72,7 +93,35 @@ export function createV21App(deps:AppDependencies) {
       requestId:res.locals.requestId,
     });
   });
-  // Other V2 routes are intentionally absent until Clerk + database RBAC in PR 03.
+  // These are identity/permission introspection endpoints only. No supplier/admin
+  // mutation endpoints are exposed before domain-specific security tests.
+  if(deps.identityVerifier){
+    const auth=requireIdentity(deps.identityVerifier,deps.db);
+    app.get('/api/v2/me',auth,async(_req,res,next)=>{
+      try{
+        const principal=res.locals.principal as {id:string;displayName:string};
+        const roles=await listOwnMemberships(deps.db,principal.id);
+        res.json({data:{id:principal.id,displayName:principal.displayName,
+          adminRole:roles.adminRole,suppliers:roles.suppliers},requestId:res.locals.requestId});
+      }catch(error){next(error);}
+    });
+    app.get('/api/v2/suppliers/:supplierId/access',auth,async(req,res,next)=>{
+      try{
+        const principal=res.locals.principal as {id:string};
+        const scope=await requireSupplierPermission(deps.db,principal.id,req.params.supplierId,'SUPPLIER_READ');
+        res.json({data:scope,requestId:res.locals.requestId});
+      }catch(error){next(error);}
+    });
+    app.get('/api/v2/admin/access',auth,async(_req,res,next)=>{
+      try{
+        const principal=res.locals.principal as {id:string};
+        const access=await requireAdminPermission(deps.db,principal.id,'ADMIN_READ');
+        res.json({data:access,requestId:res.locals.requestId});
+      }catch(error){next(error);}
+    });
+  }
+  // All business mutations remain unavailable until following domain PRs.
+
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);
   return app;

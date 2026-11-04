@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.2.0",
-    "description": "Foundational public endpoints only; authenticated business APIs will be added after Clerk RBAC."
+    "version": "0.3.0",
+    "description": "Clerk-verified identity introspection and DB-authorized supplier/admin access. No mutation business APIs."
   },
   "paths": {
     "/health": {
@@ -79,6 +79,220 @@
           },
           "503": {
             "description": "Rate limiter unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me": {
+      "get": {
+        "operationId": "getMyIdentity",
+        "summary": "Return current database-authoritative user and active memberships",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Own profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User unprovisioned or inactive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/access": {
+      "get": {
+        "operationId": "getAdminAccess",
+        "summary": "Inspect own active administrator role",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privilege",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/access": {
+      "get": {
+        "operationId": "getSupplierAccess",
+        "summary": "Inspect membership on one exact supplier",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privilege",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/webhooks/clerk": {
+      "post": {
+        "operationId": "clerkSignedWebhook",
+        "summary": "Verify and synchronize signed Clerk identity events",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed event processed or idempotent duplicate"
+          },
+          "202": {
+            "description": "Signed but unsupported event acknowledged"
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature or timestamp invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Internal dependency unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -216,6 +430,46 @@
             }
           }
         }
+      },
+      "IdentityEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "Minimum identity and role metadata; no token claims confer permissions."
+          }
+        }
+      },
+      "AccessEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "Current database-authorized scope and role."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "clerkBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Clerk session JWT. Database membership decides privileges."
       }
     }
   }

@@ -101,6 +101,23 @@ test('config refuses production, unrelated Neon databases and wildcard CORS',()=
 });
 test('documented OpenAPI includes exactly implemented routes',()=>{
  const spec=require('../openapi.json');
- assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready'].sort());
+ assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready','/api/v2/me','/api/v2/admin/access','/api/v2/suppliers/{supplierId}/access','/api/v2/webhooks/clerk'].sort());
  assert.equal(spec.openapi,'3.0.3');
+});
+
+
+test('rate limits use a shared budget even when a caller changes the supplier ID in the URL',async()=>{
+ const subjects=[];
+ const app=createV21App({
+   db:{$queryRaw:async()=>[{one:1}]},
+   limiter:{check:async subject=>{subjects.push(subject);return {remaining:49};}},
+   log:()=>{},allowedOrigins:[],proxyHops:0,
+   identityVerifier:{verify:async()=>{throw new ApiError(401,'INVALID_SESSION','Invalid session.');}}
+ });
+ const uuid1='11111111-1111-4111-8111-111111111111';
+ const uuid2='22222222-2222-4222-8222-222222222222';
+ await request(app).get('/api/v2/suppliers/'+uuid1+'/access').set('Authorization','Bearer invalid');
+ await request(app).get('/api/v2/suppliers/'+uuid2+'/access').set('Authorization','Bearer invalid');
+ assert.equal(subjects.length,2);
+ assert.equal(subjects[0],subjects[1]);
 });
