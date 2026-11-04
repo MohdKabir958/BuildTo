@@ -3,6 +3,8 @@ import {ClerkProvider,ClerkLoaded,ClerkLoading,ClerkFailed,SignIn,UserButton,use
 import {LockKeyhole,RefreshCw,ShieldCheck} from 'lucide-react';
 import {AdminShell} from '../AdminShell';
 import {AdminAccessError,fetchAdminSession} from './adminSession';
+import {V21ApiClient} from '../lib/apiClient';
+import {V21ApiProvider} from '../lib/ApiProvider';
 import type {VerifiedAdminSession} from './adminSession';
 
 type GateState={phase:'checking'|'allowed'|'denied';identity?:string;admin?:VerifiedAdminSession;error?:string};
@@ -58,7 +60,7 @@ function ClerkV21Gate() {
     <SignIn routing="hash" appearance={{variables:{colorPrimary:'#123E6A',borderRadius:'12px'},elements:{rootBox:'w-full',card:'shadow-none border-0',cardBox:'shadow-none'}}}/>
   </Frame>;
   if(state.phase==='allowed'&&state.identity===identity&&state.admin)
-    return <><AdminShell apiBaseUrl={apiBaseUrl} administrator={state.admin} onSignOut={()=>{void signOut();}}/><div className="fixed bottom-4 right-4 z-30 rounded-full bg-white p-1 shadow-lg"><UserButton/></div></>;
+    return <V21ApiProvider client={new V21ApiClient(apiBaseUrl,()=>getToken())}><AdminShell apiBaseUrl={apiBaseUrl} administrator={state.admin} onSignOut={()=>{void signOut();}}/><div className="fixed bottom-4 right-4 z-30 rounded-full bg-white p-1 shadow-lg"><UserButton/></div></V21ApiProvider>;
   return <Frame>
     <ShieldCheck size={32} className="text-[#174C86]" aria-hidden="true"/>
     <h1 className="mt-4 text-xl font-extrabold">Verifying admin access</h1>
