@@ -16,6 +16,7 @@ export async function attestBankDebit(db:PrismaClient,userId:string,payoutId:str
   !/^[A-Za-z0-9][A-Za-z0-9_./:-]{11,119}$/.test(r.bankStatementReference)||
   typeof r.providerUtr!=='string'||!/^[A-Za-z0-9_-]{8,60}$/.test(r.providerUtr))
   throw new ApiError(400,'INVALID_BANK_EVIDENCE','Invalid bank statement reference or UTR.');
+ const bankReference=r.bankStatementReference as string,bankUtr=r.providerUtr as string;
  return serializable(db,async tx=>{
   await requireAdminPermission(tx,userId,'FINANCE_MANAGE');
   const p=await tx.payoutTransfer.findUnique({where:{id:payoutId},
@@ -28,15 +29,15 @@ export async function attestBankDebit(db:PrismaClient,userId:string,payoutId:str
    throw new ApiError(409,'BANK_PAYOUT_NOT_PROCESSED',
     'Bank-debit attestation requires a verified provider-processed payout.');
   await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(
-   hashtextextended(${'bank-statement:'+r.bankStatementReference},73103)) IS NULL AS locked`);
+   hashtextextended(${'bank-statement:'+bankReference},73103)) IS NULL AS locked`);
   const existing=await tx.auditEvent.findFirst({where:{
    entityType:'PayoutTransfer',entityId:payoutId,
    action:'PAYOUT_BANK_STATEMENT_HUMAN_ATTESTED'},
    select:{afterState:true}});
   if(existing){
    const before=existing.afterState as Record<string,unknown>|null;
-   if(before?.bankStatementReference!==r.bankStatementReference||
-    before?.providerUtr!==r.providerUtr)
+   if(before?.bankStatementReference!==bankReference||
+    before?.providerUtr!==bankUtr)
     throw new ApiError(409,'BANK_STATEMENT_ATTESTATION_IMMUTABLE',
      'Already attested payout has different bank evidence.');
    return {payoutId,replayed:true,bankStatementAttested:true,
@@ -53,17 +54,17 @@ export async function attestBankDebit(db:PrismaClient,userId:string,payoutId:str
    requested?.actorUserId===userId)
    throw new ApiError(403,'BANK_EVIDENCE_INDEPENDENT_APPROVER_REQUIRED',
     'A different finance reviewer must match the external bank statement.');
-  if(evidence?.providerUtr!==r.providerUtr||evidence?.amountPaise!==p.amountPaise.toString())
+  if(evidence?.providerUtr!==bankUtr||evidence?.amountPaise!==p.amountPaise.toString())
    throw new ApiError(409,'BANK_STATEMENT_UTR_MISMATCH',
     'Bank-statement UTR or provider amount cannot be matched.');
   const duplicate=await tx.auditEvent.findFirst({where:{
    entityType:'PayoutTransfer',action:'PAYOUT_BANK_STATEMENT_HUMAN_ATTESTED',
-   afterState:{path:['bankStatementReference'],equals:r.bankStatementReference}
+   afterState:{path:['bankStatementReference'],equals:bankReference}
   },select:{id:true}});
   if(duplicate)throw new ApiError(409,'BANK_STATEMENT_REFERENCE_REUSED',
    'Bank statement entry is already attributed to another payout.');
   await payoutEvent(tx,userId,payoutId,'PAYOUT_BANK_STATEMENT_HUMAN_ATTESTED',{
-   bankStatementReference:r.bankStatementReference,providerUtr:r.providerUtr,
+   bankStatementReference:bankReference,providerUtr:bankUtr,
    amountPaise:p.amountPaise.toString(),bankStatementAPIReconciled:false,
    attestationType:'INDEPENDENT_MANUAL_REVIEW'});
   return {payoutId,replayed:false,bankStatementAttested:true,
@@ -75,7 +76,7 @@ export async function financePayoutReport(db:PrismaClient,userId:string){
  const [items,bank]=await Promise.all([
   db.payoutTransfer.findMany({select:{id:true,status:true,amountPaise:true,
    providerRef:true,settlement:{select:{supplierId:true}}},
-   },orderBy:{createdAt:'desc'},take:100}),
+   orderBy:{createdAt:'desc'},take:100}),
   db.auditEvent.findMany({where:{entityType:'PayoutTransfer',
    action:'PAYOUT_BANK_STATEMENT_HUMAN_ATTESTED'},
    select:{entityId:true},orderBy:{createdAt:'desc'},take:1000})
