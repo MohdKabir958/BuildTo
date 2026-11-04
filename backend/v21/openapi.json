@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.14.0",
-    "description": "Buildto V2.1: independently attested settlements, received full returns, original-invoice-linked GST credit notes and independently approved refund reservations. Refund execution is EXTERNAL MANUAL ONLY: Razorpay GET can confirm provider processing, not customer bank credit. Partial GST credit and supplier payouts remain disabled."
+    "version": "0.15.0",
+    "description": "Buildto V2.1 finance: provider-read-only RazorpayX bank account validation, independently reviewed supplier payout intent, immutable exact provider-processed payouts and separately human-attested bank statement UTR. The API never initiates payouts; bank statements are not verified by direct banking APIs."
   },
   "paths": {
     "/health": {
@@ -9621,6 +9621,761 @@
           }
         }
       }
+    },
+    "/api/v2/suppliers/{supplierId}/finance/beneficiaries": {
+      "get": {
+        "operationId": "supplierPayoutBankBeneficiaries",
+        "summary": "Masked provider-validated bank account for beneficiary supplier FINANCE_READ, no full bank number.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PayoutBeneficiary"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/finance/payouts": {
+      "get": {
+        "operationId": "supplierPayoutHistory",
+        "summary": "Supplier-owned payouts; PENDING is an intent and SUCCEEDED means provider processed, not direct bank API verification.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PayoutTransferStatus"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/suppliers/{supplierId}/beneficiaries": {
+      "post": {
+        "operationId": "financeRegisterBankBeneficiary",
+        "summary": "FINANCE_MANAGE initiates bank account validation by read-only RazorpayX fund-account+validation GET; supplier-legal-name matched; cannot store full bank number.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fundAccountId",
+                  "validationId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "fundAccountId": {
+                    "type": "string",
+                    "pattern": "^fa_[A-Za-z0-9]{8,60}$"
+                  },
+                  "validationId": {
+                    "type": "string",
+                    "pattern": "^fav_[A-Za-z0-9]{8,60}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payout intent/beneficiary staged; no transfer sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "beneficiary",
+                        "replayed"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "beneficiary": {
+                          "$ref": "#/components/schemas/PayoutBeneficiary"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/beneficiaries/{accountId}/approve": {
+      "post": {
+        "operationId": "financeApprovePayoutBeneficiary",
+        "summary": "Second finance admin rechecks fund account and bank validation with provider GET and activates masked account; registration maker cannot self-approve.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [],
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "beneficiary",
+                        "replayed"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "beneficiary": {
+                          "$ref": "#/components/schemas/PayoutBeneficiary"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/settlements/{settlementId}/payout-intent": {
+      "post": {
+        "operationId": "financeReserveSupplierPayout",
+        "summary": "Idempotent single exact payable amount and beneficiary; requires approved settlement, independent reviewer and no open refund, return or COD receivable. Creates PENDING intent, not transfer.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "settlementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 180
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "payoutAccountId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "payoutAccountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payout intent/beneficiary staged; no transfer sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PayoutTransferStatus"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/payouts": {
+      "get": {
+        "operationId": "financePayoutQueue",
+        "summary": "FINANCE_MANAGE-only pending/processing/failed bank payout intents and provider reconciliation queue.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PayoutTransferStatus"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/payouts/{payoutId}/reconcile": {
+      "post": {
+        "operationId": "financeReconcileRazorpayXPayout",
+        "summary": "Independent admin fetches RazorpayX payout via GET, requires exact fund account, 34-character external reference, currency, amount and processed UTR before balanced clearing memo and PAID.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payoutId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "providerPayoutId"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "providerPayoutId": {
+                    "type": "string",
+                    "pattern": "^pout_[A-Za-z0-9]{8,60}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "payout",
+                        "providerStatus"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "payout": {
+                          "$ref": "#/components/schemas/PayoutTransferStatus"
+                        },
+                        "providerStatus": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/payouts/{payoutId}/bank-attest": {
+      "post": {
+        "operationId": "financeAttestPayoutBankStatement",
+        "summary": "Third independent finance admin manually compares external bank-statement debit and previously provider-confirmed UTR; audit is human-attested, not API-verified statement.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payoutId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bankStatementReference",
+                  "providerUtr"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "bankStatementReference": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 120
+                  },
+                  "providerUtr": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "payoutId",
+                        "bankStatementAttested",
+                        "bankStatementAPIReconciled"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "payoutId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "bankStatementAttested": {
+                          "type": "boolean"
+                        },
+                        "bankStatementAPIReconciled": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/payouts-reconciliation": {
+      "get": {
+        "operationId": "financePayoutBankExceptions",
+        "summary": "Finance report of latest 100 payout statuses, which provider-processed payouts lack independent bank statement attestation; bankStatementAPIReconciled always false.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authorized finance evidence only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "payouts",
+                        "missingBankAttestation",
+                        "bankStatementAPIReconciled",
+                        "payoutExecutionEnabledByApi"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "payouts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "status",
+                              "amountPaise",
+                              "bankStatementAttested"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "amountPaise": {
+                                "type": "string",
+                                "pattern": "^[0-9]+$"
+                              },
+                              "bankStatementAttested": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "missingBankAttestation": {
+                          "type": "integer"
+                        },
+                        "bankStatementAPIReconciled": {
+                          "type": "boolean"
+                        },
+                        "payoutExecutionEnabledByApi": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource hidden/out of scope"
+          },
+          "409": {
+            "description": "Financial conflict, stale provider or bank validation evidence"
+          },
+          "503": {
+            "description": "Required read-only provider unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11357,6 +12112,125 @@
           "providerCompletedAt": {
             "type": "string",
             "nullable": true,
+            "format": "date-time"
+          }
+        }
+      },
+      "PayoutBeneficiary": {
+        "type": "object",
+        "required": [
+          "id",
+          "supplierId",
+          "maskedBankAccount",
+          "active",
+          "bankValidationApproved"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerFundAccountId": {
+            "type": "string"
+          },
+          "validationId": {
+            "type": "string"
+          },
+          "maskedBankAccount": {
+            "type": "string"
+          },
+          "accountHolder": {
+            "type": "string"
+          },
+          "ifsc": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "bankValidationApproved": {
+            "type": "boolean"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "externalPayoutExecutionOnly": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PayoutTransferStatus": {
+        "type": "object",
+        "required": [
+          "id",
+          "settlementId",
+          "amountPaise",
+          "status",
+          "externalReferenceId",
+          "payoutExecutionByBuildtoApi"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "settlementId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SUCCEEDED",
+              "FAILED"
+            ]
+          },
+          "providerPayoutId": {
+            "type": "string",
+            "nullable": true
+          },
+          "externalReferenceId": {
+            "type": "string",
+            "pattern": "^BT[A-F0-9]{32}$"
+          },
+          "maskedBankAccount": {
+            "type": "string"
+          },
+          "settlementStatus": {
+            "type": "string"
+          },
+          "bankEvidenceType": {
+            "type": "string"
+          },
+          "payoutExecutionByBuildtoApi": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
             "format": "date-time"
           }
         }
