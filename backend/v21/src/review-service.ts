@@ -9,7 +9,7 @@ type Tx=Prisma.TransactionClient;
 const fields={id:true,customerId:true,supplierOrderId:true,supplierId:true,
  rating:true,comment:true,status:true,createdAt:true} as const;
 function dto(r:any,publicView=false){
- return {id:r.id,supplierOrderId:r.supplierOrderId,supplierId:r.supplierId,
+ return {id:r.id,...(!publicView?{supplierOrderId:r.supplierOrderId}:{}),supplierId:r.supplierId,
   rating:r.rating,comment:r.comment,status:r.status,
   createdAt:r.createdAt.toISOString(),
   ...(!publicView?{customerId:r.customerId}:{})};
