@@ -93,10 +93,17 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   const clerkAllowNativeWithoutAzp=env.CLERK_ALLOW_NATIVE_WITHOUT_AZP==='true';
   if(clerkAuthorizedParties.some(x=>!isExactOrigin(x)))throw new Error('V21_CLERK_PARTIES_INVALID');
   if(clerkAllowNativeWithoutAzp && !clerkAudience)throw new Error('V21_CLERK_NATIVE_AUDIENCE_REQUIRED');
-  if(environment==='staging' && (
-    !clerkIssuer?.startsWith('https://') || !clerkSecretKey || !clerkWebhookSecret?.startsWith('whsec_') ||
-    !clerkAuthorizedParties.length || clerkAuthorizedParties.some(x=>!x.startsWith('https://'))
-  ))throw new Error('V21_CLERK_CONFIG_REQUIRED: staging needs issuer, server key, signed webhook secret and HTTPS authorized parties.');
+  if(environment==='staging') {
+    // Identify only the configuration KEYS that fail validation, never their values.
+    const missingOrInvalid: string[]=[];
+    if(!clerkIssuer?.startsWith('https://'))missingOrInvalid.push('CLERK_ISSUER');
+    if(!clerkSecretKey)missingOrInvalid.push('CLERK_SECRET_KEY');
+    if(!clerkWebhookSecret?.startsWith('whsec_'))missingOrInvalid.push('CLERK_WEBHOOK_SIGNING_SECRET');
+    if(!clerkAuthorizedParties.length||clerkAuthorizedParties.some(x=>!x.startsWith('https://')))
+      missingOrInvalid.push('CLERK_AUTHORIZED_PARTIES');
+    if(missingOrInvalid.length)
+      throw new Error('V21_CLERK_CONFIG_REQUIRED: invalid or missing '+missingOrInvalid.join(', '));
+  }
   return {
     clerkIssuer,clerkAuthorizedParties,clerkSecretKey,clerkJwtKey,clerkAudience,clerkWebhookSecret,
     clerkAllowNativeWithoutAzp,razorpayKeyId,razorpayKeySecret,razorpayWebhookSecret,
