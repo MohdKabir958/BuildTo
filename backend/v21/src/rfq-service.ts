@@ -144,6 +144,9 @@ export async function cancelCustomerRfq(db:PrismaClient,userId:string,rfqId:stri
   if(!['DRAFT','OPEN'].includes(r.status))
    throw new ApiError(409,'INVALID_RFQ_STATE','Only draft or open RFQs can be cancelled.');
   await tx.rfq.update({where:{id:rfqId},data:{status:'CANCELLED'}});
+  // Cancelled RFQs must not leave apparently actionable supplier offers.
+  // REJECTED reflects the customer's cancellation; WITHDRAWN implies a supplier action.
+  await tx.supplierQuote.updateMany({where:{rfqId,status:'SUBMITTED'},data:{status:'REJECTED'}});
   await event(tx,rfqId,userId,'RFQ_CANCELLED');
   return {id:rfqId,status:'CANCELLED'};
  });
