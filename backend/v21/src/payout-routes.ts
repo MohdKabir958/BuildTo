@@ -6,6 +6,7 @@ import {registerBeneficiary,approveBeneficiary,supplierBeneficiaries} from './pa
 import {reservePayout,supplierPayouts,adminPayoutQueue} from './payout-service';
 import {reconcilePayout} from './payout-reconciliation';
 import {attestBankDebit,financePayoutReport} from './payout-bank-statement';
+import {adminBeneficiaryQueue} from './admin-beneficiary-read';
 
 const actor=(res:Response):string=>{
  const id=(res.locals.principal as {id?:unknown}|undefined)?.id;
@@ -28,6 +29,17 @@ export function registerPayouts(app:Express,db:PrismaClient,auth:RequestHandler,
   supplierBeneficiaries(db,actor(res),req.params.supplierId)));
  app.get('/api/v2/suppliers/:supplierId/finance/payouts',auth,go((req,res)=>
   supplierPayouts(db,actor(res),req.params.supplierId)));
+ app.get('/api/v2/admin/finance/beneficiaries',auth,go((req,res)=>{
+  const limit=req.query.limit;
+  const cursor=req.query.cursor;
+  if(limit!==undefined&&(typeof limit!=='string'||!/^([1-9][0-9]{0,2})$/.test(limit)))
+   throw new ApiError(400,'INVALID_LIMIT','Invalid limit.');
+  if(cursor!==undefined&&typeof cursor!=='string')
+   throw new ApiError(400,'INVALID_CURSOR','Invalid cursor.');
+  return adminBeneficiaryQueue(db,actor(res),{
+   limit:limit===undefined?undefined:Number(limit),cursor:cursor as string|undefined,
+  });
+ }));
  app.post('/api/v2/admin/finance/suppliers/:supplierId/beneficiaries',auth,
   async(req,res,next)=>{
    try{
