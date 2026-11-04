@@ -251,3 +251,75 @@ test('taxable freight is not misclassified as exempt GST in issued invoices',asy
  assert.equal(r.body.error.code,'FREIGHT_GST_POLICY_REQUIRED');
  assert.equal(await db.taxInvoice.count({where:{supplierOrderId:child.id}}),0);
 });
+
+test('provider CAPTURED flag without verified amount/reference never licenses a tax invoice',async()=>{
+ const parent=await db.purchaseOrder.create({data:{
+  customerId:store.customer.id,clientRequestId:key(),publicNumber:'BT-'+id().replaceAll('-').slice(0,24),
+  status:'CONFIRMED',addressSnapshot:{recipientName:'B2C User',line1:'Building',
+   city:'Hyderabad',stateCode:'TG',postalCode:'500001'},
+  subtotalPaise:10000n,taxPaise:1800n,totalPaise:11800n
+ }});
+ const child=await db.supplierOrder.create({data:{
+  purchaseOrderId:parent.id,supplierId:store.supplier.id,status:'DISPATCHED',
+  subtotalPaise:10000n,taxPaise:1800n,totalPaise:11800n
+ }});
+ await db.supplierOrderItem.create({data:{
+  supplierOrderId:child.id,listingId:store.listing.id,skuSnapshot:store.listing.sku,
+  nameSnapshot:'Cement Bag',hsnSnapshot:'2523',unitCode:'BAG',
+  packSizeSnapshot:new Prisma.Decimal(1),quantity:new Prisma.Decimal(2),
+  unitPrice:new Prisma.Decimal(50),taxRateBps:1800,
+  taxablePaise:10000n,taxPaise:1800n,cgstPaise:900n,sgstPaise:900n,
+  lineTotalPaise:11800n
+ }});
+ await db.paymentAttempt.create({data:{
+  purchaseOrderId:parent.id,provider:'RAZORPAY',paymentMethod:'UPI',
+  idempotencyKey:key(),status:'CAPTURED',amountPaise:11800n,capturedPaise:0n
+ }});
+ const route='/api/v2/suppliers/'+store.supplier.id+'/orders/'+child.id+'/invoices';
+ const r=await call('post',route,'finance',{});
+ assert.equal(r.status,409,JSON.stringify(r.body));
+ assert.equal(r.body.error.code,'INVOICE_PAYMENT_METHOD_REQUIRED');
+ assert.equal(await db.taxInvoice.count({where:{supplierOrderId:child.id}}),0);
+});
+test('verified composition supplier issues zero-GST bill of supply, never a tax invoice',async()=>{
+ const supplier=await db.supplier.create({data:{
+  slug:'composition-'+id(),legalName:'Local Composition Building Materials',
+  displayName:'Local Materials',approval:'APPROVED',verifiedAt:new Date(),
+  gstRegistration:'COMPOSITION',billingAddress:{line1:'Street 6',
+   city:'Hyderabad',stateCode:'TG',postalCode:'500001'}
+ }});
+ await db.supplierMember.create({data:{
+  supplierId:supplier.id,userId:store.finance.id,role:'FINANCE',active:true
+ }});
+ const parent=await db.purchaseOrder.create({data:{
+  customerId:store.customer.id,clientRequestId:key(),
+  publicNumber:'BT-'+id().replaceAll('-').slice(0,24),
+  status:'CONFIRMED',addressSnapshot:{recipientName:'B2C buyer',line1:'Construction Site',
+   city:'Hyderabad',stateCode:'TG',postalCode:'500001'},
+  subtotalPaise:10000n,totalPaise:10000n
+ }});
+ const child=await db.supplierOrder.create({data:{
+  purchaseOrderId:parent.id,supplierId:supplier.id,status:'DISPATCHED',
+  subtotalPaise:10000n,totalPaise:10000n
+ }});
+ await db.supplierOrderItem.create({data:{
+  supplierOrderId:child.id,skuSnapshot:'COMPO-ONE',nameSnapshot:'Exempt material',
+  unitCode:'BAG',packSizeSnapshot:new Prisma.Decimal(1),
+  quantity:new Prisma.Decimal(1),unitPrice:new Prisma.Decimal(100),
+  taxRateBps:0,taxablePaise:10000n,taxPaise:0n,lineTotalPaise:10000n
+ }});
+ await db.paymentAttempt.create({data:{
+  purchaseOrderId:parent.id,provider:'RAZORPAY',paymentMethod:'UPI',
+  providerOrderRef:'order_'+id().replaceAll('-').slice(0,20),
+  providerPayRef:'pay_'+id().replaceAll('-').slice(0,20),
+  idempotencyKey:key(),status:'CAPTURED',
+  verifiedAt:new Date(),amountPaise:10000n,capturedPaise:10000n
+ }});
+ const route='/api/v2/suppliers/'+supplier.id+'/orders/'+child.id+'/invoices';
+ const issued=await call('post',route,'finance',{});
+ assert.equal(issued.status,201,JSON.stringify(issued.body));
+ assert.equal(issued.body.data.kind,'BILL_OF_SUPPLY');
+ assert.equal(issued.body.data.taxPaise,'0');
+ assert.equal(issued.body.data.totalPaise,'10000');
+ assert.equal(issued.body.data.seller.gstRegistration,'COMPOSITION');
+});
