@@ -13,6 +13,7 @@ import {SupplierPanel} from './features/suppliers/SupplierPanel';
 import {CatalogAdminPanel} from './features/catalog/CatalogAdminPanel';
 import {DeliveryAdminPanel} from './features/delivery/DeliveryAdminPanel';
 import {DashboardPanel} from './features/overview/DashboardPanel';
+import {AdminOrdersPanel} from './features/orders/AdminOrdersPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -139,6 +140,8 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             ? <CatalogAdminPanel/>
             : active==='delivery'&&administrator&&['OWNER','OPERATIONS'].includes(administrator.role)
             ? <DeliveryAdminPanel/>
+            : active==='orders'&&administrator&&['OWNER','OPERATIONS','SUPPORT','FINANCE'].includes(administrator.role)
+            ? <AdminOrdersPanel/>
             : active==='team'&&administrator?.role==='OWNER'
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}

@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.20.0",
+    "version": "0.21.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -11158,6 +11158,101 @@
           },
           "403": {
             "description": "ADMIN_READ permission required"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/orders": {
+      "get": {
+        "operationId": "adminOrders",
+        "summary": "Scoped read-only global order list; no customer PII or gateway secrets",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "number",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 40
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded order list with supplier split summaries and cursor"
+          },
+          "400": {
+            "description": "Invalid filters"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Only OWNER/OPERATIONS/SUPPORT/FINANCE read roles"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/orders/{orderId}": {
+      "get": {
+        "operationId": "adminOrderDetail",
+        "summary": "Safe operational order, supplier items and shipment/funding states; never mutation",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order split and payment attempt statuses, no PII/address/payment refs/OTPs"
+          },
+          "401": {
+            "description": "Clerk required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Unknown order"
           }
         }
       }
