@@ -264,3 +264,27 @@ test('stock movement and audit are append-only database records',async()=>{
  assert.equal(await db.stockMovement.count({where:{id:store.receiptId}}),1);
  assert((await db.auditEvent.count({where:{action:{startsWith:'STOCK_'}}}))>=2);
 });
+
+test('checkout holds reject cancelled orders, suspended suppliers and inactive products',async()=>{
+ const item=await purchase('1.000');
+ const parent=await db.supplierOrderItem.findUniqueOrThrow({where:{id:item.id},
+  select:{supplierOrderId:true}});
+ const payload=()=>({
+  supplierId:store.supplier.id,orderItemId:item.id,warehouseId:store.firstId,
+  quantity:'1.000',expiresAt:new Date(Date.now()+10*60_000)
+ });
+ await db.supplierOrder.update({where:{id:parent.supplierOrderId},data:{status:'CANCELLED'}});
+ await assert.rejects(serializable(db,tx=>holdOrderItemStock(tx,payload())),
+   error=>error.status===409&&error.code==='ORDER_STOCK_UNAVAILABLE');
+ await db.supplierOrder.update({where:{id:parent.supplierOrderId},data:{status:'PENDING_ACCEPTANCE'}});
+ await db.supplier.update({where:{id:store.supplier.id},
+   data:{approval:'SUSPENDED',suspendedAt:new Date()}});
+ await assert.rejects(serializable(db,tx=>holdOrderItemStock(tx,payload())),
+   error=>error.status===409&&error.code==='ORDER_STOCK_UNAVAILABLE');
+ await db.supplier.update({where:{id:store.supplier.id},
+   data:{approval:'APPROVED',suspendedAt:null}});
+ await db.product.update({where:{id:store.product.id},data:{active:false}});
+ await assert.rejects(serializable(db,tx=>holdOrderItemStock(tx,payload())),
+   error=>error.status===409&&error.code==='LISTING_UNAVAILABLE');
+ await db.product.update({where:{id:store.product.id},data:{active:true}});
+});
