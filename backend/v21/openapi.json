@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.9.0",
-    "description": "Buildto V2.1 server-priced construction marketplace checkout and signed Razorpay online payment attempts. COD, GST invoice, supplier dispatch, refunds and settlements remain gated to later PRs."
+    "version": "0.10.0",
+    "description": "Buildto V2.1 marketplace: server-priced checkout, signed Razorpay captures, COD choice and independently verified supplier cash, supplier-issued GST invoice snapshots and fail-closed freight tax review. Live tax compliance and fulfillment are release-gated."
   },
   "paths": {
     "/health": {
@@ -5455,6 +5455,570 @@
           }
         }
       }
+    },
+    "/api/v2/orders/{orderId}/cod": {
+      "post": {
+        "operationId": "selectCustomerCod",
+        "summary": "Choose COD for a complete unpaid order and commit its held warehouse stock; not evidence of collection",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 140
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CodSelection"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      }
+    },
+    "/api/v2/orders/{orderId}/invoices": {
+      "get": {
+        "operationId": "listMyTaxInvoices",
+        "summary": "Customer-owned issued supplier invoice snapshots",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TaxInvoice"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/cod": {
+      "post": {
+        "operationId": "recordSupplierCodClaim",
+        "summary": "Supplier fulfillment reports cash for a fully delivered shipment; remains unverified",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "supplierOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 140
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "shipmentId",
+                  "receiptNumber"
+                ],
+                "properties": {
+                  "shipmentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "receiptNumber": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CodReceipt"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listSupplierCodClaims",
+        "summary": "Supplier finance reads supplier-scoped COD receipt history",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "supplierOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CodReceipt"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/cod/{receiptId}/review": {
+      "post": {
+        "operationId": "independentlyVerifyOrDisputeCod",
+        "summary": "Independent finance reviewer posts balanced supplier-held cash memorandum before verifying receipt",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "receiptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decision"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "VERIFY",
+                      "DISPUTE"
+                    ]
+                  },
+                  "externalReference": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CodReceipt"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/invoices": {
+      "post": {
+        "operationId": "issueSupplierTaxInvoice",
+        "summary": "Issue once from immutable seller/order GST snapshots, fail closed on unresolved taxable freight",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "supplierOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TaxInvoice"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listSupplierTaxInvoices",
+        "summary": "Supplier finance reads own issued invoice snapshots",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "supplierOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response or safe replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TaxInvoice"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable record created"
+          },
+          "400": {
+            "description": "Invalid payload or server-owned amount override"
+          },
+          "401": {
+            "description": "No authenticated Clerk identity"
+          },
+          "403": {
+            "description": "Insufficient permission"
+          },
+          "404": {
+            "description": "Unknown or foreign resource"
+          },
+          "409": {
+            "description": "Unsafe lifecycle or amount conflict"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6264,6 +6828,184 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CodSelection": {
+        "type": "object",
+        "required": [
+          "orderId",
+          "method",
+          "status",
+          "amountPaise",
+          "replayed"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "COD"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COLLECTION_DUE"
+            ]
+          },
+          "amountPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "replayed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CodReceipt": {
+        "type": "object",
+        "required": [
+          "id",
+          "supplierOrderId",
+          "supplierId",
+          "collectedPaise",
+          "status",
+          "receiptNumber",
+          "currency",
+          "receivedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shipmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "receiptNumber": {
+            "type": "string"
+          },
+          "collectedPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECORDED",
+              "VERIFIED",
+              "DISPUTED",
+              "REVERSED"
+            ]
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "TaxInvoice": {
+        "type": "object",
+        "required": [
+          "id",
+          "supplierId",
+          "supplierOrderId",
+          "invoiceNumber",
+          "financialYear",
+          "kind",
+          "status",
+          "taxablePaise",
+          "taxPaise",
+          "totalPaise",
+          "issuedAt",
+          "seller",
+          "buyer",
+          "lines"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoiceNumber": {
+            "type": "string"
+          },
+          "financialYear": {
+            "type": "string",
+            "pattern": "^20[0-9]{2}-[0-9]{2}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "TAX_INVOICE",
+              "BILL_OF_SUPPLY"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ISSUED",
+              "VOIDED",
+              "CREDITED"
+            ]
+          },
+          "taxablePaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "taxPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "totalPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "seller": {
+            "type": "object"
+          },
+          "buyer": {
+            "type": "object"
+          },
+          "lines": {
+            "type": "object"
           }
         }
       }
