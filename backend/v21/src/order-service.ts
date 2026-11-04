@@ -202,6 +202,9 @@ export async function placeCheckoutOrder(db:PrismaClient,userId:string,quoteId:s
       quantity:new Prisma.Decimal(item.quantity),unitPrice:new Prisma.Decimal(item.unitPrice),
       taxRateBps:item.taxRateBps,taxablePaise:BigInt(item.taxablePaise),
       taxPaise:BigInt(item.taxPaise),discountPaise:BigInt(item.discountPaise),
+      cgstPaise:BigInt(item.cgstPaise),sgstPaise:BigInt(item.sgstPaise),
+      utgstPaise:BigInt(item.utgstPaise),igstPaise:BigInt(item.igstPaise),
+      cessPaise:BigInt(item.cessPaise),
       lineTotalPaise:BigInt(item.lineTotalPaise),
       attributesSnapshot:{listingVersion:item.listingVersion,taxInclusive:item.taxInclusive}
      },select:{id:true}});

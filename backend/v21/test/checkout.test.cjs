@@ -41,7 +41,8 @@ test('fixture: two suppliers, delivery zones, customer address, priced listings 
   state[name]=user;tokens[name]=user.clerkUserId;
  }
  const supplierA=await db.supplier.create({data:{
-  slug:'cart-a-'+id(),legalName:'Build Materials A',displayName:'Supplier A',approval:'APPROVED'
+  slug:'cart-a-'+id(),legalName:'Build Materials A',displayName:'Supplier A',approval:'APPROVED',
+  gstin:'36ABCDE1234F1Z1',gstRegistration:'REGULAR',verifiedAt:new Date()
  }});
  const supplierB=await db.supplier.create({data:{
   slug:'cart-b-'+id(),legalName:'Build Materials B',displayName:'Supplier B',approval:'APPROVED'
@@ -191,6 +192,11 @@ test('multi-supplier order placement is atomic, repeat-safe and never assumes pa
  assert.equal(firstBalance.onHandQty.toString(),'10');
  assert.equal(firstBalance.reservedQty.toString(),'2');
  assert.equal(await db.paymentAttempt.count({where:{purchaseOrderId:order.id}}),0);
+ const line=await db.supplierOrderItem.findFirstOrThrow({where:{listingId:state.listingA.id,
+  supplierOrder:{purchaseOrderId:order.id}}});
+ assert.equal(line.cgstPaise.toString(),'1800');
+ assert.equal(line.sgstPaise.toString(),'1800');
+ assert.equal(line.igstPaise.toString(),'0');
 });
 
 test('customer cancellation releases all supplier holds and cannot be repeated incorrectly',async()=>{

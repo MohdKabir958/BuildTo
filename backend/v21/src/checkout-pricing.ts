@@ -1,6 +1,7 @@
 import {Prisma} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {computeDiscount} from './promotion-service';
+import {splitOrderGst} from './checkout-tax';
 import {allocatePaise,checkedQuantity,MAX_ORDER,money,roundedPaise,taxFor} from './checkout-validation';
 
 type Tx=Prisma.TransactionClient;
@@ -9,6 +10,7 @@ export type PricedItem={
  hsnCode:string|null;unitCode:string;packSize:string;quantity:string;unitPrice:string;
  listingVersion:number;taxRateBps:number;taxInclusive:boolean;
  taxablePaise:string;taxPaise:string;discountPaise:string;lineTotalPaise:string;
+ cgstPaise:string;sgstPaise:string;utgstPaise:string;igstPaise:string;cessPaise:string;
 };
 export type PricedSupplier={
  supplierId:string;areaId:string;rateId:string;
@@ -113,6 +115,7 @@ export async function priceCheckout(tx:Tx,customerId:string,opts:{
   id:true,supplierId:true,sku:true,unitCode:true,unitPrice:true,version:true,
   minOrderQty:true,maxOrderQty:true,stepQty:true,packSize:true,taxRateBps:true,taxInclusive:true,
   product:{select:{name:true,hsnCode:true,brand:{select:{name:true}}}},
+  supplier:{select:{gstin:true,gstRegistration:true,verifiedAt:true}},
   priceTiers:{where:{active:true,effectiveUntil:null,effectiveFrom:{lte:new Date()}},
    select:{minQty:true,pricePerUnit:true},orderBy:{minQty:'desc'}},
   balances:{where:{warehouse:{active:true}},select:{onHandQty:true,reservedQty:true}},
@@ -120,7 +123,8 @@ export async function priceCheckout(tx:Tx,customerId:string,opts:{
  if(listings.length!==cart.lines.length)
   throw new ApiError(409,'LISTING_CHANGED','A product is no longer available. Refresh cart.');
  const byId=new Map(listings.map(l=>[l.id,l]));
- const prices:{item:PricedItem;net:bigint;tax:bigint;gross:bigint}[]=[];
+ const prices:{item:PricedItem;net:bigint;tax:bigint;gross:bigint;
+ gst:{gstin:string|null;gstRegistration:string;verifiedAt:Date|null}}[]=[];
  for(const line of cart.lines){
   const listing=byId.get(line.listingId)!;
   checkedQuantity(listing,line.quantity);
@@ -146,8 +150,9 @@ export async function priceCheckout(tx:Tx,customerId:string,opts:{
    unitCode:listing.unitCode,packSize:listing.packSize.toString(),quantity:line.quantity.toString(),
    unitPrice:unitPrice.toString(),listingVersion:listing.version,taxRateBps:listing.taxRateBps,
    taxInclusive:listing.taxInclusive,taxablePaise:net.toString(),taxPaise:'0',
-   discountPaise:'0',lineTotalPaise:'0'
-  },net,tax,gross:money(net+tax)});
+   discountPaise:'0',lineTotalPaise:'0',cgstPaise:'0',sgstPaise:'0',
+   utgstPaise:'0',igstPaise:'0',cessPaise:'0'
+  },net,tax,gross:money(net+tax),gst:listing.supplier});
  }
  const sum=(values:readonly bigint[])=>money(values.reduce((a,b)=>a+b,0n));
  const subtotal=sum(prices.map(p=>p.net));
@@ -178,6 +183,10 @@ export async function priceCheckout(tx:Tx,customerId:string,opts:{
  for(let i=0;i<prices.length;i++){
   const p=prices[i],portion=portions[i];
   const tax=taxFor(p.net-portion,p.item.taxRateBps);
+  const split=splitOrderGst(tax,p.gst,addr.city.stateCode);
+  p.item.cgstPaise=split.cgstPaise.toString();p.item.sgstPaise=split.sgstPaise.toString();
+  p.item.utgstPaise=split.utgstPaise.toString();p.item.igstPaise=split.igstPaise.toString();
+  p.item.cessPaise=split.cessPaise.toString();
   p.item.discountPaise=portion.toString();p.item.taxPaise=tax.toString();
   p.item.lineTotalPaise=money(p.net-portion+tax).toString();
  }
