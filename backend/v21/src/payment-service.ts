@@ -145,7 +145,7 @@ export async function startPayment(db:PrismaClient,userId:string,orderId:string,
 export async function customerPayments(db:PrismaClient,userId:string,orderId:string,publicKey:string){
  if(!validUuid(orderId))throw new ApiError(400,'INVALID_ORDER_ID','Invalid order reference.');
  const order=await db.purchaseOrder.findFirst({where:{id:orderId,customerId:userId},
-  select:{id:true,payments:{orderBy:{createdAt:'desc'},take:20}}});
+  select:{id:true,payments:{where:{provider:'RAZORPAY'},orderBy:{createdAt:'desc'},take:20}}});
  if(!order)throw new ApiError(404,'NOT_FOUND','Order not found.');
  return order.payments.map(p=>dto(p,publicKey));
 }
