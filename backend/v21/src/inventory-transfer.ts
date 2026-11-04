@@ -3,6 +3,7 @@ import {ApiError} from './errors';
 import {executeIdempotently} from './idempotency';
 import {record,uuid,requiredString,integer,stockQty,keyHash} from './inventory-validation';
 import {lockSupplierInventory} from './inventory-stock';
+import {requireSupplierPermission} from './permissions';
 
 export async function transferStock(db:PrismaClient,actor:string,supplierId:string,
  key:string,input:unknown) {
@@ -80,7 +81,6 @@ export async function transferStock(db:PrismaClient,actor:string,supplierId:stri
   }
  });
  // Revalidate grants even for a replayed key.
- const {requireSupplierPermission}=await import('./permissions');
  await requireSupplierPermission(db,actor,supplierId,'INVENTORY_WRITE');
  const out=await db.stockMovement.findFirst({where:{
   id:execution.resultRef,balance:{listing:{supplierId},warehouse:{supplierId}}
