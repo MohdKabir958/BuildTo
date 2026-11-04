@@ -27,7 +27,7 @@ const summary=(s:{
  gstRegistration:s.gstRegistration,gstin:s.gstin,verifiedAt:iso(s.verifiedAt),
  suspendedAt:iso(s.suspendedAt),createdAt:s.createdAt.toISOString()});
 async function lockSupplier(tx:Prisma.TransactionClient,id:string){
- const rows=await tx.$queryRaw<{id:string}[]>(Prisma.sql\`SELECT id FROM "Supplier" WHERE id=\${id}::uuid FOR UPDATE\`);
+ const rows=await tx.$queryRaw<{id:string}[]>(Prisma.sql`SELECT id FROM "Supplier" WHERE id=${id}::uuid FOR UPDATE`);
  if(rows.length===0)no('NOT_FOUND','Supplier not found.',404);
 }
 async function reviewer(tx:Prisma.TransactionClient,actor:string,id:string){
@@ -68,7 +68,7 @@ export async function submitSupplierApplication(db:PrismaClient,actor:string,inp
  if(!/^[1-9]\d{5}$/.test(billing.pinCode))no('INVALID_PIN','Six-digit Indian PIN is required.');
  try {
   return await serializable(db,async tx=>{
-   await tx.$queryRaw(Prisma.sql\`SELECT pg_advisory_xact_lock(hashtextextended(\${actor}, 54117)) IS NULL AS locked\`);
+   await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${actor}, 54117)) IS NULL AS locked`);
    const user=await tx.user.findUnique({where:{id:actor},select:{email:true,clerkUserId:true,status:true,deletedAt:true}});
    if(!user||user.status!=='ACTIVE'||!user.clerkUserId||user.deletedAt||user.email?.toLowerCase()!==email)
     no('VERIFIED_CONTACT_REQUIRED','Use the verified email on your synchronized Clerk account.',403);
