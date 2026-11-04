@@ -17,6 +17,7 @@ export interface V21Config {
   razorpayKeyId:string|null;
   razorpayKeySecret:string|null;
   razorpayWebhookSecret:string|null;
+  deliveryOtpHmacSecret:string|null;
 }
 const STAGING_HOST = 'ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech';
 export function readConfig(env: NodeJS.ProcessEnv): V21Config {
@@ -49,6 +50,9 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   if (environment === 'staging' && (corsOrigins.length === 0 || corsOrigins.some(x => !x.startsWith('https://')))) {
     throw new Error('V21_CORS_REQUIRED: staging needs explicit HTTPS origins.');
   }
+  const deliveryOtpHmacSecret=env.BUILDTO_V21_DELIVERY_OTP_HMAC_SECRET||null;
+  if(deliveryOtpHmacSecret&&Buffer.byteLength(deliveryOtpHmacSecret,'utf8')<32)
+    throw new Error('V21_DELIVERY_OTP_SECRET_TOO_SHORT: use at least 32 bytes.');
   const razorpayKeyId=env.RAZORPAY_KEY_ID?.trim()||null;
   const razorpayKeySecret=env.RAZORPAY_KEY_SECRET?.trim()||null;
   const razorpayWebhookSecret=env.RAZORPAY_WEBHOOK_SECRET?.trim()||null;
@@ -75,6 +79,7 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   return {
     clerkIssuer,clerkAuthorizedParties,clerkSecretKey,clerkJwtKey,clerkAudience,clerkWebhookSecret,
     clerkAllowNativeWithoutAzp,razorpayKeyId,razorpayKeySecret,razorpayWebhookSecret,
+    deliveryOtpHmacSecret,
     environment,
     port,
     databaseUrl: env.DATABASE_URL!,
