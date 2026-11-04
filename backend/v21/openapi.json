@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.12.0",
-    "description": "Buildto V2.1 modular marketplace API: checkout, signed payments, separately verified supplier COD, GST invoice snapshots, supplier shipments, customer requests for returned goods, private support cases, independently moderated reviews. Return approval and physical receipt NEVER initiate refund, bank transfer, or restock."
+    "version": "0.13.0",
+    "description": "Buildto V2.1 marketplace API: warehouse fulfillment, COD finance verification, GST snapshot invoices, customer care, and supplier financial reconciliation. Finance settlement proposals are held until independent finance attestation; posted accrual memo journals do not establish bank-held funds or execute payouts. Refunds and legal credit notes remain separate gated flows."
   },
   "paths": {
     "/health": {
@@ -8451,6 +8451,718 @@
           }
         }
       }
+    },
+    "/api/v2/suppliers/{supplierId}/finance/statement": {
+      "get": {
+        "operationId": "supplierFinanceStatement",
+        "summary": "Supplier FINANCE_READ private settlement proposals and verified COD receivables; no bank claims.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized finance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "settlements",
+                        "codCommissionReceivables",
+                        "payoutExecutionEnabled"
+                      ],
+                      "properties": {
+                        "settlements": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/FinanceSettlement"
+                          }
+                        },
+                        "codCommissionReceivables": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CodCommissionReceivable"
+                          }
+                        },
+                        "payoutExecutionEnabled": {
+                          "type": "boolean"
+                        },
+                        "bankingReconciled": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/suppliers/{supplierId}": {
+      "get": {
+        "operationId": "adminSupplierReconciliation",
+        "summary": "Admin FINANCE_MANAGE order funding and settlement review. Captured funds are NOT represented as verified bank deposits.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized finance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "orders",
+                        "settlements",
+                        "bankingReconciled"
+                      ],
+                      "properties": {
+                        "orders": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "supplierOrderId",
+                              "fundingType",
+                              "totalPaise",
+                              "disputed"
+                            ],
+                            "properties": {
+                              "supplierOrderId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "fundingType": {
+                                "type": "string"
+                              },
+                              "totalPaise": {
+                                "type": "string",
+                                "pattern": "^[0-9]+$"
+                              },
+                              "disputed": {
+                                "type": "boolean"
+                              },
+                              "platformFeePaise": {
+                                "type": "string",
+                                "pattern": "^[0-9]+$"
+                              }
+                            }
+                          }
+                        },
+                        "settlements": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/FinanceSettlement"
+                          }
+                        },
+                        "bankingReconciled": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/settlements/drafts": {
+      "post": {
+        "operationId": "financeDraftSupplierSettlement",
+        "summary": "Creates ON_HOLD proposal from exact verified capture, issued invoice, full shipment handover, and return/refund-free supplier orders; no payout.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 180
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "supplierId",
+                  "settlementKey",
+                  "periodStart",
+                  "periodEnd",
+                  "supplierOrderIds"
+                ],
+                "properties": {
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "settlementKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 100
+                  },
+                  "periodStart": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "periodEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "supplierOrderIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Finance draft created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FinanceSettlement"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/settlements/{settlementId}/approve": {
+      "post": {
+        "operationId": "independentlyAttestSettlement",
+        "summary": "Different finance admin attests external statement reference, revalidates exact order/invoice/return state and posts balanced accrual memo; NEVER initiates bank transfer.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "settlementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "bankStatementReference"
+                ],
+                "properties": {
+                  "bankStatementReference": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 120
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized finance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "status",
+                        "payoutState",
+                        "bankEvidenceType"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "APPROVED"
+                          ]
+                        },
+                        "payoutState": {
+                          "type": "string",
+                          "enum": [
+                            "NOT_DISBURSED"
+                          ]
+                        },
+                        "bankEvidenceType": {
+                          "type": "string",
+                          "enum": [
+                            "HUMAN_ATTESTED"
+                          ]
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/settlements/{settlementId}/cancel": {
+      "post": {
+        "operationId": "financeCancelHeldSettlement",
+        "summary": "Cancel only ON_HOLD draft; released allocation remains auditable. Approved settlements cannot be cancelled here.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "settlementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized finance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "status"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/cod-commissions/{supplierOrderId}/recognize": {
+      "post": {
+        "operationId": "financeRecognizeVerifiedCodCommission",
+        "summary": "Supplier-independent finance recognizes the order's exact platform commission after independently verified COD and posted cash memo; no cash receipt at platform bank.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized finance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "supplierOrderId",
+                        "amountPaise",
+                        "status"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "supplierOrderId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "amountPaise": {
+                          "type": "string",
+                          "pattern": "^[0-9]+$"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/journals/{journalId}": {
+      "get": {
+        "operationId": "readBalancedFinanceJournal",
+        "summary": "Finance-only inspection of immutable balanced posted journal and line amounts.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "journalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized finance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "referenceKey",
+                        "balanced",
+                        "debitPaise",
+                        "creditPaise",
+                        "lines"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "referenceKey": {
+                          "type": "string"
+                        },
+                        "balanced": {
+                          "type": "boolean"
+                        },
+                        "debitPaise": {
+                          "type": "string",
+                          "pattern": "^[0-9]+$"
+                        },
+                        "creditPaise": {
+                          "type": "string",
+                          "pattern": "^[0-9]+$"
+                        },
+                        "lines": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "lineNumber",
+                              "accountCode",
+                              "debitPaise",
+                              "creditPaise"
+                            ],
+                            "properties": {
+                              "lineNumber": {
+                                "type": "integer"
+                              },
+                              "accountCode": {
+                                "type": "string"
+                              },
+                              "debitPaise": {
+                                "type": "string",
+                                "pattern": "^[0-9]+$"
+                              },
+                              "creditPaise": {
+                                "type": "string",
+                                "pattern": "^[0-9]+$"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Independent finance or supplier permission required"
+          },
+          "404": {
+            "description": "Resource not in caller scope"
+          },
+          "409": {
+            "description": "Financial conflict, discrepancy or repeated resource"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9848,6 +10560,193 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "FinanceSettlement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "supplierId",
+          "settlementKey",
+          "status",
+          "grossPaise",
+          "commissionPaise",
+          "payablePaise",
+          "payoutState",
+          "lines"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "settlementKey": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ON_HOLD",
+              "APPROVED",
+              "CANCELLED",
+              "OPEN",
+              "PROCESSING",
+              "PAID",
+              "FAILED"
+            ]
+          },
+          "grossPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "commissionPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "refundPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "adjustmentPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "payablePaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "approvedById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "payoutState": {
+            "type": "string",
+            "enum": [
+              "NOT_DISBURSED",
+              "PAYOUT_RECORD_REQUIRES_RECONCILIATION"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "supplierOrderId",
+                "grossPaise",
+                "commissionPaise",
+                "netPaise"
+              ],
+              "properties": {
+                "supplierOrderId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "grossPaise": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "commissionPaise": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "refundPaise": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "adjustmentPaise": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "netPaise": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                }
+              }
+            }
+          },
+          "transfers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "status",
+                "amountPaise"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "amountPaise": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CodCommissionReceivable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "supplierOrderId",
+          "commissionPaise",
+          "offsetPaise",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierOrderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "commissionPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "offsetPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "PARTIALLY_OFFSET",
+              "SETTLED",
+              "WRITTEN_OFF"
+            ]
           }
         }
       }
