@@ -17,6 +17,8 @@ export interface V21Config {
   razorpayKeyId:string|null;
   razorpayKeySecret:string|null;
   razorpayWebhookSecret:string|null;
+  razorpayXKeyId:string|null;
+  razorpayXKeySecret:string|null;
   deliveryOtpHmacSecret:string|null;
 }
 const STAGING_HOST = 'ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech';
@@ -63,6 +65,13 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
     throw new Error('V21_RAZORPAY_CONFIG_INCOMPLETE');
   if(environment==='staging'&&razorpayKeyId?.startsWith('rzp_live_'))
     throw new Error('V21_RAZORPAY_LIVE_KEY_NOT_ALLOWED_IN_STAGING');
+  const razorpayXKeyId=env.RAZORPAYX_READ_ONLY_KEY_ID?.trim()||null;
+  const razorpayXKeySecret=env.RAZORPAYX_READ_ONLY_KEY_SECRET?.trim()||null;
+  if(Boolean(razorpayXKeyId)!==Boolean(razorpayXKeySecret)||
+    razorpayXKeyId&&!/^rzp_(test|live)_[A-Za-z0-9]+$/.test(razorpayXKeyId))
+    throw new Error('V21_RAZORPAYX_READ_ONLY_CONFIG_INVALID');
+  if(environment==='staging'&&razorpayXKeyId?.startsWith('rzp_live_'))
+    throw new Error('V21_RAZORPAYX_STAGING_LIVE_KEY_DENIED');
   const clerkIssuer=env.CLERK_ISSUER?.trim()||null;
   const clerkSecretKey=env.CLERK_SECRET_KEY?.trim()||null;
   const clerkJwtKey=env.CLERK_JWT_KEY?.trim()||null;
@@ -79,7 +88,7 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   return {
     clerkIssuer,clerkAuthorizedParties,clerkSecretKey,clerkJwtKey,clerkAudience,clerkWebhookSecret,
     clerkAllowNativeWithoutAzp,razorpayKeyId,razorpayKeySecret,razorpayWebhookSecret,
-    deliveryOtpHmacSecret,
+    deliveryOtpHmacSecret,razorpayXKeyId,razorpayXKeySecret,
     environment,
     port,
     databaseUrl: env.DATABASE_URL!,
