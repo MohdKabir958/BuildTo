@@ -7,6 +7,7 @@ export interface GatewayOrder {
 export interface PaymentGateway {
  readonly publicKey:string;
  createOrder(input:{amount:bigint;receipt:string}):Promise<GatewayOrder>;
+ lookupOrderByReceipt?(receipt:string):Promise<GatewayOrder|null>;
 }
 export class RazorpayGateway implements PaymentGateway {
  constructor(
@@ -29,8 +30,7 @@ export class RazorpayGateway implements PaymentGateway {
      'Content-Type':'application/json'
     },
     body:JSON.stringify({
-     amount:Number(input.amount),currency:'INR',receipt:input.receipt,
-     payment_capture:1
+     amount:Number(input.amount),currency:'INR',receipt:input.receipt
     }),
     signal:AbortSignal.timeout(7000)
    });
@@ -53,5 +53,40 @@ export class RazorpayGateway implements PaymentGateway {
     BigInt(x.amount)!==input.amount)
    throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Payment provider order details did not match.');
   return {id:x.id,amount:input.amount,currency:'INR',receipt:input.receipt};
+ }
+ // Lookup is read-only. It is used to reconcile an UNKNOWN create outcome;
+ // never blindly issue another POST after a timeout or missing response.
+ async lookupOrderByReceipt(receipt:string):Promise<GatewayOrder|null>{
+  if(!/^[A-Za-z0-9_-]{8,40}$/.test(receipt))
+   throw new ApiError(400,'BAD_GATEWAY_RECEIPT','Invalid gateway receipt.');
+  let response:globalThis.Response;
+  try{
+   response=await fetch('https://api.razorpay.com/v1/orders?receipt='+
+    encodeURIComponent(receipt)+'&count=10',{
+     headers:{Authorization:'Basic '+
+      Buffer.from(this.publicKey+':'+this.secretKey).toString('base64')},
+     signal:AbortSignal.timeout(7000)
+    });
+  }catch{
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_UNAVAILABLE','Provider lookup unavailable.');
+  }
+  if(!response.ok)
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_UNAVAILABLE','Provider lookup unavailable.');
+  let payload:unknown;
+  try{payload=await response.json();}catch{
+   throw new ApiError(503,'PAYMENT_PROVIDER_INVALID_RESPONSE','Invalid provider lookup.');
+  }
+  if(!payload||typeof payload!=='object'||Array.isArray(payload))
+   throw new ApiError(503,'PAYMENT_PROVIDER_INVALID_RESPONSE','Invalid provider lookup.');
+  const items=(payload as {items?:unknown}).items;
+  if(!Array.isArray(items))throw new ApiError(503,'PAYMENT_PROVIDER_INVALID_RESPONSE','Invalid provider lookup.');
+  const matched=items.filter(x=>x&&typeof x==='object'&&x.receipt===receipt);
+  if(matched.length===0)return null;
+  if(matched.length!==1)throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Duplicate provider receipts need review.');
+  const x=matched[0];
+  if(typeof x.id!=='string'||!/^order_[A-Za-z0-9]{8,60}$/.test(x.id)||
+    !Number.isSafeInteger(x.amount)||x.amount<100||x.currency!=='INR')
+   throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Provider receipt record invalid.');
+  return {id:x.id,amount:BigInt(x.amount),currency:'INR',receipt};
  }
 }
