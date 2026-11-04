@@ -178,6 +178,85 @@ test('RFQ can award exactly one current quote and prevent later submissions',asy
  },hdr())).status,409);
  assert.equal(await db.supplierOrder.count({where:{sourceQuoteId:store.revisedId}}),0);
 });
+
+test('accepted listing-backed RFQ converts its negotiated price into one unpaid order',async()=>{
+ const city=await db.city.create({data:{code:'RFQ'+id().slice(0,12).toUpperCase(),
+  name:'Hyderabad',stateCode:'TG',active:true}});
+ const address=await db.address.create({data:{
+  userId:store.customer.id,cityId:city.id,label:'RFQ site',
+  recipientName:'RFQ Buyer',phoneE164:'+919876543210',line1:'Site 1',
+  locality:'Hyderabad',postalCode:'500001'
+ }});
+ store.rfqAddress=address;
+ const warehouse=await db.warehouse.create({data:{
+  supplierId:store.first.id,code:'RFQ'+id().slice(0,10).toUpperCase(),
+  name:'RFQ stock',active:true
+ }});
+ await db.inventoryBalance.create({data:{
+  listingId:store.listing.id,warehouseId:warehouse.id,
+  onHandQty:new Prisma.Decimal('10.000')
+ }});
+ await db.supplier.update({where:{id:store.first.id},data:{
+  gstin:'36BCDEF4321G1Z2',gstRegistration:'REGULAR',verifiedAt:new Date()
+ }});
+ const path=rfqURL()+'/quotes/'+store.revisedId+'/order';
+ const body={clientRequestId:'rfqorder_'+id(),addressId:address.id};
+ assert.equal((await send('post',path,'customer',body)).status,428);
+ assert.equal((await send('post',path,'otherCustomer',body,hdr())).status,404);
+ const k=hdr();
+ const order=await send('post',path,'customer',body,k);
+ assert.equal(order.status,201,JSON.stringify(order.body));
+ assert.equal(order.body.data.suppliers.length,1);
+ assert.equal(order.body.data.suppliers[0].sourceQuoteId,store.revisedId);
+ assert.equal(order.body.data.totalPaise,'29320');
+ assert.equal(order.body.data.paymentStatus,'AWAITING_PAYMENT_INTEGRATION');
+ store.rfqOrderId=order.body.data.id;
+ const line=await db.supplierOrderItem.findFirstOrThrow({where:{
+  supplierOrder:{purchaseOrderId:store.rfqOrderId}
+ }});
+ assert.equal(line.unitPrice.toString(),'120');
+ assert.equal(line.quantity.toString(),'2');
+ assert.equal(line.cgstPaise.toString(),'2160');
+ assert.equal(line.sgstPaise.toString(),'2160');
+ const holds=await db.inventoryReservation.findMany({where:{orderItemId:line.id}});
+ assert.equal(holds.length,1);assert.equal(holds[0].state,'HELD');
+ const replay=await send('post',path,'customer',body,k);
+ assert.equal(replay.status,200);
+ assert.equal(replay.body.replayed,true);
+ assert.equal(replay.body.data.id,store.rfqOrderId);
+ const duplicate=await send('post',path,'customer',{...body,clientRequestId:'another_'+id()},hdr());
+ assert.equal(duplicate.status,409);
+ assert.equal(duplicate.body.error.code,'QUOTE_ALREADY_ORDERED');
+ assert.equal((await send('post','/api/v2/orders/'+store.rfqOrderId+'/cancel','customer',{})).status,200);
+ assert.equal((await db.inventoryReservation.findUniqueOrThrow({where:{id:holds[0].id}})).state,'RELEASED');
+});
+test('accepted bespoke RFQ is provisional and never invents warehouse stock',async()=>{
+ const created=await send('post','/api/v2/rfqs','customer',{
+  siteSnapshot:{city:'Hyderabad',postalCode:'500001'},
+  items:[{description:'Custom graded aggregate',quantity:'1.000',unitCode:'BAG'}]
+ },hdr());
+ assert.equal(created.status,201);
+ const rfqId=created.body.data.id,rfqItemId=created.body.data.items[0].id;
+ assert.equal((await send('post','/api/v2/rfqs/'+rfqId+'/open','customer',{})).status,200);
+ assert.equal((await send('post','/api/v2/rfqs/'+rfqId+'/invitations/'+store.second.id,'customer',{})).status,200);
+ const submitted=await send('post','/api/v2/suppliers/'+store.second.id+'/rfqs/'+rfqId+'/quotes',
+  'secondSupplier',{deliveryPaise:'500',
+   lines:[{rfqItemId,quantity:'1.000',unitCode:'BAG',unitPrice:'99.0000',taxRateBps:0}]},hdr());
+ assert.equal(submitted.status,201,JSON.stringify(submitted.body));
+ assert.equal((await send('post','/api/v2/rfqs/'+rfqId+'/quotes/'+submitted.body.data.id+'/award','customer',{})).status,200);
+ const order=await send('post','/api/v2/rfqs/'+rfqId+'/quotes/'+submitted.body.data.id+'/order',
+  'customer',{clientRequestId:'bespoke_'+id(),addressId:store.rfqAddress.id},hdr());
+ assert.equal(order.status,201,JSON.stringify(order.body));
+ assert.equal(order.body.data.totalPaise,'10400');
+ assert.equal(order.body.data.reservationExpiresAt,null);
+ const item=await db.supplierOrderItem.findFirstOrThrow({where:{
+  supplierOrder:{purchaseOrderId:order.body.data.id}
+ }});
+ assert.equal(item.listingId,null);
+ assert.equal(await db.inventoryReservation.count({where:{orderItemId:item.id}}),0);
+ assert.equal((await send('post','/api/v2/orders/'+order.body.data.id+'/cancel','customer',{})).status,200);
+});
+
 const activeWindow=()=>({
  startsAt:new Date(Date.now()-60000).toISOString().replace(/\.\d{3}Z$/,'Z'),
  endsAt:new Date(Date.now()+5*86400000).toISOString().replace(/\.\d{3}Z$/,'Z')
@@ -252,16 +331,39 @@ test('fixed and free delivery promotion calculations are precise and never clien
   promoPayload('SHIP'+id().slice(0,10).toUpperCase(),'FREE_DELIVERY',{minCartPaise:'1000'}));
  assert.equal(free.status,201);
  await send('patch',endpoint+'/'+free.body.data.id,'admin',{active:true});
- const shipOrder=await makeOrder(store.customer.id,2500n,100000n,2500n);
+ // Shipping discounts reduce freight, not taxable item prices.
+ const city=await db.city.create({data:{
+  code:'HYD'+id().slice(0,12).toUpperCase(),name:'Hyderabad Test',stateCode:'TG',active:true
+ }});
+ const address=await db.address.create({data:{
+  userId:store.customer.id,cityId:city.id,label:'Test site',
+  recipientName:'Receiver',phoneE164:'+919876543210',line1:'Road 1',
+  locality:'Hyderabad',postalCode:'500001'
+ }});
+ const linkedQuote=async(discountPaise)=>{
+  const quote=await db.checkoutQuote.create({data:{
+   customerId:store.customer.id,addressId:address.id,
+   cartVersion:0,cartFingerprint:'0'.repeat(64),
+   addressSnapshot:{postalCode:'500001'},
+   quoteSnapshot:{promotionCode:free.body.data.code,promotionType:'FREE_DELIVERY',
+    deliveryBeforePromotionPaise:'2500',promotionAmountPaise:'2500'},
+   subtotalPaise:100000n,discountPaise:0n,taxPaise:0n,deliveryPaise:0n,totalPaise:100000n,
+   expiresAt:new Date(Date.now()+600000)
+  }});
+  const order=await makeOrder(store.customer.id,discountPaise,100000n,0n);
+  await db.purchaseOrder.update({where:{id:order.id},data:{checkoutQuoteId:quote.id}});
+  return order;
+ };
+ const shipOrder=await linkedQuote(0n);
  const shipped=await serializable(db,tx=>recordOrderPromotion(tx,{
   code:free.body.data.code,customerId:store.customer.id,orderId:shipOrder.id
  }));
  assert.equal(shipped.amountPaise,'2500');
- const invalidOrder=await makeOrder(store.customer.id,200n,100000n,2500n);
+ const invalidOrder=await linkedQuote(200n);
  await assert.rejects(serializable(db,tx=>recordOrderPromotion(tx,{
   code:free.body.data.code,customerId:store.customer.id,orderId:invalidOrder.id
  })),e=>e.code==='PROMOTION_TOTAL_MISMATCH');
- assert.equal((await send('get','/api/v2/promotions/preview','customer')).status,404);
+  assert.equal((await send('get','/api/v2/promotions/preview','customer')).status,404);
 });
 test('a cancelled or unapproved RFQ cannot be reopened or quoted',async()=>{
  const payload={

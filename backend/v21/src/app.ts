@@ -12,6 +12,7 @@ import {registerPublicCatalog,registerProtectedCatalog} from './catalog-routes';
 import {registerPublicDelivery,registerProtectedDelivery} from './delivery-routes';
 import {registerProtectedInventory} from './inventory-routes';
 import {registerRfqAndPromotions} from './rfq-routes';
+import {registerProtectedCheckout} from './checkout-routes';
 
 export interface AppDependencies {
   db:PrismaClient;
@@ -94,7 +95,7 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin'] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer'] as string[],
       },
       requestId:res.locals.requestId,
     });
@@ -109,6 +110,7 @@ export function createV21App(deps:AppDependencies) {
     registerProtectedDelivery(app,deps.db,auth);
     registerProtectedInventory(app,deps.db,auth);
     registerRfqAndPromotions(app,deps.db,auth);
+    registerProtectedCheckout(app,deps.db,auth);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
       try{
         const principal=res.locals.principal as {id:string;displayName:string};
@@ -132,7 +134,7 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
-  // Inventory reservations are internal to checkout; no public reservation or payment routes.
+  // Checkout holds warehouse stock transactionally. Payment capture remains disabled until PR 09.
 
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);

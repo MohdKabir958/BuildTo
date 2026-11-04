@@ -53,12 +53,14 @@ test('two concurrent workers SKIP LOCKED and cannot claim identical events',asyn
  const keys=Array.from({length:4},()=>('ci:'+randomUUID()));
  for(const eventKey of keys){
    await db.outboxEvent.create({data:{eventKey,eventType:'ci.claim',
-     aggregateType:'ci',aggregateId:randomUUID(),payload:{key:eventKey}}});
+     aggregateType:'ci',aggregateId:randomUUID(),payload:{key:eventKey},
+     createdAt:new Date('2000-01-02T00:00:00Z')}});
  }
  const [left,right]=await Promise.all([claimOutbox(db,2,10),claimOutbox(db,2,10)]);
  const claimed=[...left,...right];
  assert.equal(claimed.length,4);
  assert.equal(new Set(claimed.map(x=>x.id)).size,4);
+ assert.deepEqual(new Set(claimed.map(x=>x.eventKey)),new Set(keys));
  for(const msg of claimed){
     assert.equal(await acknowledgeOutbox(db,msg),true);
     assert.equal(await acknowledgeOutbox(db,msg),false);
@@ -67,7 +69,8 @@ test('two concurrent workers SKIP LOCKED and cannot claim identical events',asyn
 test('failed delivery can terminally DEAD-letter and stale worker cannot rewrite it',async()=>{
  const eventKey='ci:'+randomUUID();
  const record=await db.outboxEvent.create({data:{eventKey,eventType:'ci.dead',
-    aggregateType:'ci',aggregateId:randomUUID(),payload:{}}});
+    aggregateType:'ci',aggregateId:randomUUID(),payload:{},
+    createdAt:new Date('2000-01-01T00:00:00Z')}});
  const events=await claimOutbox(db,20,10);
  const event=events.find(x=>x.id===record.id);
  assert(event);
@@ -80,7 +83,8 @@ test('failed delivery can terminally DEAD-letter and stale worker cannot rewrite
 test('dispatcher processes registered handlers and persists success',async()=>{
  const eventKey='ci:'+randomUUID(),aggregateId=randomUUID();
  await db.outboxEvent.create({data:{eventKey,eventType:'ci.handler',
-    aggregateType:'ci',aggregateId,payload:{ok:true}}});
+    aggregateType:'ci',aggregateId,payload:{ok:true},
+    createdAt:new Date('2000-01-01T00:00:00Z')}});
  let count=0;
  const handlers=new Map([['ci.handler',async msg=>{
    if(msg.eventKey===eventKey)count++;
