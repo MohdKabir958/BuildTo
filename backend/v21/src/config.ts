@@ -14,6 +14,9 @@ export interface V21Config {
   clerkAudience: string | null;
   clerkWebhookSecret: string | null;
   clerkAllowNativeWithoutAzp: boolean;
+  razorpayKeyId:string|null;
+  razorpayKeySecret:string|null;
+  razorpayWebhookSecret:string|null;
 }
 const STAGING_HOST = 'ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech';
 export function readConfig(env: NodeJS.ProcessEnv): V21Config {
@@ -46,6 +49,16 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   if (environment === 'staging' && (corsOrigins.length === 0 || corsOrigins.some(x => !x.startsWith('https://')))) {
     throw new Error('V21_CORS_REQUIRED: staging needs explicit HTTPS origins.');
   }
+  const razorpayKeyId=env.RAZORPAY_KEY_ID?.trim()||null;
+  const razorpayKeySecret=env.RAZORPAY_KEY_SECRET?.trim()||null;
+  const razorpayWebhookSecret=env.RAZORPAY_WEBHOOK_SECRET?.trim()||null;
+  if([razorpayKeyId,razorpayKeySecret,razorpayWebhookSecret].some(Boolean) &&
+     (!razorpayKeyId||!razorpayKeySecret||!razorpayWebhookSecret||
+      !/^rzp_(test|live)_[A-Za-z0-9]+$/.test(razorpayKeyId)||
+      razorpayWebhookSecret.length<24))
+    throw new Error('V21_RAZORPAY_CONFIG_INCOMPLETE');
+  if(environment==='staging'&&razorpayKeyId?.startsWith('rzp_live_'))
+    throw new Error('V21_RAZORPAY_LIVE_KEY_NOT_ALLOWED_IN_STAGING');
   const clerkIssuer=env.CLERK_ISSUER?.trim()||null;
   const clerkSecretKey=env.CLERK_SECRET_KEY?.trim()||null;
   const clerkJwtKey=env.CLERK_JWT_KEY?.trim()||null;
@@ -61,7 +74,7 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   ))throw new Error('V21_CLERK_CONFIG_REQUIRED: staging needs issuer, server key, signed webhook secret and HTTPS authorized parties.');
   return {
     clerkIssuer,clerkAuthorizedParties,clerkSecretKey,clerkJwtKey,clerkAudience,clerkWebhookSecret,
-    clerkAllowNativeWithoutAzp,
+    clerkAllowNativeWithoutAzp,razorpayKeyId,razorpayKeySecret,razorpayWebhookSecret,
     environment,
     port,
     databaseUrl: env.DATABASE_URL!,

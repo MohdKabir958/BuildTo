@@ -33,6 +33,11 @@ const validSession=(s:unknown):s is string=>typeof s==='string' && /^sess_[a-zA-
 
 export function createClerkIdentityVerifier(o:ClerkOptions):IdentityVerifier {
   validateClerkOptions(o);
+  // Bounded positive cache for a single API process; never caches failed checks.
+  // Clerk revocations/bans may be observed up to 15 seconds later. Local DB
+  // account and membership checks remain live on every authenticated request.
+  const positive=new Map<string,number>();
+  const TTL_MS=15_000, MAX_ENTRIES=1000;
   return {async verify(token:string):Promise<VerifiedClerkIdentity> {
     if(!token || token.length>8192)throw invalidSession();
     let claims;
@@ -46,8 +51,12 @@ export function createClerkIdentityVerifier(o:ClerkOptions):IdentityVerifier {
     const party=(claims as {azp?:unknown}).azp;
     if(typeof party==='string' ? !o.authorizedParties.includes(party)
         : !(o.allowNativeWithoutAzp && o.audience))throw invalidSession();
-    // Fail closed for provider-revoked sessions and banned identities, even if JWT remains unexpired.
-    // This is intentionally online; add bounded safe caching only after a measured capacity review.
+    // JWT signature, expiration and audience above are verified on every call.
+    const key=claims.sub+':'+claims.sid;
+    const now=Date.now();
+    if((positive.get(key)??0)>now)return {subject:claims.sub,sessionId:claims.sid};
+    positive.delete(key);
+    // Provider failures fail closed for non-cached sessions.
     let session,account;
     try {
       [session,account]=await Promise.all([
@@ -62,6 +71,14 @@ export function createClerkIdentityVerifier(o:ClerkOptions):IdentityVerifier {
     if(session.id!==claims.sid || session.userId!==claims.sub || session.status!=='active' ||
        account.id!==claims.sub)throw invalidSession();
     if(account.banned)throw new ApiError(403,'ACCOUNT_SUSPENDED','Account unavailable.');
+    if(positive.size>=MAX_ENTRIES) {
+      for(const [k,expiry] of positive)if(expiry<=now)positive.delete(k);
+      if(positive.size>=MAX_ENTRIES) {
+        const oldest=positive.keys().next().value;
+        if(oldest!==undefined)positive.delete(oldest);
+      }
+    }
+    positive.set(key,Date.now()+TTL_MS);
     return {subject:claims.sub,sessionId:claims.sid};
   }};
 }

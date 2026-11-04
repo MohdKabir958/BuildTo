@@ -3,6 +3,7 @@ import {readConfig} from './config';
 import {createV21App} from './app';
 import {createClerkIdentityVerifier} from './identity';
 import {SingleInstanceRateLimiter} from './rateLimit';
+import {RazorpayGateway} from './payment-gateway';
 import {jsonLogger} from './logging';
 import {assertV21BaselineApplied} from './baseline';
 
@@ -32,8 +33,11 @@ async function main() {
       authorizedParties:config.clerkAuthorizedParties,
       allowNativeWithoutAzp:config.clerkAllowNativeWithoutAzp,
     });
+    const paymentGateway=config.razorpayKeyId&&config.razorpayKeySecret?
+      new RazorpayGateway(config.razorpayKeyId,config.razorpayKeySecret):undefined;
     const app=createV21App({db,limiter,log:jsonLogger,allowedOrigins:config.corsOrigins,
-      proxyHops:config.proxyHops,identityVerifier,clerkWebhookSecret:config.clerkWebhookSecret});
+      proxyHops:config.proxyHops,identityVerifier,clerkWebhookSecret:config.clerkWebhookSecret,
+      razorpayWebhookSecret:config.razorpayWebhookSecret??undefined,paymentGateway});
     server=http.createServer(app);
     await new Promise<void>((resolve,reject)=>{
       server!.once('error',reject);

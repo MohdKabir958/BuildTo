@@ -209,7 +209,7 @@ test('accepted listing-backed RFQ converts its negotiated price into one unpaid 
  assert.equal(order.body.data.suppliers.length,1);
  assert.equal(order.body.data.suppliers[0].sourceQuoteId,store.revisedId);
  assert.equal(order.body.data.totalPaise,'29320');
- assert.equal(order.body.data.paymentStatus,'AWAITING_PAYMENT_INTEGRATION');
+ assert.equal(order.body.data.paymentStatus,'NOT_STARTED');
  store.rfqOrderId=order.body.data.id;
  const line=await db.supplierOrderItem.findFirstOrThrow({where:{
   supplierOrder:{purchaseOrderId:store.rfqOrderId}
@@ -399,4 +399,22 @@ test('two simultaneous redemptions cannot exceed the global cap',async()=>{
  assert.equal(results.filter(x=>x.status==='fulfilled').length,1);
  assert.equal(results.filter(x=>x.status==='rejected').length,1);
  assert.equal(await db.promotionRedemption.count({where:{promotionId:created.body.data.id}}),1);
+});
+
+test('cancelling an open RFQ closes all submitted supplier offers atomically',async()=>{
+ const created=await send('post','/api/v2/rfqs','customer',{
+  siteSnapshot:{city:'Hyderabad',postalCode:'500001'},
+  items:[{description:'Need more cement',quantity:'2.000',unitCode:'BAG'}]
+ },hdr());
+ assert.equal(created.status,201,JSON.stringify(created.body));
+ const rfqId=created.body.data.id,base='/api/v2/rfqs/'+rfqId;
+ assert.equal((await send('post',base+'/open','customer',{})).status,200);
+ const quote=await db.supplierQuote.create({data:{
+  rfqId,supplierId:store.first.id,quoteNumber:'QT-'+id().replaceAll('-').slice(0,20),
+  version:1,status:'SUBMITTED',subtotalPaise:1000n,taxPaise:0n,
+  deliveryPaise:0n,totalPaise:1000n
+ }});
+ assert.equal((await send('post',base+'/cancel','customer',{})).status,200);
+ assert.equal((await db.supplierQuote.findUniqueOrThrow({where:{id:quote.id}})).status,'REJECTED');
+ assert.equal((await db.rfq.findUniqueOrThrow({where:{id:rfqId}})).status,'CANCELLED');
 });
