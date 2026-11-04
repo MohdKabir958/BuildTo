@@ -16,7 +16,7 @@ export async function attestBankDebit(db:PrismaClient,userId:string,payoutId:str
   !/^[A-Za-z0-9][A-Za-z0-9_./:-]{11,119}$/.test(r.bankStatementReference)||
   typeof r.providerUtr!=='string'||!/^[A-Za-z0-9_-]{8,60}$/.test(r.providerUtr))
   throw new ApiError(400,'INVALID_BANK_EVIDENCE','Invalid bank statement reference or UTR.');
- const bankReference=r.bankStatementReference as string,bankUtr=r.providerUtr as string;
+ const bankReference=(r.bankStatementReference as string).toUpperCase(),bankUtr=r.providerUtr as string;
  return serializable(db,async tx=>{
   await requireAdminPermission(tx,userId,'FINANCE_MANAGE');
   const p=await tx.payoutTransfer.findUnique({where:{id:payoutId},
