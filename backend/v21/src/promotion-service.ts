@@ -78,16 +78,17 @@ export async function setPromotionActive(db:PrismaClient,actorId:string,promotio
  uuid(promotionId,'promotionId');
  const o=record(payload,['active']);
  if(typeof o.active!=='boolean')throw new ApiError(400,'INVALID_ACTIVE','active must be boolean.');
+ const active=o.active as boolean;
  return serializable(db,async tx=>{
   await admin(tx,actorId);
   const promotion=await tx.promotion.findUnique({where:{id:promotionId},select:promotionSelect});
   if(!promotion)throw new ApiError(404,'NOT_FOUND','Promotion not found.');
-  if(o.active&&promotion.endsAt<=new Date())
+  if(active&&promotion.endsAt<=new Date())
    throw new ApiError(409,'PROMOTION_EXPIRED','Expired promotion cannot be activated.');
   const updated=await tx.promotion.update({where:{id:promotionId},
-   data:{active:o.active},select:promotionSelect});
+   data:{active},select:promotionSelect});
   await tx.auditEvent.create({data:{actorUserId:actorId,actorRole:'ADMIN_PROMOTION',
-   action:o.active?'PROMOTION_ACTIVATED':'PROMOTION_DEACTIVATED',
+   action:active?'PROMOTION_ACTIVATED':'PROMOTION_DEACTIVATED',
    entityType:'Promotion',entityId:promotionId}});
   return promoDTO(updated);
  });
