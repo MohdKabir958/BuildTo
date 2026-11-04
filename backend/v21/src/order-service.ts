@@ -29,9 +29,9 @@ const orderSelect={
  id:true,publicNumber:true,customerId:true,checkoutQuoteId:true,status:true,
  subtotalPaise:true,discountPaise:true,taxPaise:true,deliveryPaise:true,totalPaise:true,
  placedAt:true,cancelledAt:true,addressSnapshot:true,
- payments:{select:{status:true,capturedPaise:true},orderBy:{createdAt:'desc' as const}},
+ payments:{select:{status:true,provider:true,paymentMethod:true,capturedPaise:true},orderBy:{createdAt:'desc' as const}},
  supplierOrders:{select:{
-  id:true,supplierId:true,sourceQuoteId:true,status:true,subtotalPaise:true,discountPaise:true,
+  id:true,supplierId:true,sourceQuoteId:true,status:true,codRecordedPaise:true,codVerifiedPaise:true,subtotalPaise:true,discountPaise:true,
   taxPaise:true,deliveryPaise:true,totalPaise:true,
   items:{select:{id:true,listingId:true,skuSnapshot:true,nameSnapshot:true,
    unitCode:true,quantity:true,unitPrice:true,taxablePaise:true,
@@ -45,7 +45,10 @@ function orderDTO(o:any){
   i.reservations.map((r:any)=>r.expiresAt?.toISOString()).filter(Boolean))).sort()[0]??null;
  return {
   id:o.id,publicNumber:o.publicNumber,checkoutQuoteId:o.checkoutQuoteId,
-  status:o.status,paymentStatus:o.payments.some((p:any)=>p.status==='CAPTURED')
+  status:o.status,paymentStatus:o.payments.some((p:any)=>p.provider==='MANUAL'&&p.paymentMethod==='COD')
+    ?(o.supplierOrders.every((s:any)=>s.codVerifiedPaise===s.totalPaise)?'COD_VERIFIED'
+      :o.supplierOrders.some((s:any)=>s.codRecordedPaise>0n)?'COD_RECORDED_UNVERIFIED':'COD_DUE')
+    :o.payments.some((p:any)=>p.status==='CAPTURED')
     ?(o.status==='CONFIRMED'?'CAPTURED':'CAPTURED_NEEDS_REVIEW')
     :o.payments.some((p:any)=>p.status==='AUTHORIZED')?'AUTHORIZED'
     :o.payments.some((p:any)=>['CREATED','PENDING'].includes(p.status))?'PENDING'
@@ -56,6 +59,7 @@ function orderDTO(o:any){
   totalPaise:o.totalPaise.toString(),addressSnapshot:o.addressSnapshot,
   suppliers:o.supplierOrders.map((s:any)=>({
    id:s.id,supplierId:s.supplierId,sourceQuoteId:s.sourceQuoteId,status:s.status,
+   codRecordedPaise:s.codRecordedPaise.toString(),codVerifiedPaise:s.codVerifiedPaise.toString(),
    subtotalPaise:s.subtotalPaise.toString(),discountPaise:s.discountPaise.toString(),
    taxPaise:s.taxPaise.toString(),deliveryPaise:s.deliveryPaise.toString(),
    totalPaise:s.totalPaise.toString(),
