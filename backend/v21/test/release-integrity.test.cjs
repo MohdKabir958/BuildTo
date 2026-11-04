@@ -155,3 +155,28 @@ test('CORS and Clerk authorized origins cannot include credentials, paths or que
   CLERK_AUTHORIZED_PARTIES:'http://localhost:3000'})
   .corsOrigins[0],'http://localhost:5173');
 });
+
+
+test('access logs never contain unknown URL segments, customer order IDs or querystring data',async()=>{
+ const events=[];
+ const app=createV21App({db:{$queryRaw:async()=>[{one:1}]},
+  limiter:new InMemoryTestLimiter(),log:e=>events.push(e),
+  allowedOrigins:[],proxyHops:0,
+  identityVerifier:{verify:async()=>{throw new ApiError(401,'INVALID_SESSION','Invalid');}}});
+ const secret='PRIVATE_CUSTOMER_BANK_TOKEN_1234567890';
+ const orderId='22222222-2222-4222-8222-222222222222';
+ const missing=await request(app).get('/api/v2/unexpected/'+secret+
+  '?account=123456789012345&token='+secret);
+ assert.equal(missing.status,404);
+ assert.equal(events.at(-1).path,'UNMATCHED');
+ const denied=await request(app).get('/api/v2/suppliers/'+orderId+'/access')
+  .set('Authorization','Bearer invalid');
+ assert.equal(denied.status,401);
+ assert.equal(events.at(-1).path,'/api/v2/suppliers/:supplierId/access');
+ const logged=JSON.stringify(events);
+ assert(!logged.includes(secret));
+ assert(!logged.includes(orderId));
+ assert(!logged.includes('123456789012345'));
+ assert(!logged.includes('Bearer'));
+ assert(!logged.includes('token='));
+});
