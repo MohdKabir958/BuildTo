@@ -76,7 +76,7 @@ async function eligibility(tx:Tx,supplierId:string,supplierOrderId:string){
    invoices:{where:{status:'ISSUED'},select:{id:true,totalPaise:true,kind:true}},
    items:{select:{id:true,quantity:true,shipmentLines:{select:{
     deliveredQty:true,shipment:{select:{status:true,deliveredAt:true,
-     handoverMethod:true,otpVerifiedAt:true,exceptionApprovedAt:true}}}}}},} ,
+     handoverMethod:true,otpVerifiedAt:true,exceptionApprovedAt:true}}}}}},
    returnRequests:{where:{status:{in:[...blockedReturns]}},select:{id:true}},
    purchaseOrder:{select:{currency:true,totalPaise:true,
     payments:{select:{provider:true,status:true,capturedPaise:true,amountPaise:true,
