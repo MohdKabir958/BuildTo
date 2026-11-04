@@ -1,0 +1,46 @@
+name: Buildto V2.1 staging API smoke
+on:
+  push:
+    branches: [backend/v21-16-release-security-integration]
+    paths: ['.github/workflows/buildto-v21-staging-smoke.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health-and-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check public staging health, migration readiness and release flags
+        shell: bash
+        env:
+          STAGING_URL: https://buildto-v21-staging.onrender.com
+        run: |
+          set -euo pipefail
+          for route in /health /ready /api/v2/system; do
+            ok=false
+            for attempt in $(seq 1 12); do
+              code=$(curl -sS --location --connect-timeout 10 --max-time 40 \
+                --output response.json --write-out '%{http_code}' "${STAGING_URL}${route}" || true)
+              if [[ "$code" == "200" ]]; then
+                echo "PASS: ${route} returned HTTP 200"
+                ok=true
+                break
+              fi
+              echo "staging ${route}: HTTP ${code}; retry ${attempt}/12"
+              sleep 8
+            done
+            if [[ "$ok" != "true" ]]; then
+              echo "::error::Staging endpoint failed: ${route}"
+              exit 1
+            fi
+            if [[ "$route" == "/api/v2/system" ]]; then
+              if ! grep -Eq '"productionReady"[[:space:]]*:[[:space:]]*false' response.json; then
+                echo "::error::Staging must never advertise production readiness"
+                exit 1
+              fi
+            fi
+          done
+          echo "PASS: Buildto V2.1 staging responds and denies production-ready status."
