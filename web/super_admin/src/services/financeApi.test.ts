@@ -134,13 +134,9 @@ describe('settlement calls', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/admin/settlements/s1/export.csv');
     expect(((fetchMock.mock.calls[0][1] as RequestInit).headers as Record<string, string>).Authorization).toBe('Bearer tokentokentoken');
     expect(one.filename).toBe('grozo-settlement-s1111111.csv');
-    // jsdom's Blob has no text(); use the browser FileReader API and still assert the exact bytes.
-    const csv = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsText(one.blob);
-    });
+    // The undici Response fixture returns a Node Blob, not a jsdom Blob.
+    // Decode through Response instead of passing it to jsdom's FileReader.
+    const csv = await new Response(one.blob).text();
     expect(csv).toBe('a,b\r\n1,2\r\n');
     await apiService.downloadSettlementsCsv(range);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/api/admin/settlements/export.csv?from=2026-10-01&to=2026-10-07');
