@@ -9,6 +9,7 @@ const {PrismaClient}=require('../../generated/buildto-v21');
 const {createV21App}=require('../dist/app.js');
 const {InMemoryTestLimiter}=require('../dist/rateLimit.js');
 const {ApiError}=require('../dist/errors.js');
+const {readConfig}=require('../dist/config.js');
 const {
  REVIEWED_V21_MIGRATIONS,INTEGRITY_COUNTERS,
  assertMigrationLedgerRecords,assertV21AllMigrationsApplied,
