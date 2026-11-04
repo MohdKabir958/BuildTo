@@ -11,6 +11,7 @@ import {canViewSection} from './auth/roles';
 import {TeamPanel} from './features/team/TeamPanel';
 import {SupplierPanel} from './features/suppliers/SupplierPanel';
 import {CatalogAdminPanel} from './features/catalog/CatalogAdminPanel';
+import {DeliveryAdminPanel} from './features/delivery/DeliveryAdminPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -135,6 +136,8 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             ? <SupplierPanel currentAdminId={administrator.id}/>
             : active==='catalog'&&administrator&&['OWNER','CATALOG'].includes(administrator.role)
             ? <CatalogAdminPanel/>
+            : active==='delivery'&&administrator&&['OWNER','OPERATIONS'].includes(administrator.role)
+            ? <DeliveryAdminPanel/>
             : active==='team'&&administrator?.role==='OWNER'
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
