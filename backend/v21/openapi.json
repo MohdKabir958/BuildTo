@@ -8219,7 +8219,7 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/ModeratedReview"
+                        "$ref": "#/components/schemas/PublicSupplierReview"
                       }
                     },
                     "requestId": {
@@ -9781,6 +9781,49 @@
             "format": "uuid"
           },
           "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PUBLISHED",
+              "HIDDEN",
+              "REJECTED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PublicSupplierReview": {
+        "type": "object",
+        "required": [
+          "id",
+          "supplierId",
+          "rating",
+          "status",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierId": {
             "type": "string",
             "format": "uuid"
           },
