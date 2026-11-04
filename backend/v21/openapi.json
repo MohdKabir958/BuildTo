@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.5.0",
-    "description": "Buildto V2 location, address, postal coverage and basic supplier delivery rates. Estimates are previews; no checkout/dispatch guarantees."
+    "version": "0.6.0",
+    "description": "Buildto V2 construction catalog, supplier-scoped warehouse inventory, safe stock adjustments/transfers and delivery previews. Checkout reservations remain internal until orders are implemented."
   },
   "paths": {
     "/health": {
@@ -3108,6 +3108,537 @@
           }
         }
       }
+    },
+    "/api/v2/suppliers/{supplierId}/inventory/warehouses": {
+      "get": {
+        "operationId": "listMySupplierWarehouses",
+        "summary": "Read own supplier warehouses",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSupplierWarehouse",
+        "summary": "Create an inactive supplier warehouse",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/inventory/warehouses/{warehouseId}": {
+      "patch": {
+        "operationId": "updateSupplierWarehouse",
+        "summary": "Update own warehouse and activation",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/inventory/balances": {
+      "get": {
+        "operationId": "listSupplierInventoryBalances",
+        "summary": "List own stock balances (available is a current snapshot, not a reservation)",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "listingId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/inventory/warehouses/{warehouseId}/movements": {
+      "get": {
+        "operationId": "listSupplierStockMovements",
+        "summary": "Read append-only stock movements for own warehouse",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "listingId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/inventory/adjustments": {
+      "post": {
+        "operationId": "adjustSupplierStock",
+        "summary": "Post idempotent quantity adjustment with expected version",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 180
+            },
+            "description": "Repeat-safe stock change key. Must remain identical for identical requests."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockAdjustment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/inventory/transfers": {
+      "post": {
+        "operationId": "transferSupplierStock",
+        "summary": "Transfer exact available stock between two own warehouses atomically",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 180
+            },
+            "description": "Repeat-safe stock change key. Must remain identical for identical requests."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockTransfer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          },
+          "409": {
+            "description": "Stock version conflict or insufficient available stock"
+          },
+          "428": {
+            "description": "Idempotency-Key or version is required"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3443,6 +3974,131 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "nullable": true
+          }
+        }
+      },
+      "InventoryEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "data": {
+            "description": "Supplier-owned stock snapshot or stock change. Quantities are exact decimal strings, availableQty=onHandQty-reservedQty."
+          }
+        }
+      },
+      "WarehouseCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "address": {
+            "type": "object",
+            "nullable": true,
+            "description": "Optional validated warehouse location; line1/locality/city/stateCode/postalCode only."
+          }
+        }
+      },
+      "StockAdjustment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "listingId",
+          "warehouseId",
+          "kind",
+          "delta",
+          "reason",
+          "expectedVersion"
+        ],
+        "properties": {
+          "listingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "warehouseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "RECEIPT",
+              "DAMAGE",
+              "ADJUSTMENT"
+            ]
+          },
+          "delta": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(\\\\.[0-9]{1,3})?$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "StockTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "listingId",
+          "fromWarehouseId",
+          "toWarehouseId",
+          "quantity",
+          "reason",
+          "expectedFromVersion",
+          "expectedToVersion"
+        ],
+        "properties": {
+          "listingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromWarehouseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toWarehouseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^[0-9]+(\\\\.[0-9]{1,3})?$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "expectedFromVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expectedToVersion": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       }
