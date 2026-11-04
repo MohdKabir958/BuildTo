@@ -152,7 +152,7 @@ test('authorized is not captured, signed capture commits stock exactly once',asy
  const orderView=await call('get','/api/v2/orders/'+state.order.id,'customer');
  assert.equal(orderView.body.data.paymentStatus,'CAPTURED');
 });
-test('capture after stock hold expiry requires manual review, no dispatch entitlement',async()=>{
+test('capture after order cancellation requires manual review, no dispatch entitlement',async()=>{
  const order=await db.purchaseOrder.create({data:{
   customerId:state.customer.id,publicNumber:'BT-'+uuid().replaceAll('-').slice(0,24),
   clientRequestId:'PAY-'+uuid().replaceAll('-'),currency:'INR',status:'PLACED',
@@ -182,4 +182,87 @@ test('capture after stock hold expiry requires manual review, no dispatch entitl
  assert.equal((await db.purchaseOrder.findUniqueOrThrow({where:{id:order.id}})).status,'CANCELLED');
  assert.equal((await db.paymentAttempt.findFirstOrThrow({where:{purchaseOrderId:order.id}})).status,'CAPTURED');
  assert.equal(await db.auditEvent.count({where:{entityId:order.id,action:'PAYMENT_CAPTURED_REQUIRES_REVIEW'}}),1);
+});
+
+test('partial warehouse stock holds can never authorize the entire purchase',async()=>{
+ const order=await db.purchaseOrder.create({data:{
+  customerId:state.customer.id,publicNumber:'BT-'+uuid().replaceAll('-').slice(0,24),
+  clientRequestId:'PAY-'+uuid().replaceAll('-'),currency:'INR',status:'PLACED',
+  addressSnapshot:{city:'Hyderabad'},subtotalPaise:15000n,totalPaise:15000n
+ }});
+ const child=await db.supplierOrder.create({data:{
+  purchaseOrderId:order.id,supplierId:state.supplier.id,
+  subtotalPaise:15000n,totalPaise:15000n
+ }});
+ const item=await db.supplierOrderItem.create({data:{
+  supplierOrderId:child.id,listingId:state.item.listingId,skuSnapshot:'PARTIAL',
+  nameSnapshot:'Partial warehouse stock',unitCode:'BAG',
+  packSizeSnapshot:new Prisma.Decimal(1),quantity:new Prisma.Decimal(2),
+  unitPrice:new Prisma.Decimal(75),taxRateBps:0,taxablePaise:15000n,
+  taxPaise:0n,lineTotalPaise:15000n
+ }});
+ await db.inventoryBalance.update({where:{id:state.balance.id},
+  data:{reservedQty:{increment:new Prisma.Decimal(1)}}});
+ await db.inventoryReservation.create({data:{
+  balanceId:state.balance.id,orderItemId:item.id,quantity:new Prisma.Decimal(1),
+  state:'HELD',expiresAt:new Date(Date.now()+1200000)
+ }});
+ const result=await call('post','/api/v2/orders/'+order.id+'/payments','customer',
+  {paymentMethod:'UPI'},'partial_'+uuid().replaceAll('-'));
+ assert.equal(result.status,409,JSON.stringify(result.body));
+ assert.equal(result.body.error.code,'STOCK_NOT_RESERVED');
+ assert.equal(await db.paymentAttempt.count({where:{purchaseOrderId:order.id}}),0);
+});
+test('unconfirmed gateway creation uses receipt lookup, never blindly repeats POST',async()=>{
+ const order=await db.purchaseOrder.create({data:{
+  customerId:state.customer.id,publicNumber:'BT-'+uuid().replaceAll('-').slice(0,24),
+  clientRequestId:'PAY-'+uuid().replaceAll('-'),currency:'INR',status:'PLACED',
+  addressSnapshot:{city:'Hyderabad'},subtotalPaise:15000n,totalPaise:15000n
+ }});
+ const child=await db.supplierOrder.create({data:{
+  purchaseOrderId:order.id,supplierId:state.supplier.id,
+  subtotalPaise:15000n,totalPaise:15000n
+ }});
+ await db.supplierOrderItem.create({data:{
+  supplierOrderId:child.id,skuSnapshot:'CUSTOM',nameSnapshot:'Custom quote',
+  unitCode:'BAG',packSizeSnapshot:new Prisma.Decimal(1),
+  quantity:new Prisma.Decimal(1),unitPrice:new Prisma.Decimal(150),
+  taxRateBps:0,taxablePaise:15000n,taxPaise:0n,lineTotalPaise:15000n
+ }});
+ const originalCreate=gateway.createOrder;
+ const idem='recover_'+uuid().replaceAll('-');
+ let attempted=0;
+ gateway.createOrder=async()=>{attempted++;throw new Error('network timeout');};
+ const first=await call('post','/api/v2/orders/'+order.id+'/payments','customer',
+  {paymentMethod:'UPI'},idem);
+ assert.equal(first.status,503,JSON.stringify(first.body));
+ assert.equal(first.body.error.code,'PAYMENT_INITIALIZATION_UNKNOWN');
+ const attempt=await db.paymentAttempt.findFirstOrThrow({where:{purchaseOrderId:order.id}});
+ assert.equal(attempt.status,'CREATED');
+ const reference='order_'+uuid().replaceAll('-').slice(0,20);
+ gateway.lookupOrderByReceipt=async receipt=>({
+  id:reference,amount:15000n,currency:'INR',receipt
+ });
+ const retry=await call('post','/api/v2/orders/'+order.id+'/payments','customer',
+  {paymentMethod:'UPI'},idem);
+ assert.equal(retry.status,200,JSON.stringify(retry.body));
+ assert.equal(retry.body.data.providerOrderId,reference);
+ assert.equal(retry.body.data.status,'PENDING');
+ assert.equal(attempted,1,'gateway create POST must not be retried');
+ gateway.createOrder=originalCreate;
+ delete gateway.lookupOrderByReceipt;
+});
+test('simultaneous delivery of one signed event ID is deduplicated',async()=>{
+ const pay={id:'pay_'+uuid().replaceAll('-').slice(0,20),
+  order_id:state.providerOrderId,amount:15000,currency:'INR',
+  status:'captured',method:'upi'};
+ const eventId='evt_'+uuid().replaceAll('-');
+ const [a,b]=await Promise.all([
+  signedEvent('payment.captured',pay,eventId),
+  signedEvent('payment.captured',pay,eventId)
+ ]);
+ assert.equal(a.status,200,JSON.stringify(a.body));
+ assert.equal(b.status,200,JSON.stringify(b.body));
+ assert.equal(Number(a.body.duplicate)+Number(b.body.duplicate),1);
+ assert.equal((await db.purchaseOrder.findUniqueOrThrow({where:{id:state.order.id}})).status,'CONFIRMED');
 });
