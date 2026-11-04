@@ -229,7 +229,9 @@ test('unresolved customer return and reserved provider refund each prevent onlin
  assert.equal(first.body.error.code,'SETTLEMENT_DISPUTED');
  const refunded=await makeOrder('RAZORPAY',15000n,800n);
  const payment=await db.paymentAttempt.findFirstOrThrow({where:{purchaseOrderId:refunded.parent.id}});
+ const received=await db.returnRequest.create({data:{supplierOrderId:refunded.child.id,customerId:users.customer.id,reason:'Returned goods remain held during finance review',status:'RECEIVED',items:{create:{supplierOrderItemId:refunded.item.id,quantity:new Prisma.Decimal(1)}}}});
  await db.refundRequest.create({data:{
+  returnRequestId:received.id,
   purchaseOrderId:refunded.parent.id,paymentAttemptId:payment.id,
   requestKey:key(),amountPaise:2000n,status:'REQUESTED',
   reason:'Outstanding request requiring manual review'

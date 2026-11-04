@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.13.0",
-    "description": "Buildto V2.1 marketplace API: warehouse fulfillment, COD finance verification, GST snapshot invoices, customer care, and supplier financial reconciliation. Finance settlement proposals are held until independent finance attestation; posted accrual memo journals do not establish bank-held funds or execute payouts. Refunds and legal credit notes remain separate gated flows."
+    "version": "0.14.0",
+    "description": "Buildto V2.1: independently attested settlements, received full returns, original-invoice-linked GST credit notes and independently approved refund reservations. Refund execution is EXTERNAL MANUAL ONLY: Razorpay GET can confirm provider processing, not customer bank credit. Partial GST credit and supplier payouts remain disabled."
   },
   "paths": {
     "/health": {
@@ -9163,6 +9163,464 @@
           }
         }
       }
+    },
+    "/api/v2/suppliers/{supplierId}/returns/{returnId}/credit-note": {
+      "post": {
+        "operationId": "issueFullReturnGstCreditNote",
+        "summary": "Supplier FINANCE issues exact FULL TAX_INVOICE credit for RECEIVED return only; no client amounts or partial credit.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "returnId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Financial credit or reservation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FullReturnCreditNote"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
+          "404": {
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/orders/{orderId}/refunds": {
+      "get": {
+        "operationId": "customerOrderRefunds",
+        "summary": "Customer-owned refund statuses. SUCCEEDED = read-only provider processed, not bank credit verified.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized refund/credit result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VerifiedRefundRequest"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
+          "404": {
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/refunds": {
+      "get": {
+        "operationId": "adminRefundQueue",
+        "summary": "FINANCE_MANAGE queue of requested, approved, processing and manual-review refunds.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authorized refund/credit result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VerifiedRefundRequest"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
+          "404": {
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/refunds/requests/{returnId}": {
+      "post": {
+        "operationId": "reserveFullReturnRefund",
+        "summary": "Idempotent exact full supplier return/refund request after issued GST note and verified Razorpay capture; no outgoing provider POST.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "returnId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 180
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Financial credit or reservation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/VerifiedRefundRequest"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
+          "404": {
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/refunds/{refundId}/approve": {
+      "post": {
+        "operationId": "independentlyApproveRefund",
+        "summary": "Second finance admin distinct from requester and supplier personnel approves refund budget; does not send money.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "refundId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [],
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized refund/credit result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/VerifiedRefundRequest"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
+          "404": {
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/refunds/{refundId}/reconcile": {
+      "post": {
+        "operationId": "reconcileRazorpayRefundReadOnly",
+        "summary": "Razorpay GET refund; exact provider payment/paise/currency verification outside transaction. Pending isn't success, processed posts balanced memo, bank credit unknown.",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "refundId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "providerRefundId"
+                ],
+                "properties": {
+                  "providerRefundId": {
+                    "type": "string",
+                    "pattern": "^rfnd_[A-Za-z0-9]{8,60}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized refund/credit result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "refund",
+                        "providerStatus"
+                      ],
+                      "properties": {
+                        "refund": {
+                          "$ref": "#/components/schemas/VerifiedRefundRequest"
+                        },
+                        "providerStatus": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "processed",
+                            "failed"
+                          ]
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
+          "404": {
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10747,6 +11205,159 @@
               "SETTLED",
               "WRITTEN_OFF"
             ]
+          }
+        }
+      },
+      "FullReturnCreditNote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "returnRequestId",
+          "sourceInvoiceId",
+          "totalPaise",
+          "taxPaise",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "returnRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceInvoiceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CREDIT_NOTE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ISSUED"
+            ]
+          },
+          "totalPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "taxablePaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "taxPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "cgstPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "sgstPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "utgstPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "igstPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "cessPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "financialYear": {
+            "type": "string"
+          },
+          "invoiceNumber": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "VerifiedRefundRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "orderId",
+          "returnRequestId",
+          "amountPaise",
+          "status",
+          "customerBankCredit"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "returnRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "APPROVED",
+              "PROCESSING",
+              "SUCCEEDED",
+              "MANUAL_REVIEW",
+              "FAILED",
+              "REJECTED"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "RAZORPAY"
+            ]
+          },
+          "providerRefundId": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerBankCredit": {
+            "type": "string",
+            "enum": [
+              "NOT_VERIFIED"
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR"
+            ]
+          },
+          "approvalAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "providerCompletedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
           }
         }
       }

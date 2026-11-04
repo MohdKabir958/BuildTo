@@ -38,9 +38,25 @@ function expectedCatalog() {
     throw new Error('Missing critical spatial migration index '+name);
   return {tables,enums,columns,constraints,indexes,triggers};
 }
-const CATALOG=expectedCatalog();
+const BASELINE=expectedCatalog();
+const ADDITIONS={
+ columns:['RefundRequest.returnRequestId','TaxInvoice.sourceInvoiceId','TaxInvoice.returnRequestId'],
+ constraints:['RefundRequest_returnRequestId_fkey','TaxInvoice_sourceInvoiceId_fkey',
+ 'TaxInvoice_returnRequestId_fkey','refund_proof_required'],
+ indexes:['RefundRequest_returnRequestId_key','TaxInvoice_returnRequestId_key',
+ 'TaxInvoice_sourceInvoiceId_idx'],
+ triggers:['buildto_return_refund_guard','buildto_return_credit_note_guard']
+};
+const LATEST={
+ ...BASELINE,
+ columns:BASELINE.columns.concat(ADDITIONS.columns),
+ constraints:BASELINE.constraints.concat(ADDITIONS.constraints),
+ indexes:BASELINE.indexes.concat(ADDITIONS.indexes),
+ triggers:BASELINE.triggers.concat(ADDITIONS.triggers)
+};
 
-async function verifyExistingSchema(prisma) {
+async function verifyExistingSchema(prisma,{baselineOnly=false}={}) {
+  const CATALOG=baselineOnly?BASELINE:LATEST;
   const query=async sql => {
     try{return await prisma.$queryRawUnsafe(sql);}catch {
       throw new Error('V21_SCHEMA_INSPECTION_FAILED: read-only PostgreSQL metadata query failed.');

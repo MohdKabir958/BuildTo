@@ -1147,6 +1147,7 @@ model RefundRequest {
   id              String        @id @default(uuid()) @db.Uuid
   purchaseOrderId String        @db.Uuid
   paymentAttemptId String       @db.Uuid
+  returnRequestId String?        @unique @db.Uuid
   requestKey      String        @db.VarChar(150)
   providerRefundRef String?     @unique @db.VarChar(180)
   amountPaise     BigInt
@@ -1159,6 +1160,7 @@ model RefundRequest {
   updatedAt       DateTime      @updatedAt @db.Timestamptz(3)
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
   paymentAttempt  PaymentAttempt @relation(fields: [paymentAttemptId], references: [id], onDelete: Restrict)
+  returnRequest    ReturnRequest? @relation(fields: [returnRequestId], references: [id], onDelete: Restrict)
   @@unique([purchaseOrderId, requestKey])
   @@index([status, createdAt])
 }
@@ -1166,6 +1168,8 @@ model TaxInvoice {
   id              String        @id @default(uuid()) @db.Uuid
   supplierId      String        @db.Uuid
   supplierOrderId String        @db.Uuid
+  sourceInvoiceId String?       @db.Uuid
+  returnRequestId String?       @unique @db.Uuid
   invoiceNumber   String        @db.VarChar(80)
   financialYear   String        @db.VarChar(9)
   status          InvoiceStatus @default(ISSUED)
@@ -1185,7 +1189,11 @@ model TaxInvoice {
   cancelledAt     DateTime?     @db.Timestamptz(3)
   supplier        Supplier      @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   supplierOrder   SupplierOrder @relation(fields: [supplierOrderId], references: [id], onDelete: Restrict)
+  sourceInvoice   TaxInvoice? @relation("CreditNoteOriginal", fields: [sourceInvoiceId], references: [id], onDelete: Restrict)
+  creditNotes     TaxInvoice[] @relation("CreditNoteOriginal")
+  returnRequest   ReturnRequest? @relation(fields: [returnRequestId], references: [id], onDelete: Restrict)
   @@unique([supplierId, financialYear, invoiceNumber])
+  @@index([sourceInvoiceId])
   @@index([supplierOrderId, status])
 }
 model SupplierPayoutAccount {
@@ -1298,6 +1306,8 @@ model ReturnRequest {
   customer        User          @relation(fields: [customerId], references: [id], onDelete: Restrict)
   items           ReturnItem[]
   evidence        ReturnEvidence[]
+  refundRequest   RefundRequest?
+  creditNote      TaxInvoice?
   @@index([supplierOrderId, status])
   @@index([customerId, createdAt])
 }

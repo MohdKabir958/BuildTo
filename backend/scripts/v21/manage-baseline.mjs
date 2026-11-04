@@ -55,7 +55,7 @@ try{
     runPrisma(['migrate','status'],u);
   }else if(operation==='resolve-existing'){
     approvedTarget(u,process.env.BUILDTO_V21_BASELINE_CONFIRM);
-    const result=await verifyExistingSchema(db);
+    const result=await verifyExistingSchema(db,{baselineOnly:true});
     if(result.migrationHistoryExists)
       throw new Error('V21_ALREADY_HAS_MIGRATION_LEDGER: stop and inspect existing migration history.');
     // Official Prisma bookkeeping, NOT hand-writing _prisma_migrations rows.
