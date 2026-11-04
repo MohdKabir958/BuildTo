@@ -21,7 +21,12 @@ export const requestContext=(log:LogWriter):RequestHandler=>(req:Request,res:Res
   res.on('finish',()=>{
     const durationMs=Number((process.hrtime.bigint()-start)/1_000_000n);
     // Do not log request bodies, raw URLs, querystrings, tokens, PII, errors, or connection URLs.
-    log({event:'http_request',requestId,method:req.method,path:req.route?.path || req.path,
+    // Only Express route TEMPLATES are allowed into logs, never raw paths,
+    // UUIDs, email addresses, query parameters or attacker-chosen path segments.
+    const template=req.route?.path;
+    log({event:'http_request',requestId,method:req.method,
+      path:typeof template==='string'&&template.startsWith('/')?
+       template:'UNMATCHED',
       statusCode:res.statusCode,durationMs});
   });
   next();
