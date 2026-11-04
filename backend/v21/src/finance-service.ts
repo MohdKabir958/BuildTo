@@ -223,7 +223,7 @@ async function journal(tx:Tx,referenceKey:string,eventType:string,lines:Array<{
  const debit=lines.reduce((n,x)=>n+(x.debit??0n),0n);
  const credit=lines.reduce((n,x)=>n+(x.credit??0n),0n);
  if(debit<=0n||debit!==credit)throw new ApiError(409,'LEDGER_UNBALANCED','Journal debits must equal credits.');
- const accounts=[];
+ const accounts:string[]=[];
  for(const line of lines){
   const account=await tx.ledgerAccount.upsert({where:{code:line.code},
    create:{code:line.code,name:line.name,currency:'INR',active:true},update:{},
@@ -280,7 +280,7 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
     invoices:{where:{status:'ISSUED'},select:{totalPaise:true}},
     items:{select:{quantity:true,shipmentLines:{select:{deliveredQty:true,
      shipment:{select:{status:true,deliveredAt:true,handoverMethod:true,
-      otpVerifiedAt:true,exceptionApprovedAt:true}}}}}}},
+      otpVerifiedAt:true,exceptionApprovedAt:true}}}}}},
     purchaseOrder:{select:{currency:true,totalPaise:true,
      payments:{select:{provider:true,status:true,amountPaise:true,capturedPaise:true,
       verifiedAt:true,providerPayRef:true}},
