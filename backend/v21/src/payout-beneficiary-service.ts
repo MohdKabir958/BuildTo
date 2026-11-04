@@ -63,7 +63,13 @@ export async function registerBeneficiary(db:PrismaClient,userId:string,
   crossCheck(supplier.legalName,fund,valid);
   const existing=await tx.supplierPayoutAccount.findFirst({where:{
    supplierId,providerTokenRef:fund.id,validationRef:valid.id},select:accountSelect});
-  if(existing)return {beneficiary:dto(existing),replayed:true};
+  if(existing){
+   if(existing.bankAccountLast4!==fund.last4||existing.ifsc!==fund.ifsc||
+    normalized(existing.accountHolder??'')!==normalized(fund.holder))
+    throw new ApiError(409,'PAYOUT_BENEFICIARY_EVIDENCE_CHANGED',
+     'RazorpayX bank details differ from the stored beneficiary identity.');
+   return {beneficiary:dto(existing),replayed:true};
+  }
   if(await tx.supplierPayoutAccount.count({where:{supplierId}}))
    throw new ApiError(409,'PAYOUT_BENEFICIARY_REPLACEMENT_GATED',
     'Bank destination replacement requires an audited financial migration.');
@@ -104,7 +110,15 @@ export async function approveBeneficiary(db:PrismaClient,userId:string,
    throw new ApiError(404,'NOT_FOUND','Verified supplier unavailable.');
   if(!current.registeredById||current.registeredById===userId)
    throw new ApiError(403,'PAYOUT_BENEFICIARY_SECOND_REVIEWER','Second finance administrator required.');
-  if(current.active)return {beneficiary:dto(current),replayed:true};
+  if(current.active){
+   if(current.providerTokenRef!==fund.id||current.validationRef!==valid.id||
+    current.bankAccountLast4!==fund.last4||current.ifsc!==fund.ifsc||
+    normalized(current.accountHolder??'')!==normalized(fund.holder))
+    throw new ApiError(409,'PAYOUT_BENEFICIARY_EVIDENCE_CHANGED',
+     'Previously approved bank details differ from current provider evidence.');
+   crossCheck(supplier.legalName,fund,valid);
+   return {beneficiary:dto(current),replayed:true};
+  }
   if(current.verifiedAt||current.approvedById||
    current.providerTokenRef!==fund.id||current.validationRef!==valid.id||
    current.bankAccountLast4!==fund.last4||current.ifsc!==fund.ifsc||
