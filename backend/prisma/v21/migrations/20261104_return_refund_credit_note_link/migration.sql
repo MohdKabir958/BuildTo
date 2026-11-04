@@ -86,6 +86,15 @@ BEGIN
     (NEW."totalPaise" IS DISTINCT FROM OLD."totalPaise" OR
      NEW."taxablePaise" IS DISTINCT FROM OLD."taxablePaise" OR
      NEW."taxPaise" IS DISTINCT FROM OLD."taxPaise" OR
+     NEW."cgstPaise" IS DISTINCT FROM OLD."cgstPaise" OR
+     NEW."sgstPaise" IS DISTINCT FROM OLD."sgstPaise" OR
+     NEW."utgstPaise" IS DISTINCT FROM OLD."utgstPaise" OR
+     NEW."igstPaise" IS DISTINCT FROM OLD."igstPaise" OR
+     NEW."cessPaise" IS DISTINCT FROM OLD."cessPaise" OR
+     NEW."invoiceNumber" IS DISTINCT FROM OLD."invoiceNumber" OR
+     NEW."financialYear" IS DISTINCT FROM OLD."financialYear" OR
+     NEW."issuedAt" IS DISTINCT FROM OLD."issuedAt" OR
+     NEW."supplierOrderId" IS DISTINCT FROM OLD."supplierOrderId" OR
      NEW."sellerSnapshot" IS DISTINCT FROM OLD."sellerSnapshot" OR
      NEW."buyerSnapshot" IS DISTINCT FROM OLD."buyerSnapshot" OR
      NEW."lineSnapshot" IS DISTINCT FROM OLD."lineSnapshot" OR
