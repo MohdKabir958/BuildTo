@@ -97,7 +97,7 @@ test('A05: registered GST suppliers require separately verified current GST evid
  await db.adminMembership.create({data:{userId:admin.id,role:'OPERATIONS',active:true}});
  const api=request(app({applicant:applicant.clerkUserId,admin:admin.clerkUserId}));
  const result=await auth(api,'post','/api/v2/supplier-applications','applicant',{
-  ...apply(applicant),gstRegistration:'REGULAR',gstin:'36AAAAA0000A1Z5'
+  ...apply(applicant),gstRegistration:'REGULAR',gstin:'36'+randomUUID().replaceAll('-','').slice(0,5).toUpperCase().replace(/[0-9]/g,x=>String.fromCharCode(65+Number(x)))+randomUUID().replaceAll('-','').slice(0,4).replace(/[a-f]/g,x=>String(parseInt(x,16)%10))+'A1Z5'
  });
  assert.equal(result.status,201,JSON.stringify(result.body));
  const id=result.body.data.id;
