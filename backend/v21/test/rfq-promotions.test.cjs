@@ -218,6 +218,11 @@ test('promotion limits are checked atomically from persisted order totals, not r
   code:store.promo.code,customerId:store.customer.id,orderId:first.id
  }));
  assert.equal(retry.replayed,true);
+ const historicalRetry=await serializable(db,tx=>recordOrderPromotion(tx,{
+  code:store.promo.code,customerId:store.customer.id,orderId:first.id,
+  now:new Date(Date.now()+12*86400000)
+ }));
+ assert.equal(historicalRetry.replayed,true);
  const other=await makeOrder(store.otherCustomer.id,5000n);
  await assert.rejects(serializable(db,tx=>recordOrderPromotion(tx,{
   code:store.promo.code,customerId:store.otherCustomer.id,orderId:other.id
@@ -269,4 +274,27 @@ test('a cancelled or unapproved RFQ cannot be reopened or quoted',async()=>{
  assert.equal((await send('post',rfq+'/cancel','customer',{})).status,200);
  assert.equal((await send('post',rfq+'/open','customer',{})).status,409);
  assert.equal((await send('post',rfq+'/invitations/'+store.first.id,'customer',{})).status,409);
+});
+
+test('two simultaneous redemptions cannot exceed the global cap',async()=>{
+ const endpoint='/api/v2/admin/promotions';
+ const created=await send('post',endpoint,'admin',
+  promoPayload('LIMIT'+id().slice(0,12).toUpperCase(),'FIXED_PAISE',{
+   amountPaise:'1500',globalLimit:1
+  }));
+ assert.equal(created.status,201);
+ const activated=await send('patch',endpoint+'/'+created.body.data.id,'admin',{active:true});
+ assert.equal(activated.status,200);
+ const orders=await Promise.all([
+  makeOrder(store.customer.id,1500n),
+  makeOrder(store.otherCustomer.id,1500n)
+ ]);
+ const results=await Promise.allSettled(orders.map((order,i)=>serializable(db,tx=>recordOrderPromotion(tx,{
+  code:created.body.data.code,
+  customerId:i===0?store.customer.id:store.otherCustomer.id,
+  orderId:order.id
+ }))));
+ assert.equal(results.filter(x=>x.status==='fulfilled').length,1);
+ assert.equal(results.filter(x=>x.status==='rejected').length,1);
+ assert.equal(await db.promotionRedemption.count({where:{promotionId:created.body.data.id}}),1);
 });
