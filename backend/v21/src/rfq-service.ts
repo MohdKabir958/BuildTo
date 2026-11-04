@@ -163,10 +163,13 @@ async function supplierGrant(tx:Tx,userId:string,supplierId:string) {
  await requireSupplierPermission(tx,userId,supplierId,'RFQ_QUOTE');
 }
 export async function submitSupplierQuote(db:PrismaClient,userId:string,supplierId:string,
- rfqId:string,payload:unknown) {
+ rfqId:string,payload:unknown,key:string) {
  uuid(supplierId,'supplierId');uuid(rfqId,'rfqId');
  const input=quoteInput(payload);
- return serializable(db,async tx=>{
+ const saved=await executeIdempotently(db,{
+  actorId:userId,scope:'rfq-quote:'+supplierId+':'+rfqId,
+  requestKey:key,requestPayload:payload,expiresAt:new Date(Date.now()+86400000),
+  execute:async tx=>{
   await supplierGrant(tx,userId,supplierId);
   const r=await lockedRfq(tx,rfqId);
   isOpen(r);
@@ -216,8 +219,14 @@ export async function submitSupplierQuote(db:PrismaClient,userId:string,supplier
    }))}
   },select:quoteSelect});
   await event(tx,rfqId,userId,'RFQ_QUOTE_SUBMITTED');
-  return quoteDTO(quote);
+  return {result:quote.id,resultRef:quote.id,responseCode:201};
+  }
  });
+ // Revocation is checked again when a previously submitted key is replayed.
+ await requireSupplierPermission(db,userId,supplierId,'RFQ_QUOTE');
+ const quote=await db.supplierQuote.findFirst({where:{id:saved.resultRef,rfqId,supplierId},select:quoteSelect});
+ if(!quote)throw new ApiError(404,'NOT_FOUND','Quote not found.');
+ return {quote:quoteDTO(quote),replayed:saved.kind==='replayed'};
 }
 export async function mySupplierQuotes(db:PrismaClient,userId:string,supplierId:string,rfqId:string) {
  uuid(supplierId,'supplierId');uuid(rfqId,'rfqId');
