@@ -114,16 +114,19 @@ test('only owner opens RFQ and invites approved suppliers; invitations are repea
 });
 test('supplier quote is exact, complete and cannot use another supplier listing',async()=>{
  const path='/api/v2/suppliers/'+store.first.id+'/rfqs/'+store.rfqId+'/quotes';
- assert.equal((await send('post',path,'otherCustomer',quotePayload())).status,404);
- assert.equal((await send('post',path,'viewer',quotePayload())).status,403);
- assert.equal((await send('post',path,'secondSupplier',quotePayload())).status,404);
+ assert.equal((await send('post',path,'otherCustomer',quotePayload(),hdr())).status,404);
+ assert.equal((await send('post',path,'viewer',quotePayload(),hdr())).status,403);
+ assert.equal((await send('post',path,'secondSupplier',quotePayload(),hdr())).status,404);
  assert.equal((await send('post',path,'supplier',{
   ...quotePayload(),lines:[{...quotePayload().lines[0],quantity:'1.000'}]
- })).status,422);
+ },hdr())).status,422);
  assert.equal((await send('post',path,'supplier',{
   ...quotePayload(),lines:[{...quotePayload().lines[0],unitPrice:125.5}]
- })).status,400);
- const first=await send('post',path,'supplier',quotePayload());
+ },hdr())).status,400);
+ const original=quotePayload();
+ assert.equal((await send('post',path,'supplier',original)).status,428);
+ const firstKey=hdr();
+ const first=await send('post',path,'supplier',original,firstKey);
  assert.equal(first.status,201,JSON.stringify(first.body));
  assert.equal(first.body.data.subtotalPaise,'25100');
  assert.equal(first.body.data.taxPaise,'4518');
@@ -132,7 +135,15 @@ test('supplier quote is exact, complete and cannot use another supplier listing'
  assert.equal(first.body.data.lines[0].lineTotalPaise,'29618');
  assert.equal(first.body.data.version,1);
  store.quoteId=first.body.data.id;
- const revised=await send('post',path,'supplier',quotePayload('120.0000'));
+ const replay=await send('post',path,'supplier',original,firstKey);
+ assert.equal(replay.status,200);
+ assert.equal(replay.body.replayed,true);
+ assert.equal(replay.body.data.id,store.quoteId);
+ assert.equal(await db.supplierQuote.count({where:{rfqId:store.rfqId,supplierId:store.first.id}}),1);
+ const reused=await send('post',path,'supplier',quotePayload('135.0000'),firstKey);
+ assert.equal(reused.status,409);
+ assert.equal(reused.body.error.code,'IDEMPOTENCY_KEY_REUSED');
+ const revised=await send('post',path,'supplier',quotePayload('120.0000'),hdr());
  assert.equal(revised.status,201,JSON.stringify(revised.body));
  assert.equal(revised.body.data.version,2);
  assert.equal(revised.body.data.status,'SUBMITTED');
@@ -150,7 +161,7 @@ test('RFQ can award exactly one current quote and prevent later submissions',asy
  const quote=await send('post',path,'secondSupplier',{
   deliveryPaise:'1500',
   lines:[{rfqItemId:store.rfqItemId,quantity:'2.000',unitCode:'BAG',unitPrice:'130.0000',taxRateBps:0}]
- });
+ },hdr());
  assert.equal(quote.status,201,JSON.stringify(quote.body));
  assert.equal((await send('post',rfqURL()+'/quotes/'+store.revisedId+'/award','otherCustomer',{})).status,404);
  const awarded=await send('post',rfqURL()+'/quotes/'+store.revisedId+'/award','customer',{});
@@ -164,7 +175,7 @@ test('RFQ can award exactly one current quote and prevent later submissions',asy
  assert.equal((await send('post',rfqURL()+'/quotes/'+quote.body.data.id+'/award','customer',{})).status,409);
  assert.equal((await send('post',path,'secondSupplier',{
   lines:[{rfqItemId:store.rfqItemId,quantity:'2.000',unitCode:'BAG',unitPrice:'120.0000',taxRateBps:0}]
- })).status,409);
+ },hdr())).status,409);
  assert.equal(await db.supplierOrder.count({where:{sourceQuoteId:store.revisedId}}),0);
 });
 const activeWindow=()=>({
