@@ -1,43 +1,39 @@
-# Buildto V2.1 platform — PR 02 foundation
+# BuildTo V2.1 backend
 
-## Scope and deployment
+One modular Express/TypeScript API backed by Prisma 5.22, PostgreSQL 16/PostGIS and Clerk. This is **the active backend** for construction materials.
 
-This is a **separate, deliberately restricted Express API**, not the legacy Kraveo/Grozo API. It builds from `backend/v21/src` into `backend/v21/dist`, using the isolated `backend/generated/buildto-v21` Prisma client created in PR 01. No legacy route, migration, or rider worker is imported.
+## What is implemented
 
-**Not yet production-ready.** The V2.1 service now includes PR 03 Clerk-secured identity/RBAC, PR 04 construction catalog and supplier pricing, and PR 05 cities/addresses/delivery-area previews. OpenAPI lists the implemented routes. Inventory, checkout, finance and payment APIs remain disabled until their domain PRs.
+Customer and supplier identity, roles, construction catalog, inventory/warehouses, serviceability, RFQs/promotions, cart and checkout, Razorpay test payments, COD/GST invoices, supplier shipments and OTP proof, returns/reviews, settlements, refunds/credit notes and controlled supplier payout reconciliation.
 
-## Enterprise safeguards
+**Safeguards:** signed provider webhooks, explicit scopes, idempotency, transactional outbox, migration SHA256 validation, guarded accounting, redacted logs and staging-only startup. No Redis/Kafka/microservices. Automated money movement remains disabled.
 
-- `BUILDTO_V21_ENV` allows only `local` or `staging`. Production boot is prohibited; staging accepts only the approved Neon staging hostname, local only loopback.
-- At startup, the PR 01 inspector checks tables, enum types, columns, indexes, constraints, PostGIS, triggers and the presence of the Prisma migration ledger. If the ledger is missing, **the HTTP port does not open**.
-- Request IDs, request-body-free JSON logging, strict CORS origins, security headers, 64 KB JSON body limit and safe standardized errors.
-- Decimal money values and paise are JSON decimal strings, never floats; all DTOs are explicitly allowlisted.
-- Rate limiting is bounded and **in-process** for a single API instance, with a separate Clerk webhook budget. No Redis. Add shared limits only if deploying multiple API replicas.
-- No private media uploads or Socket.IO rooms exist yet. These require authenticated storage and permissions first.
+## Build and test
 
-## Transactional infrastructure
-
-- `executeIdempotently` creates the idempotency record, domain mutation and outbox record in one serializable PostgreSQL transaction. A transaction-scoped advisory lock serializes repeated request keys; duplicate calls replay a resource reference, and changed payloads return a conflict. Do not call external providers inside that transaction.
-- `publishOutbox` saves domain events inside the domain transaction. `claimOutbox` uses `FOR UPDATE SKIP LOCKED`, leases and bounded claim sizes. `acknowledgeOutbox` and `rejectOutbox` compare claim attempt counters; stale workers cannot settle newer claims.
-- Outbox semantics are **at-least-once**. External side-effect handlers must deduplicate using `eventKey`. A handler registry and worker dispatcher exist but there is **no autonomous background worker process** in this PR. Domain modules will register handlers in later PRs.
-- No frontend or Android app has been migrated to this foundation.
-
-## Commands
-
-```bash
+```sh
 cd backend
 npm ci
-npm run db:v21:deploy-empty    # only on an authorized disposable local database
+npm run db:v21:parity
+npm run db:v21:validate
 npm run build:v21
-npm run test:v21:api
+npm run test:v21:api     # requires a disposable PostGIS DB with migrations and seeds
+npm run release:v21:preflight
 ```
 
-For a staging server, configure `BUILDTO_V21_ENV=staging`, the allowlisted staging `DATABASE_URL`, `BUILDTO_V21_CORS_ORIGINS` (HTTPS exact origin), then use `node v21/dist/server.js`.
+For a disposable local database, `docker compose up -d postgres` from repository root provides PostGIS 16. Use `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test`, `BUILDTO_V21_ENV=local`, `NODE_ENV=test`, and `BUILDTO_V21_BASELINE_CONFIRM=ci-test`. On an empty test database, run `npm run db:v21:deploy-empty` and import `architecture/buildto-schema-v2.1/sql/reference-seed.sql` before the integration suite. Never run these disposable DB commands against Neon.
 
-### Staging migration history blocker
+## Staging deployment
 
-The Neon staging database has the correct V2.1 schema, but **official Prisma migration history is not yet recorded**. The documented `npm run db:v21:baseline:resolve` must be run with the approved direct staging connection. We will not hand-edit Prisma's internal tables. The API will refuse staging startup until the baseline history is present.
+[Render staging](https://buildto-v21-staging.onrender.com) uses `cd backend && npm ci && npm run db:v21:parity && npm run db:v21:validate && npm run build:v21`, then `cd backend && node v21/dist/server.js`. Runtime requires `BUILDTO_V21_ENV=staging`, the exact allowlisted Neon staging URL with TLS, explicit HTTPS frontend CORS and Clerk authorized origins, a valid Clerk issuer/secret and signed webhook secret. Only configure Razorpay TEST credentials.
 
-## Next PR
+- `GET /health` — liveness
+- `GET /ready` — actual V2.1 Prisma/migration readiness
+- `GET /api/v2/system` — intentionally reports `productionReady=false`
+- `POST /api/v2/webhooks/clerk` — signed Clerk identity synchronization
+- `v21/openapi.json` — API contract
 
-PR 03 will add Clerk authentication, identity sync, supplier and admin membership RBAC, tenant-scope enforcement and authorization tests before exposing private business endpoints.
+## Old backend is not the V2.1 runtime
+
+`backend/src/`, default `backend/prisma/schema.prisma`, old `backend/prisma/migrations/`, legacy scripts and test harness are inherited Grozo/Kraveo code. Do not execute their old migration or startup commands on V2.1. Existing admin/mobile clients still rely on legacy API contracts. See [cleanup plan](docs/LEGACY-CLEANUP-PLAN.md) for dependencies and ordered retirement.
+
+The staging database baseline and two additive migrations have been applied and verified. Production launch still requires real client/provider UAT, financial policy signoff, dependency audit and approval. See `docs/PR16-RELEASE-SECURITY-READINESS.md` for remaining gates.
