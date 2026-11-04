@@ -10642,7 +10642,8 @@
           "payoutState": {
             "type": "string",
             "enum": [
-              "NOT_DISBURSED"
+              "NOT_DISBURSED",
+              "PAYOUT_RECORD_REQUIRES_RECONCILIATION"
             ]
           },
           "lines": {
