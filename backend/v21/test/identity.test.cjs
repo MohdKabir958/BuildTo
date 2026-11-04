@@ -138,3 +138,36 @@ test('each supplier/admin role has explicit action membership only',()=>{
  assert(!ADMIN_PERMISSIONS.AUDITOR.includes('SUPPLIER_APPROVE'));
  assert(!ADMIN_PERMISSIONS.SUPPORT.includes('FINANCE_MANAGE'));
 });
+
+test('Clerk primary verified contact sync, partial update preservation and unverified rejection',async()=>{
+ const actor=subject(),client=request(app({}));
+ const unique=randomUUID().replaceAll('-','').slice(0,14);
+ const email='CI'+unique+'@example.test',phone='+919012345678';
+ const primary={
+  type:'user.created',data:{id:actor,first_name:'Primary',
+   primary_email_address_id:'id_main',primary_phone_number_id:'phone_main',
+   email_addresses:[
+    {id:'id_other',email_address:'wrong@example.test',verification:{status:'verified'}},
+    {id:'id_main',email_address:email,verification:{status:'verified'}}
+   ],
+   phone_numbers:[
+    {id:'phone_other',phone_number:'+918888888888',verification:{status:'verified'}},
+    {id:'phone_main',phone_number:phone,verification:{status:'verified'}}
+   ]
+  }
+ };
+ assert.equal((await webhook(client,primary)).status,200);
+ let user=await db.user.findUniqueOrThrow({where:{clerkUserId:actor}});
+ assert.equal(user.email,email.toLowerCase());assert.equal(user.phoneE164,phone);
+ // Clerk user.updated can omit unchanged collections. Existing contact survives.
+ assert.equal((await webhook(client,{type:'user.updated',data:{
+  id:actor,first_name:'Renamed'}})).status,200);
+ user=await db.user.findUniqueOrThrow({where:{id:user.id}});
+ assert.equal(user.email,email.toLowerCase());assert.equal(user.phoneE164,phone);
+ assert.equal((await webhook(client,{type:'user.updated',data:{
+  id:actor,primary_email_address_id:'id_unverified',
+  email_addresses:[{id:'id_unverified',email_address:'attacker@example.test',
+    verification:{status:'unverified'}}]
+ }})).status,200);
+ assert.equal((await db.user.findUniqueOrThrow({where:{id:user.id}})).email,null);
+});
