@@ -69,11 +69,15 @@ export function registerReturnsSupportReviews(app:Express,db:PrismaClient,auth:R
   createReview(db,actor(res),req.params.orderId,req.body),true));
  app.get('/api/v2/orders/:orderId/reviews',auth,go((req,res)=>
   customerReviews(db,actor(res),req.params.orderId)));
- app.get('/api/v2/suppliers/:supplierId/reviews',go(req=>
-  publicSupplierReviews(db,req.params.supplierId)));
  app.get('/api/v2/suppliers/:supplierId/reviews/manage',auth,go((req,res)=>
   supplierOwnReviews(db,actor(res),req.params.supplierId)));
  app.get('/api/v2/admin/reviews',auth,go((_req,res)=>adminReviewQueue(db,actor(res))));
  app.post('/api/v2/admin/reviews/:reviewId/moderate',auth,go((req,res)=>
   moderateReview(db,actor(res),req.params.reviewId,req.body)));
+}
+
+/** Published reviews are genuinely public; moderation and write endpoints are not. */
+export function registerPublicReviews(app:Express,db:PrismaClient){
+ app.get('/api/v2/suppliers/:supplierId/reviews',go(req=>
+  publicSupplierReviews(db,req.params.supplierId)));
 }
