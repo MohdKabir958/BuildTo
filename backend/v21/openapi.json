@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.8.0",
-    "description": "Buildto V2 cart, server-calculated delivery and tax-aware checkout, provisional multi-supplier orders and stock holds. No payment capture, COD confirmation or supplier fulfillment in this PR."
+    "version": "0.9.0",
+    "description": "Buildto V2.1 server-priced construction marketplace checkout and signed Razorpay online payment attempts. COD, GST invoice, supplier dispatch, refunds and settlements remain gated to later PRs."
   },
   "paths": {
     "/health": {
@@ -5244,6 +5244,217 @@
           }
         }
       }
+    },
+    "/api/v2/orders/{orderId}/payments": {
+      "post": {
+        "operationId": "createRazorpayPaymentAttempt",
+        "summary": "Create one owner-scoped gateway attempt with exact server-issued amount",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 150
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "paymentMethod"
+                ],
+                "properties": {
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "UPI",
+                      "CARD",
+                      "NET_BANKING"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Identical attempt replayed"
+          },
+          "201": {
+            "description": "Gateway order initialized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RazorpayPayment"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "replayed": {
+                      "type": "boolean"
+                    },
+                    "initializing": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Attempt created but provider confirmation still pending"
+          },
+          "400": {
+            "description": "Invalid payment request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Customer order not found"
+          },
+          "409": {
+            "description": "Attempt in progress or stock unavailable"
+          },
+          "422": {
+            "description": "Unsupported payment method or amount"
+          },
+          "428": {
+            "description": "Idempotency-Key required"
+          },
+          "503": {
+            "description": "Provider outcome unknown; reconciliation required"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listMyRazorpayPaymentAttempts",
+        "summary": "Read own gateway attempts, excluding provider secrets",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner payment attempt history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RazorpayPayment"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "404": {
+            "description": "Not an owned order"
+          }
+        }
+      }
+    },
+    "/api/v2/webhooks/razorpay": {
+      "post": {
+        "operationId": "processSignedRazorpayPaymentEvent",
+        "summary": "Verify raw HMAC-SHA256 webhook and dedupe gateway event IDs; no customer authentication",
+        "parameters": [
+          {
+            "name": "x-razorpay-signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "x-razorpay-event-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Razorpay webhook object, verified against exact raw bytes before parsing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verified notification recorded or replayed"
+          },
+          "400": {
+            "description": "Malformed signed payload"
+          },
+          "401": {
+            "description": "Missing or invalid signature"
+          },
+          "409": {
+            "description": "Conflicting event replay"
+          },
+          "503": {
+            "description": "Valid early event awaiting the payment-attempt provider reference"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5929,7 +6140,7 @@
             "type": "string"
           },
           "data": {
-            "description": "Customer-owned cart, priced checkout quote or unpaid order. Monetary fields are exact integer paise encoded as strings."
+            "description": "Customer-owned cart, quote or order with exact paise strings and DB-verified paymentStatus (NOT_STARTED, PENDING, AUTHORIZED, CAPTURED, CAPTURED_NEEDS_REVIEW, NOT_CAPTURED)."
           }
         }
       },
@@ -5977,6 +6188,82 @@
           "expectedVersion": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "RazorpayPayment": {
+        "type": "object",
+        "required": [
+          "id",
+          "orderId",
+          "provider",
+          "status",
+          "amountPaise",
+          "capturedPaise",
+          "currency",
+          "paymentMethod",
+          "keyId",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "RAZORPAY"
+            ]
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "UPI",
+              "CARD",
+              "NET_BANKING"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "PENDING",
+              "AUTHORIZED",
+              "CAPTURED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "providerOrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "capturedPaise": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "INR"
+            ]
+          },
+          "keyId": {
+            "type": "string",
+            "description": "Public Razorpay key ID; never a private secret."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
