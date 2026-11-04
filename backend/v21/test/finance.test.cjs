@@ -51,7 +51,7 @@ async function makeOrder(method='RAZORPAY',amount=10000n,fee=800n){
   nameSnapshot:'Building materials',unitCode:'BAG',
   packSizeSnapshot:new Prisma.Decimal(1),quantity:new Prisma.Decimal(1),
   unitPrice:new Prisma.Decimal(Number(amount)/100),taxRateBps:0,
-  taxablePaise:amount,lineTotalPaise:amount
+  taxablePaise:amount,taxPaise:0n,lineTotalPaise:amount
  }});
  const shipment=await db.shipment.create({data:{
   shipmentNumber:'FINSH-'+id().replaceAll('-').slice(0,24),
