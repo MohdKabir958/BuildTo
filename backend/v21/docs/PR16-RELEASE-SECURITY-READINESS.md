@@ -58,7 +58,7 @@ After an authorized **separate** staging migration:
 ## Explicit prerequisites before claiming production readiness
 
 - Formal sequential review/merge of the full PR stack; staging deploy rehearsed and fresh CI all green at **exact release commit**.
-- Named operator sign-off on Clerk tenant/role provisioning, admin maker-checker policy, seed data, Stripe/Razorpay/RazorpayX merchant configuration, key isolation, webhook retries/alerts, bank beneficiary validation, dashboard-controlled money movement and independent bank reconciliation operations.
+- Named operator sign-off on Clerk tenant/role provisioning, admin maker-checker policy, seed data, Razorpay/RazorpayX merchant configuration, key isolation, webhook retries/alerts, bank beneficiary validation, dashboard-controlled money movement and independent bank reconciliation operations.
 - GST/Indian tax advisor review of statutory invoices and full tax credit notes, and a policy/implementation for unsupported partial returns, freight allocation, COD commission collection and payout reversals if required for launch.
 - Real staging UAT with realistic concurrency and traffic; database backup/restore proof, logs/alerting, incident response, error budget and dependency security audit. Existing single-instance in-memory limiter is **intentional**; do not scale to multiple API replicas without a shared-limit plan.
 - Production environment, network, deploy credentials and live money execution **remain explicitly disabled**. Production cutover requires a separate approved decision and deployment configuration, not an automatic consequence of PR16 or a green unit test.
