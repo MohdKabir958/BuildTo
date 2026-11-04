@@ -16,6 +16,7 @@ import {registerProtectedCheckout} from './checkout-routes';
 import {registerProtectedPayments} from './payment-routes';
 import {registerCodAndInvoices} from './cod-invoice-routes';
 import {registerFulfillment} from './fulfillment-routes';
+import {registerReturnsSupportReviews,registerPublicReviews} from './customer-care-routes';
 import {verifyRazorpayWebhook,receiveRazorpayEvent} from './payment-service';
 import type {PaymentGateway} from './payment-gateway';
 
@@ -117,7 +118,7 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking',
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking','returns.customer','support.cases','reviews.moderated',
           ...(deps.deliveryOtpSecret?['shipments.otp']:[]),...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },
       requestId:res.locals.requestId,
@@ -125,6 +126,7 @@ export function createV21App(deps:AppDependencies) {
   });
   registerPublicCatalog(app,deps.db);
   registerPublicDelivery(app,deps.db);
+  registerPublicReviews(app,deps.db);
   // These are identity/permission introspection endpoints only. No supplier/admin
   // mutation endpoints are exposed before domain-specific security tests.
   if(deps.identityVerifier){
@@ -136,6 +138,7 @@ export function createV21App(deps:AppDependencies) {
     registerProtectedCheckout(app,deps.db,auth);
     registerCodAndInvoices(app,deps.db,auth);
     registerFulfillment(app,deps.db,auth,deps.deliveryOtpSecret);
+    registerReturnsSupportReviews(app,deps.db,auth);
     if(deps.paymentGateway&&deps.razorpayWebhookSecret)
       registerProtectedPayments(app,deps.db,auth,deps.paymentGateway);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
