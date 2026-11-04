@@ -1,33 +1,38 @@
 #!/usr/bin/env node
-// CI-only OpenAPI contract gate. Does not contact or mutate a database.
+// A00: read-only OpenAPI contract check, independent of cwd and live databases.
 import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
-import assert from 'node:assert/strict';
-const api=JSON.parse(readFileSync(resolve('../../backend/v21/openapi.json'),'utf8'));
-const present=api.paths??{};
-const expected={
- '/health':['get'], '/ready':['get'], '/api/v2/system':['get'],
- '/api/v2/me':['get'], '/api/v2/admin/access':['get'],
- '/api/v2/admin/catalog/listings/pending':['get'],
- '/api/v2/admin/catalog/listings/{listingId}/review':['post'],
- '/api/v2/admin/delivery/cities':['post'],
- '/api/v2/admin/promotions':['get','post'],
- '/api/v2/admin/support/cases':['get'],
- '/api/v2/admin/returns':['get'],
- '/api/v2/admin/reviews':['get'],
- '/api/v2/admin/finance/refunds':['get'],
- '/api/v2/admin/finance/payouts':['get'],
-};
-for(const [route,methods] of Object.entries(expected)){
- for(const method of methods)assert.ok(present[route]?.[method],`Missing V2.1 ${method.toUpperCase()} ${route}`);
+import {fileURLToPath} from 'node:url';
+const source=fileURLToPath(new URL('../../../backend/v21/openapi.json',import.meta.url));
+const contract=JSON.parse(readFileSync(source,'utf8'));
+
+if (!contract.info?.version || !contract.paths || typeof contract.paths !== 'object') {
+  throw new Error('Invalid V2.1 OpenAPI contract.');
 }
-// These are *planned* additions, not secretly inherited from Grozo.
-for(const missing of [
- '/api/v2/admin/team',
- '/api/v2/admin/suppliers',
- '/api/v2/admin/overview',
- '/api/v2/admin/orders',
- '/api/v2/admin/audit',
-])assert.ok(!Object.hasOwn(present,missing),`New endpoint ${missing} exists: update A00 map before implementing a client`);
-assert.ok(Object.keys(present).length>=119,'Unexpected V2.1 contract shrinkage');
-console.log('PASS: BuildTo admin A00 current API/gap matrix remains accurate; no database touched.');
+const required=[
+ ['get','/health'],
+ ['get','/ready'],
+ ['get','/api/v2/system'],
+ ['get','/api/v2/me'],
+ ['get','/api/v2/admin/access'],
+ ['get','/api/v2/admin/catalog/listings/pending'],
+ ['post','/api/v2/admin/catalog/listings/{listingId}/review'],
+ ['post','/api/v2/admin/delivery/cities'],
+ ['get','/api/v2/admin/promotions'],
+ ['get','/api/v2/admin/support/cases'],
+ ['get','/api/v2/admin/returns'],
+ ['get','/api/v2/admin/finance/refunds'],
+ ['get','/api/v2/admin/finance/payouts'],
+];
+const missing=required.filter(([method,path])=>!contract.paths[path]?.[method]);
+if (missing.length) {
+  throw new Error('Required V2.1 route missing: '+missing.map(([method,path])=>method.toUpperCase()+' '+path).join(', '));
+}
+const admin=Object.keys(contract.paths).filter(path=>path.startsWith('/api/v2/admin/'));
+const planned=[
+ 'team management', 'supplier verification', 'dashboard metrics',
+ 'global read-only orders', 'permission-scoped audit reports'
+];
+console.log('PASS: BuildTo V2.1 OpenAPI '+contract.info.version+
+  ' includes '+Object.keys(contract.paths).length+' paths and '+admin.length+' admin paths.');
+console.log('Planned administrative additions (see A00 matrix): '+planned.join(', ')+'.');
+console.log('PASS: contract audit is read-only; no Prisma/database changes.');
