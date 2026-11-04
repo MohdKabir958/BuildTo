@@ -60,7 +60,13 @@ function settlementDTO(s:any){
   refundPaise:s.refundPaise.toString(),adjustmentPaise:s.adjustmentPaise.toString(),
   payablePaise:s.payablePaise.toString(),createdAt:s.createdAt.toISOString(),
   approvedById:s.approvedById,paidAt:s.paidAt?.toISOString()??null,
-  payoutState:s.transfers.length?'PAYOUT_RECORD_REQUIRES_RECONCILIATION':'NOT_DISBURSED',
+  payoutState:!s.transfers.length?'NOT_DISBURSED':
+   s.transfers.length!==1?'DUPLICATE_PAYOUT_MANUAL_REVIEW':
+   s.transfers[0].status==='SUCCEEDED'&&s.status==='PAID'?
+    'PROVIDER_PROCESSED_BANK_STATEMENT_NOT_API_VERIFIED':
+   s.transfers[0].status==='PENDING'?'PAYOUT_INTENT_NOT_SENT':
+   s.transfers[0].status==='PROCESSING'?'PROVIDER_PROCESSING':
+   'PAYOUT_EXCEPTION_MANUAL_REVIEW',
   lines:s.lines.map((l:any)=>({supplierOrderId:l.supplierOrderId,
    grossPaise:l.grossPaise.toString(),commissionPaise:l.commissionPaise.toString(),
    refundPaise:l.refundPaise.toString(),adjustmentPaise:l.adjustmentPaise.toString(),
