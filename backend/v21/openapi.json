@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.22.0",
+    "version": "0.23.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -11342,6 +11342,158 @@
           },
           "403": {
             "description": "FINANCE_MANAGE required"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/beneficiaries": {
+      "get": {
+        "summary": "Finance-only bounded masked beneficiary review queue (no bank account number or provider token)",
+        "security": [
+          {
+            "ClerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Masked beneficiary records and cursor; finance only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "items",
+                        "nextCursor"
+                      ],
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "supplierId",
+                              "supplierName",
+                              "active",
+                              "maskedBankAccount",
+                              "registeredById"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "supplierId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "supplierName": {
+                                "type": "string"
+                              },
+                              "supplierApproval": {
+                                "type": "string"
+                              },
+                              "maskedBankAccount": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "holderName": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "ifsc": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "active": {
+                                "type": "boolean"
+                              },
+                              "registeredById": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "approvedById": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "verifiedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "bankStatementVerifiedByApi": {
+                                "type": "boolean",
+                                "const": false
+                              }
+                            }
+                          }
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Finance membership required"
           }
         }
       }
