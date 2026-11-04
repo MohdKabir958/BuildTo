@@ -119,7 +119,7 @@ export async function attachSupplierDocument(db:PrismaClient,actor:string,id:str
   if(await tx.supplierDocument.findFirst({where:{mediaId}}))
    no('EVIDENCE_ALREADY_LINKED','Evidence is already attached to an application.',409);
   const doc=await tx.supplierDocument.create({data:{
-   supplierId:id,mediaId,documentType:d.documentType,status:'UPLOADED'
+   supplierId:id,mediaId,documentType:d.documentType as 'BUSINESS_REGISTRATION'|'GST_CERTIFICATE',status:'UPLOADED'
   },select:{id:true,documentType:true,status:true,createdAt:true}});
   await tx.auditEvent.create({data:{
    actorUserId:actor,actorRole:'SUPPLIER_APPLICANT',action:'SUPPLIER_DOCUMENT_ATTACHED',
@@ -151,7 +151,7 @@ export async function adminSupplierDetail(db:PrismaClient,actor:string,id:string
   documents:{select:{id:true,documentType:true,status:true,reviewNote:true,expiresAt:true,createdAt:true,
    media:{select:{mimeType:true,sizeBytes:true,sha256:true}}},orderBy:{createdAt:'asc'}}
  }});
- if(!found)no('NOT_FOUND','Supplier not found.',404);
+ if(!found)throw new ApiError(404,'NOT_FOUND','Supplier not found.');
  const {members,documents,businessType,contactEmail,contactPhone,billingAddress,...base}=found;
  return {...summary(base),businessType,contactEmail,contactPhone,billingAddress,
   owners:members.map(x=>({userId:x.userId,active:x.active,displayName:x.user.displayName,email:x.user.email})),
@@ -170,7 +170,7 @@ export async function reviewSupplierDocument(db:PrismaClient,actor:string,id:str
   if(!['PENDING','UNDER_REVIEW','REJECTED'].includes(supplier.approval))
    no('DOCUMENT_LOCKED','Document review is closed.',409);
   const old=await tx.supplierDocument.findFirst({where:{id:documentId,supplierId:id}});
-  if(!old)no('NOT_FOUND','Document not found.',404);
+  if(!old)throw new ApiError(404,'NOT_FOUND','Document not found.');
   if(!['UPLOADED','PENDING','REVIEWED'].includes(old.status))no('DOCUMENT_FINAL','Document has final decision.',409);
   const saved=await tx.supplierDocument.update({where:{id:documentId},data:{
    status:d.decision as 'VERIFIED'|'REJECTED',reviewNote:why,verifiedById:actor
@@ -182,7 +182,7 @@ export async function reviewSupplierDocument(db:PrismaClient,actor:string,id:str
 }
 export async function reviewSupplierApplication(db:PrismaClient,actor:string,id:string,input:unknown){
  uuid(id);const d=obj(input);only(d,['decision','reason']);
- const decision=d.decision;
+ const decision=d.decision as State;
  if(decision!=='UNDER_REVIEW'&&decision!=='APPROVED'&&decision!=='REJECTED'&&decision!=='SUSPENDED')
   no('INVALID_DECISION','Unsupported supplier transition.');
  const why=reason(d.reason);
