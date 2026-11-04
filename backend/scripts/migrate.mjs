@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import schemaGuard from './schema-contract.cjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const prisma = new PrismaClient();
@@ -21,6 +22,8 @@ try {
   if (databaseUrl.searchParams.has('schema') && databaseUrl.searchParams.get('schema') !== 'public') {
     throw new Error('This bootstrap supports the public schema only. Review custom-schema migrations manually.');
   }
+  // Fail closed BEFORE baseline SQL or Prisma migrate deploy can modify a V2.1 database.
+  await schemaGuard.assertLegacyMigrationContract(prisma);
   const objects = await prisma.$queryRaw`
     SELECT relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
       WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')

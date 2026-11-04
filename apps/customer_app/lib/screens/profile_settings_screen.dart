@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../config/buildto_theme.dart';
+import '../providers/cart_provider.dart';
+import '../providers/demo_orders_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../widgets/ui/snack.dart';
@@ -12,6 +14,8 @@ import 'notifications_screen.dart';
 import 'repeat_order_screen.dart';
 import 'support_help_screen.dart';
 import 'wishlist_screen.dart';
+
+const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: true);
 
 /// Screen 13 — Profile / Settings
 /// Contractor profile information, account management, saved addresses, and preferences.
@@ -284,41 +288,80 @@ class ProfileSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const Divider(height: 1, color: BuildtoColors.cardBorder),
-                  ListTile(
-                    leading: const Icon(LucideIcons.logOut, color: BuildtoColors.errorRed, size: 20),
-                    title: const Text(
-                      'Log Out',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: BuildtoColors.errorRed),
+                  if (kBuildtoOfflineDemo)
+                    ListTile(
+                      leading: const Icon(LucideIcons.refreshCw, color: BuildtoColors.primaryNavy, size: 20),
+                      title: const Text(
+                        'Reset Demo Session',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: BuildtoColors.primaryNavy),
+                      ),
+                      subtitle: const Text(
+                        'Clear cart and restore default sample orders',
+                        style: TextStyle(fontSize: 11, color: BuildtoColors.textMuted),
+                      ),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Reset Demo Session'),
+                            content: const Text(
+                              'This will clear your current cart, restore original demo orders, and reset sample delivery data.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel', style: TextStyle(color: BuildtoColors.textMuted)),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  context.read<CartProvider>().clear();
+                                  context.read<DemoOrdersProvider>().resetDemoData();
+                                  showKSnack(context, 'Demo session reset to initial state');
+                                },
+                                child: const Text('Reset', style: TextStyle(color: BuildtoColors.primaryNavy)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    ListTile(
+                      leading: const Icon(LucideIcons.logOut, color: BuildtoColors.errorRed, size: 20),
+                      title: const Text(
+                        'Log Out',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: BuildtoColors.errorRed),
+                      ),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Log Out'),
+                            content: const Text('Are you sure you want to log out of your Buildto account?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel', style: TextStyle(color: BuildtoColors.textMuted)),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  session.logOut();
+                                  showKSnack(context, 'Logged out successfully');
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                                    (route) => false,
+                                  );
+                                },
+                                child: const Text('Log Out', style: TextStyle(color: BuildtoColors.errorRed)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Log Out'),
-                          content: const Text('Are you sure you want to log out of your Buildto account?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('Cancel', style: TextStyle(color: BuildtoColors.textMuted)),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                session.logOut();
-                                showKSnack(context, 'Logged out successfully');
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const AuthScreen()),
-                                  (route) => false,
-                                );
-                              },
-                              child: const Text('Log Out', style: TextStyle(color: BuildtoColors.errorRed)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),

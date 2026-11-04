@@ -58,6 +58,9 @@ class MenuItemModel {
       ? mrpPaise! / 100 - price
       : 0;
   bool get hasCustomizations => customizationGroups.isNotEmpty;
+  bool get isOutOfStock => !isAvailable || (stockQty != null && stockQty! <= 0);
+  bool get hasConfirmedStock => stockQty != null;
+  int get availableStock => (stockQty != null && stockQty! > 0) ? stockQty! : (isAvailable ? 9999 : 0);
 
   MenuItemModel copyWith({
     String? id,

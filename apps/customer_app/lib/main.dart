@@ -21,6 +21,9 @@ import 'screens/home_screen.dart';
 import 'screens/profile_setup_screen.dart';
 import 'widgets/ui/snack.dart';
 
+// Development-signed standalone APK only; off by default in production.
+const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: false);
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   // Push is an addition: the real Firebase layer starts after the first frame (AuthGate) and
@@ -61,7 +64,7 @@ class KraveoCustomerApp extends StatelessWidget {
         title: BrandConfig.customerName,
         debugShowCheckedModeBanner: false,
         theme: KraveoTheme.customer(),
-        home: GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? const ClerkEntryScreen(appName: 'Buildto Customer',preview:true) : const AuthGate(),
+        home: kBuildtoOfflineDemo ? const HomeScreen() : (GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? const ClerkEntryScreen(appName: 'Buildto Customer',preview:true) : const AuthGate()),
       ),
     );
   }

@@ -14,7 +14,9 @@
     "seed:demo-partners": "node dist/utils/seedDemoPartners.js",
     "seed:pilot": "node scripts/seed-pilot.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
-    "seed:construction": "node scripts/seed-construction.mjs"
+    "seed:construction": "node scripts/seed-construction.mjs",
+    "db:contract:check": "node scripts/check-schema-contract.mjs runtime",
+    "test:schema-contract": "node --test test/schemaContract.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.1106.0",

@@ -1,0 +1,62 @@
+name: Buildto Schema V2.1 (PostGIS + integrity validation)
+on:
+  push:
+    branches: [architecture/buildto-schema-v2.1]
+    paths:
+      - 'architecture/buildto-schema-v2.1/**'
+      - '.github/workflows/buildto-schema-v2.1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-v2-1-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: buildto_v21_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d buildto_v21_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install pinned existing Prisma toolchain
+        run: npm ci --prefix backend
+      - name: Test safe BigInt DTO serialization
+        run: node architecture/buildto-schema-v2.1/qa/test_bigint_serialization.mjs
+      - name: Static model relation validation
+        run: python3 architecture/buildto-schema-v2.1/qa/check_model_links.py
+      - name: Validate Prisma V2 schema
+        run: ./backend/node_modules/.bin/prisma validate --schema=architecture/buildto-schema-v2.1/prisma/schema.prisma
+      - name: Generate greenfield SQL from Prisma contract
+        run: |
+          ./backend/node_modules/.bin/prisma migrate diff --from-empty --to-schema-datamodel architecture/buildto-schema-v2.1/prisma/schema.prisma --script > /tmp/buildto-v21-from-empty.sql
+          test -s /tmp/buildto-v21-from-empty.sql
+      - name: Enable PostGIS on disposable PostgreSQL
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+      - name: Apply schema and SQL-only invariants to disposable PostgreSQL
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /tmp/buildto-v21-from-empty.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f architecture/buildto-schema-v2.1/sql/integrity-guards.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f architecture/buildto-schema-v2.1/sql/v2_1-hardening.sql
+      - name: Seed safe Buildto categories and units
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f architecture/buildto-schema-v2.1/sql/reference-seed.sql
+      - name: Test integrity guards and reference data
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f architecture/buildto-schema-v2.1/sql/schema-smoke-tests.sql
+      - name: Test V2.1 COD, OTP, partial shipments, GIS, GST and cancellation
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f architecture/buildto-schema-v2.1/sql/v2_1-smoke-tests.sql
+      - name: Confirm catalog seeds remain idempotent
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f architecture/buildto-schema-v2.1/sql/reference-seed.sql

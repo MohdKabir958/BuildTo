@@ -1,0 +1,38 @@
+name: Buildto V2.1 generate reviewed greenfield SQL
+on:
+  push:
+    branches: [architecture/buildto-schema-v2.1]
+    paths: ['.github/workflows/buildto-v21-generate-ddl.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/buildto_v21_generation
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked Prisma CLI
+        run: npm ci --prefix backend
+      - name: Generate exact PostgreSQL DDL
+        run: |
+          ./backend/node_modules/.bin/prisma validate --schema architecture/buildto-schema-v2.1/prisma/schema.prisma
+          ./backend/node_modules/.bin/prisma migrate diff --from-empty --to-schema-datamodel architecture/buildto-schema-v2.1/prisma/schema.prisma --script > architecture/buildto-schema-v2.1/sql/greenfield-ddl.sql
+          test -s architecture/buildto-schema-v2.1/sql/greenfield-ddl.sql
+      - name: Commit generated DDL to schema branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add architecture/buildto-schema-v2.1/sql/greenfield-ddl.sql
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(schema-v2.1): export exact generated PostgreSQL DDL'
+            git push
+          fi

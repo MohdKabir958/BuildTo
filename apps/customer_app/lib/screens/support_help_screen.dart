@@ -64,6 +64,34 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Demonstration Mode Banner
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: BuildtoColors.infoBg,
+                borderRadius: BorderRadius.circular(BuildtoRadius.md),
+                border: Border.all(color: BuildtoColors.infoBlue.withValues(alpha: 0.25)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(LucideIcons.info, size: 18, color: BuildtoColors.infoBlue),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Demonstration Mode: Support channels demonstrate contractor workflows. In active production, live chat connects directly to regional depot dispatchers.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: BuildtoColors.infoBlue,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // Quick Support Channels
             const Text(
               'Contact Site Support',
