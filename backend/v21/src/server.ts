@@ -37,7 +37,8 @@ async function main() {
       new RazorpayGateway(config.razorpayKeyId,config.razorpayKeySecret):undefined;
     const app=createV21App({db,limiter,log:jsonLogger,allowedOrigins:config.corsOrigins,
       proxyHops:config.proxyHops,identityVerifier,clerkWebhookSecret:config.clerkWebhookSecret,
-      razorpayWebhookSecret:config.razorpayWebhookSecret??undefined,paymentGateway});
+      razorpayWebhookSecret:config.razorpayWebhookSecret??undefined,paymentGateway,
+      deliveryOtpSecret:config.deliveryOtpHmacSecret??undefined});
     server=http.createServer(app);
     await new Promise<void>((resolve,reject)=>{
       server!.once('error',reject);
