@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.23.0",
+    "version": "0.24.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -11411,6 +11411,71 @@
           },
           "403": {
             "description": "Finance role required"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/audit": {
+      "get": {
+        "operationId": "adminAudit",
+        "summary": "OWNER / AUDITOR only: paginated, redacted audit event metadata; no sensitive snapshots",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded audit metadata page; no beforeState, afterState, IP hashes or request payloads"
+          },
+          "400": {
+            "description": "Invalid pagination or filter"
+          },
+          "401": {
+            "description": "Clerk session required"
+          },
+          "403": {
+            "description": "AUDIT_READ required"
           }
         }
       }
