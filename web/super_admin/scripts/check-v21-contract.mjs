@@ -35,13 +35,10 @@ const expected={
  '/api/v2/admin/finance/suppliers/{supplierId}/beneficiaries':['get','post'],
  '/api/v2/admin/finance/refunds':['get'],
  '/api/v2/admin/finance/payouts':['get'],
+ '/api/v2/admin/audit':['get'],
 };
 for(const [route,methods] of Object.entries(expected)){
  for(const method of methods)assert.ok(present[route]?.[method],`Missing V2.1 ${method.toUpperCase()} ${route}`);
 }
-// These are *planned* additions, not secretly inherited from Grozo.
-for(const missing of [
- '/api/v2/admin/audit',
-])assert.ok(!Object.hasOwn(present,missing),`New endpoint ${missing} exists: update A00 map before implementing a client`);
 assert.ok(Object.keys(present).length>=119,'Unexpected V2.1 contract shrinkage');
 console.log('PASS: BuildTo admin A00 current API/gap matrix remains accurate; no database touched.');

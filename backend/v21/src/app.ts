@@ -24,6 +24,7 @@ import {registerAdminTeam} from './admin-team-routes';
 import {registerAdminSupplierApplications} from './admin-supplier-routes';
 import {registerAdminOverview} from './admin-overview-routes';
 import {registerAdminOrders} from './admin-orders-routes';
+import {registerAdminAudit} from './admin-audit-routes';
 import type {PayoutEvidenceGateway} from './payout-gateway';
 import {verifyRazorpayWebhook,receiveRazorpayEvent} from './payment-service';
 import type {PaymentGateway} from './payment-gateway';
@@ -162,6 +163,7 @@ export function createV21App(deps:AppDependencies) {
     registerAdminSupplierApplications(app,deps.db,auth);
     registerAdminOverview(app,deps.db,auth);
     registerAdminOrders(app,deps.db,auth);
+    registerAdminAudit(app,deps.db,auth);
     if(deps.paymentGateway&&deps.razorpayWebhookSecret)
       registerProtectedPayments(app,deps.db,auth,deps.paymentGateway);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{

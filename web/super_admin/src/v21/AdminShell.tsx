@@ -16,6 +16,7 @@ import {DashboardPanel} from './features/overview/DashboardPanel';
 import {AdminOrdersPanel} from './features/orders/AdminOrdersPanel';
 import {SupportAdminPanel} from './features/support/SupportAdminPanel';
 import {FinanceWorkspace} from './features/finance/FinanceWorkspace';
+import {AuditPanel} from './features/audit/AuditPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -148,6 +149,8 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             ? <SupportAdminPanel/>
             : active==='finance'&&administrator&&['OWNER','FINANCE'].includes(administrator.role)
             ? <FinanceWorkspace/>
+            : active==='audit'&&administrator&&['OWNER','AUDITOR'].includes(administrator.role)
+            ? <AuditPanel/>
             : active==='team'&&administrator?.role==='OWNER'
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
