@@ -22,7 +22,7 @@ describe('BuildTo A01 admin shell',()=>{
   });
 
   it('uses only public V2.1 system metadata and never sends bearer credentials',async()=>{
-    const fetch=vi.fn(async()=>new Response(JSON.stringify({data:{
+    const fetch=vi.fn(async (_url:string,_init?:RequestInit)=>new Response(JSON.stringify({data:{
       apiVersion:'v2',releaseStage:'unreleased-staging-candidate',productionReady:false,
       automaticRefundExecution:false,automaticPayoutExecution:false,
     }}),{status:200,headers:{'Content-Type':'application/json'}}));
@@ -33,7 +33,7 @@ describe('BuildTo A01 admin shell',()=>{
       expect.objectContaining({credentials:'omit',method:'GET'}));
     const sent=fetch.mock.calls[0][1] as RequestInit;
     expect(sent.headers).not.toHaveProperty('Authorization');
-    expect(screen.getByText('disabled')).toBeTruthy();
+    expect(screen.getAllByText('disabled')).toHaveLength(2);
   });
 
   it('opens and closes mobile navigation with Escape',()=>{
