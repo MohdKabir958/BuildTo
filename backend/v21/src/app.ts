@@ -31,6 +31,7 @@ export interface AppDependencies {
   razorpayWebhookSecret?:string;
   paymentGateway?:PaymentGateway;
   payoutEvidenceGateway?:PayoutEvidenceGateway;
+  readinessCheck?:()=>Promise<void>;
   deliveryOtpSecret?:string;
   limiter:RateLimiter;
   log?:LogWriter;
@@ -110,6 +111,7 @@ export function createV21App(deps:AppDependencies) {
   app.get('/ready',async(_req,res)=>{
     try {
       await deps.db.$queryRaw`SELECT 1`;
+      if(deps.readinessCheck)await deps.readinessCheck();
       res.status(200).json({ready:true,requestId:res.locals.requestId});
     }catch {
       res.status(503).json(errorDTO('DATABASE_UNAVAILABLE','Service temporarily unavailable.',res.locals.requestId));
@@ -122,7 +124,12 @@ export function createV21App(deps:AppDependencies) {
         apiVersion:'v2',
         currency:'INR',
         moneyFormat:'decimal-string-paise',
-        releaseStage:'foundation',
+        releaseStage:'unreleased-staging-candidate',
+        productionReady:false,
+        automaticRefundExecution:false,
+        automaticPayoutExecution:false,
+        bankStatementAPIReconciled:false,
+        partialGstCreditSupported:false,
         capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking','returns.customer','support.cases','reviews.moderated','finance.reconciliation','finance.settlement-proposals','finance.cod-commissions','returns.credit-notes','finance.refund-requests','finance.refund-evidence','finance.payout-beneficiaries','finance.payout-reconciliation',
           ...(deps.deliveryOtpSecret?['shipments.otp']:[]),...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },

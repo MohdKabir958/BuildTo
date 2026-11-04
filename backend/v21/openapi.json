@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.15.0",
-    "description": "Buildto V2.1 finance: provider-read-only RazorpayX bank account validation, independently reviewed supplier payout intent, immutable exact provider-processed payouts and separately human-attested bank statement UTR. The API never initiates payouts; bank statements are not verified by direct banking APIs."
+    "version": "0.16.0",
+    "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
     "/health": {
@@ -27,7 +27,7 @@
     "/ready": {
       "get": {
         "operationId": "getV21Readiness",
-        "summary": "Database connectivity; full V2.1 schema checked at boot",
+        "summary": "Database connection plus all deployed migration SHA256 checksums in the real server",
         "responses": {
           "200": {
             "description": "Database ready",
@@ -55,7 +55,7 @@
     "/api/v2/system": {
       "get": {
         "operationId": "getV21System",
-        "summary": "Public API metadata; no business endpoints enabled",
+        "summary": "Public staged capability inventory with explicit production and money-execution gates",
         "responses": {
           "200": {
             "description": "API version and supported capabilities",
@@ -10440,7 +10440,12 @@
               "currency",
               "moneyFormat",
               "releaseStage",
-              "capabilities"
+              "capabilities",
+              "productionReady",
+              "automaticRefundExecution",
+              "automaticPayoutExecution",
+              "bankStatementAPIReconciled",
+              "partialGstCreditSupported"
             ],
             "properties": {
               "apiVersion": {
@@ -10464,7 +10469,7 @@
               "releaseStage": {
                 "type": "string",
                 "enum": [
-                  "foundation"
+                  "unreleased-staging-candidate"
                 ]
               },
               "capabilities": {
@@ -10472,6 +10477,41 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "productionReady": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ],
+                "description": "Explicit disabled release gate; not proof of production readiness"
+              },
+              "automaticRefundExecution": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ],
+                "description": "Explicit disabled release gate; not proof of production readiness"
+              },
+              "automaticPayoutExecution": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ],
+                "description": "Explicit disabled release gate; not proof of production readiness"
+              },
+              "bankStatementAPIReconciled": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ],
+                "description": "Explicit disabled release gate; not proof of production readiness"
+              },
+              "partialGstCreditSupported": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ],
+                "description": "Explicit disabled release gate; not proof of production readiness"
               }
             }
           }

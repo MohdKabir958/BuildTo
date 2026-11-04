@@ -60,8 +60,13 @@ try{
       throw new Error('V21_ALREADY_HAS_MIGRATION_LEDGER: stop and inspect existing migration history.');
     // Official Prisma bookkeeping, NOT hand-writing _prisma_migrations rows.
     runPrisma(['migrate','resolve','--applied',migrationName],u);
-    runPrisma(['migrate','status'],u);
-    console.log('PASS: existing V2.1 staging schema baselined through Prisma resolve.');
+    // Additional reviewed migrations are intentionally pending at this point.
+    // Prisma `migrate status` exits nonzero until they are deployed, so verify
+    // that the official resolve wrote one finished baseline entry instead.
+    const rows=await db.$queryRawUnsafe(`SELECT migration_name, finished_at, rolled_back_at FROM \"_prisma_migrations\" WHERE migration_name = $1`,migrationName);
+    if(rows.length!==1||!rows[0].finished_at||rows[0].rolled_back_at)
+      throw new Error('V21_BASELINE_LEDGER_INVALID: official Prisma resolve did not finish.');
+    console.log('PASS: existing V2.1 schema baselined through official Prisma resolve; deploy remaining reviewed migrations separately.');
   }else if(operation==='deploy-empty'){
     approvedTarget(u,process.env.BUILDTO_V21_BASELINE_CONFIRM);
     const rows=await db.$queryRawUnsafe(`SELECT tablename AS name FROM pg_catalog.pg_tables WHERE schemaname='public'`);

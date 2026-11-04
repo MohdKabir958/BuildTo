@@ -43,6 +43,8 @@ jobs:
       - run: npm ci
       - name: Install isolated V2.1 schema into disposable PostgreSQL
         run: npm run db:v21:deploy-empty
+      - name: Seed required construction reference units for integration fixtures
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/reference-seed.sql
       - name: Compile standalone V2.1 platform
         run: npm run build:v21
       - name: Exercise API and transactional PostgreSQL foundation tests

@@ -47,6 +47,8 @@ jobs:
           npm run db:v21:validate
       - name: Install a disposable V2.1 PostgreSQL schema
         run: npm run db:v21:deploy-empty
+      - name: Seed required construction reference units for integration fixtures
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/reference-seed.sql
       - name: Compile V2.1 API
         run: npm run build:v21
       - name: Execute HTTP, webhook, authorization and transactional tests

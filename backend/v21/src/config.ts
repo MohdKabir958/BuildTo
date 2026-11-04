@@ -22,6 +22,13 @@ export interface V21Config {
   deliveryOtpHmacSecret:string|null;
 }
 const STAGING_HOST = 'ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech';
+function isExactOrigin(value:string):boolean{
+ try{
+  const url=new URL(value);
+  return ['http:','https:'].includes(url.protocol)&&url.origin===value&&
+   !url.username&&!url.password&&url.pathname==='/'&&!url.search&&!url.hash;
+ }catch{return false;}
+}
 export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   const environment = env.BUILDTO_V21_ENV;
   // PR 02 is NOT approved for production. Unknown environment is a startup error.
@@ -38,6 +45,11 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   if (environment === 'staging' && database.hostname !== STAGING_HOST) {
     throw new Error('V21_DATABASE_TARGET_DENIED: only the approved Buildto Neon staging host is allowed.');
   }
+  if(environment==='staging'&&(
+   database.searchParams.getAll('sslmode').length!==1||
+   !['require','verify-full','verify-ca'].includes(database.searchParams.get('sslmode')??'')||
+   env.NODE_TLS_REJECT_UNAUTHORIZED==='0'
+  ))throw new Error('V21_STAGING_TLS_REQUIRED: encrypted PostgreSQL and verified TLS are mandatory.');
   if (environment === 'local' && !['localhost', '127.0.0.1', '::1', '[::1]'].includes(database.hostname)) {
     throw new Error('V21_DATABASE_TARGET_DENIED: local must use loopback database.');
   }
@@ -46,7 +58,7 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   const proxyHops = Number(env.BUILDTO_V21_TRUST_PROXY_HOPS ?? '0');
   if (!Number.isInteger(proxyHops) || proxyHops < 0 || proxyHops > 1) throw new Error('V21_PROXY_CONFIG_INVALID');
   const corsOrigins = (env.BUILDTO_V21_CORS_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
-  if (corsOrigins.some(x => x === '*' || !/^https?:\/\//.test(x) || x.includes('*'))) {
+  if (corsOrigins.some(x => !isExactOrigin(x))) {
     throw new Error('V21_CORS_ORIGIN_INVALID');
   }
   if (environment === 'staging' && (corsOrigins.length === 0 || corsOrigins.some(x => !x.startsWith('https://')))) {
@@ -79,7 +91,7 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   const clerkWebhookSecret=env.CLERK_WEBHOOK_SIGNING_SECRET?.trim()||null;
   const clerkAuthorizedParties=(env.CLERK_AUTHORIZED_PARTIES||'').split(',').map(x=>x.trim()).filter(Boolean);
   const clerkAllowNativeWithoutAzp=env.CLERK_ALLOW_NATIVE_WITHOUT_AZP==='true';
-  if(clerkAuthorizedParties.some(x=>!/^https?:\/\//.test(x)||x.includes('*')))throw new Error('V21_CLERK_PARTIES_INVALID');
+  if(clerkAuthorizedParties.some(x=>!isExactOrigin(x)))throw new Error('V21_CLERK_PARTIES_INVALID');
   if(clerkAllowNativeWithoutAzp && !clerkAudience)throw new Error('V21_CLERK_NATIVE_AUDIENCE_REQUIRED');
   if(environment==='staging' && (
     !clerkIssuer?.startsWith('https://') || !clerkSecretKey || !clerkWebhookSecret?.startsWith('whsec_') ||
