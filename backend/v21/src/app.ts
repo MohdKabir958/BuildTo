@@ -10,6 +10,7 @@ import {requireAdminPermission,requireSupplierPermission,listOwnMemberships} fro
 import {verifyClerkWebhook,synchronizeClerkWebhook} from './clerk-webhooks';
 import {registerPublicCatalog,registerProtectedCatalog} from './catalog-routes';
 import {registerPublicDelivery,registerProtectedDelivery} from './delivery-routes';
+import {registerProtectedInventory} from './inventory-routes';
 
 export interface AppDependencies {
   db:PrismaClient;
@@ -92,7 +93,7 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees'] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers'] as string[],
       },
       requestId:res.locals.requestId,
     });
@@ -105,6 +106,7 @@ export function createV21App(deps:AppDependencies) {
     const auth=requireIdentity(deps.identityVerifier,deps.db);
     registerProtectedCatalog(app,deps.db,auth);
     registerProtectedDelivery(app,deps.db,auth);
+    registerProtectedInventory(app,deps.db,auth);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
       try{
         const principal=res.locals.principal as {id:string;displayName:string};
@@ -128,7 +130,7 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
-  // Checkout, inventory reservations and payment routes remain disabled until their domain PRs.
+  // Inventory reservations are internal to checkout; no public reservation or payment routes.
 
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);

@@ -1,3 +1,4 @@
+import {serializable} from './transaction';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {stableRequestHash} from './contracts';
@@ -24,7 +25,7 @@ export async function executeIdempotently<T>(db:PrismaClient,command:IdempotentC
     throw new ApiError(400,'BAD_IDEMPOTENCY_EXPIRY','An unexpired idempotency window is required.');
   const requestHash=stableRequestHash(command.requestPayload);
   const lockKey=command.actorId+':'+command.scope+':'+command.requestKey;
-  return db.$transaction(async tx=>{
+  return serializable(db,async tx=>{
     // Advisory *transaction* lock makes repeated requests serialize even before the row exists.
     await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0)) IS NULL AS locked`);
     const where={actorId_scope_requestKey:{actorId:command.actorId,scope:command.scope,requestKey:command.requestKey}};
@@ -47,5 +48,5 @@ export async function executeIdempotently<T>(db:PrismaClient,command:IdempotentC
       responseHash:stableRequestHash({ref:created.resultRef,status:created.responseCode})
     }});
     return {kind:'created',value:created.result,resultRef:created.resultRef,responseCode:created.responseCode} as const;
-  },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:5000,timeout:10000});
+  });
 }
