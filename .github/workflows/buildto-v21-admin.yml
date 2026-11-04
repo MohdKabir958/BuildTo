@@ -1,0 +1,37 @@
+name: BuildTo V2.1 admin portal
+on:
+  pull_request:
+    paths:
+      - 'web/super_admin/**'
+      - 'backend/v21/openapi.json'
+      - '.github/workflows/buildto-v21-admin.yml'
+  push:
+    branches: ['admin/v21-*']
+    paths:
+      - 'web/super_admin/**'
+      - '.github/workflows/buildto-v21-admin.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  admin-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/super_admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/super_admin/package-lock.json
+      - run: npm ci
+      - name: Current API and missing-endpoint contract
+        run: node scripts/check-v21-contract.mjs
+      - name: TypeScript and Vite
+        run: npm run build
+      - name: Existing React/UI regression
+        run: npm test -- --run
