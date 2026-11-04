@@ -49,8 +49,15 @@ export function registerRfqAndPromotions(app:Express,db:PrismaClient,auth:Reques
  const supplier='/api/v2/suppliers/:supplierId/rfqs';
  app.get(supplier,auth,wrap((req,res)=>
   invitedSupplierRfqs(db,user(res),req.params.supplierId)));
- app.post(supplier+'/:rfqId/quotes',auth,wrap((req,res)=>
-  submitSupplierQuote(db,user(res),req.params.supplierId,req.params.rfqId,req.body),true));
+ app.post(supplier+'/:rfqId/quotes',auth,async(req,res,next)=>{
+  try{
+   const result=await submitSupplierQuote(db,user(res),req.params.supplierId,
+    req.params.rfqId,req.body,key(req));
+   res.status(result.replayed?200:201).json({
+    data:result.quote,replayed:result.replayed,requestId:res.locals.requestId
+   });
+  }catch(e){next(e);}
+ });
  app.get(supplier+'/:rfqId/quotes',auth,wrap((req,res)=>
   mySupplierQuotes(db,user(res),req.params.supplierId,req.params.rfqId)));
  const promotions='/api/v2/admin/promotions';
