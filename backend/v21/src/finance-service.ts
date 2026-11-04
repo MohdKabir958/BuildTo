@@ -60,7 +60,7 @@ function settlementDTO(s:any){
   refundPaise:s.refundPaise.toString(),adjustmentPaise:s.adjustmentPaise.toString(),
   payablePaise:s.payablePaise.toString(),createdAt:s.createdAt.toISOString(),
   approvedById:s.approvedById,paidAt:s.paidAt?.toISOString()??null,
-  payoutState:'NOT_DISBURSED',
+  payoutState:s.transfers.length?'PAYOUT_RECORD_REQUIRES_RECONCILIATION':'NOT_DISBURSED',
   lines:s.lines.map((l:any)=>({supplierOrderId:l.supplierOrderId,
    grossPaise:l.grossPaise.toString(),commissionPaise:l.commissionPaise.toString(),
    refundPaise:l.refundPaise.toString(),adjustmentPaise:l.adjustmentPaise.toString(),
@@ -195,7 +195,8 @@ export async function adminSupplierFinance(db:PrismaClient,userId:string,supplie
   db.supplierOrder.findMany({where:{supplierId,status:'DELIVERED'},
    select:{id:true,totalPaise:true,platformFeePaise:true,codVerifiedPaise:true,
     purchaseOrder:{select:{totalPaise:true,payments:{
-     select:{provider:true,status:true,capturedPaise:true,verifiedAt:true}}}},
+     select:{provider:true,status:true,amountPaise:true,capturedPaise:true,
+      verifiedAt:true,providerPayRef:true}}}},
     returnRequests:{where:{status:{in:[...blockedReturns]}},select:{id:true}},
     settlementLines:{select:{settlement:{select:{status:true}}}}
    },orderBy:{createdAt:'desc'},take:100}),
@@ -206,7 +207,12 @@ export async function adminSupplierFinance(db:PrismaClient,userId:string,supplie
   supplierOrderId:s.id,totalPaise:s.totalPaise.toString(),
   platformFeePaise:s.platformFeePaise.toString(),
   codVerifiedPaise:s.codVerifiedPaise.toString(),
-  fundingType:s.purchaseOrder.payments.some(p=>p.provider==='MANUAL')?'COD_SUPPLIER_HELD':'RAZORPAY_CAPTURE',
+  fundingType:s.purchaseOrder.payments.some(p=>p.provider==='MANUAL')?'COD_SUPPLIER_HELD':
+   s.purchaseOrder.payments.length===1&&s.purchaseOrder.payments.some(p=>
+    p.provider==='RAZORPAY'&&p.status==='CAPTURED'&&!!p.verifiedAt&&
+    !!p.providerPayRef&&p.amountPaise===s.purchaseOrder.totalPaise&&
+    p.capturedPaise===s.purchaseOrder.totalPaise)
+    ?'RAZORPAY_CAPTURE_VERIFIED':'ONLINE_UNVERIFIED',
   disputed:Boolean(s.returnRequests.length),
   allocatedToActiveSettlement:s.settlementLines.some(l=>l.settlement.status!=='CANCELLED')
  })),
@@ -249,6 +255,7 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
   const current=await tx.settlement.findUnique({where:{id:settlementId},select:{
    id:true,supplierId:true,status:true,periodStart:true,periodEnd:true,createdAt:true,
    grossPaise:true,commissionPaise:true,payablePaise:true,
+   transfers:{select:{id:true}},
    lines:{select:{supplierOrderId:true,grossPaise:true,commissionPaise:true,netPaise:true}}
   }});
   if(!current)throw new ApiError(404,'NOT_FOUND','Settlement unavailable.');
@@ -263,8 +270,11 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
   if(!maker||maker.actorUserId===userId||await activeSupplierMember(tx,userId,current.supplierId))
    throw new ApiError(403,'INDEPENDENT_SETTLEMENT_APPROVAL_REQUIRED',
     'The draft maker or supplier personnel cannot independently attest the settlement.');
-  if(current.status!=='ON_HOLD')
-   throw new ApiError(409,'SETTLEMENT_ALREADY_REVIEWED','Only held drafts can be independently approved.');
+  if(current.status!=='ON_HOLD'||current.transfers.length)
+   throw new ApiError(409,'SETTLEMENT_ALREADY_REVIEWED','Only held drafts without transfers can be independently approved.');
+  const seller=await tx.supplier.findFirst({where:{id:current.supplierId,
+   approval:'APPROVED',suspendedAt:null},select:{id:true}});
+  if(!seller)throw new ApiError(409,'SETTLEMENT_SUPPLIER_NOT_ELIGIBLE','Supplier is not eligible for attestation.');
   const attestationExists=await tx.auditEvent.findFirst({where:{
    entityType:'Settlement',action:'SETTLEMENT_RECONCILIATION_ATTESTED',
    afterState:{path:['bankStatementReference'],equals:bankStatementReference}
@@ -343,10 +353,10 @@ export async function cancelHeldSettlement(db:PrismaClient,userId:string,settlem
  return serializable(db,async tx=>{
   await requireAdminPermission(tx,userId,'FINANCE_MANAGE');
   const current=await tx.settlement.findUnique({where:{id:settlementId},
-   select:{status:true,supplierId:true}});
+   select:{status:true,supplierId:true,transfers:{select:{id:true}}}});
   if(!current)throw new ApiError(404,'NOT_FOUND','Settlement unavailable.');
   if(current.status==='CANCELLED')return {id:settlementId,status:'CANCELLED',replayed:true};
-  if(current.status!=='ON_HOLD')
+  if(current.status!=='ON_HOLD'||current.transfers.length)
    throw new ApiError(409,'SETTLEMENT_CANNOT_CANCEL','Approved or processing settlements require formal reversal.');
   await tx.settlement.update({where:{id:settlementId},data:{status:'CANCELLED'}});
   await audit(tx,'Settlement',settlementId,userId,'SETTLEMENT_DRAFT_CANCELLED',{reason});
