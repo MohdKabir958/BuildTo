@@ -16,7 +16,15 @@
     "seed:demo": "node scripts/seed-demo.mjs",
     "seed:construction": "node scripts/seed-construction.mjs",
     "db:contract:check": "node scripts/check-schema-contract.mjs runtime",
-    "test:schema-contract": "node --test test/schemaContract.test.cjs"
+    "test:schema-contract": "node --test test/schemaContract.test.cjs",
+    "db:v21:validate": "prisma validate --schema prisma/v21/schema.prisma",
+    "db:v21:generate": "prisma generate --schema prisma/v21/schema.prisma",
+    "db:v21:parity": "node scripts/v21/check-parity.mjs",
+    "db:v21:verify": "node scripts/v21/manage-baseline.mjs verify",
+    "db:v21:status": "node scripts/v21/manage-baseline.mjs status",
+    "db:v21:baseline:resolve": "node scripts/v21/manage-baseline.mjs resolve-existing",
+    "db:v21:deploy-empty": "node scripts/v21/manage-baseline.mjs deploy-empty",
+    "test:v21:contract": "node --test test/v21SchemaContract.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.1106.0",
