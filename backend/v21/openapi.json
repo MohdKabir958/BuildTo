@@ -11424,43 +11424,31 @@
                                 "type": "string"
                               },
                               "maskedBankAccount": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string",
+                                "nullable": true
                               },
                               "holderName": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string",
+                                "nullable": true
                               },
                               "ifsc": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string",
+                                "nullable": true
                               },
                               "active": {
                                 "type": "boolean"
                               },
                               "registeredById": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string",
+                                "nullable": true
                               },
                               "approvedById": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string",
+                                "nullable": true
                               },
                               "verifiedAt": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": "string",
+                                "nullable": true
                               },
                               "createdAt": {
                                 "type": "string",
@@ -11474,10 +11462,9 @@
                           }
                         },
                         "nextCursor": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
                         }
                       }
                     },
