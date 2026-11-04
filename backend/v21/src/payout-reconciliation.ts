@@ -8,7 +8,7 @@ import {payoutSelection,payoutDTO,payoutExternalRef,lockSettlement,
 
 type Tx=Prisma.TransactionClient;
 async function postMemo(tx:Tx,id:string,supplierId:string,amount:bigint,utr:string){
- const suffix=supplierId.replaceAll('-');
+ const suffix=supplierId.replaceAll('-','');
  const defs=[
   {code:'SUPPLIER_PAYABLE_'+suffix,name:'Supplier payable memorandum'},
   {code:'SUPPLIER_PAYOUT_CLEAR_'+suffix,name:'RazorpayX payout clearing memorandum'}
