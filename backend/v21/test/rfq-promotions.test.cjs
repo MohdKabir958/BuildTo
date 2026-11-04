@@ -209,7 +209,7 @@ test('accepted listing-backed RFQ converts its negotiated price into one unpaid 
  assert.equal(order.body.data.suppliers.length,1);
  assert.equal(order.body.data.suppliers[0].sourceQuoteId,store.revisedId);
  assert.equal(order.body.data.totalPaise,'29320');
- assert.equal(order.body.data.paymentStatus,'AWAITING_PAYMENT_INTEGRATION');
+ assert.equal(order.body.data.paymentStatus,'NOT_STARTED');
  store.rfqOrderId=order.body.data.id;
  const line=await db.supplierOrderItem.findFirstOrThrow({where:{
   supplierOrder:{purchaseOrderId:store.rfqOrderId}
