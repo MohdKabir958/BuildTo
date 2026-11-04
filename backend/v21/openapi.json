@@ -10376,6 +10376,230 @@
           }
         }
       }
+    },
+    "/api/v2/admin/team": {
+      "get": {
+        "operationId": "listAdminTeam",
+        "summary": "OWNER-only paginated admin memberships, not a global user directory",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated admin memberships",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTeamListEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Clerk session required"
+          },
+          "403": {
+            "description": "OWNER permission required"
+          },
+          "404": {
+            "description": "Verified user or membership not found"
+          },
+          "409": {
+            "description": "Conflict, self-management or last owner protection"
+          }
+        }
+      },
+      "post": {
+        "operationId": "grantAdminAccess",
+        "summary": "Grant a role to an existing verified Clerk user; does not invite or create a Clerk account",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminTeamGrantInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Scoped admin membership response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTeamMemberEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Clerk session required"
+          },
+          "403": {
+            "description": "OWNER permission required"
+          },
+          "404": {
+            "description": "Verified user or membership not found"
+          },
+          "409": {
+            "description": "Conflict, self-management or last owner protection"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/team/{userId}": {
+      "patch": {
+        "operationId": "changeAdminRole",
+        "summary": "OWNER changes another active admin role, with audit reason and last-owner guard",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminTeamRoleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scoped admin membership response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTeamMemberEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Clerk session required"
+          },
+          "403": {
+            "description": "OWNER permission required"
+          },
+          "404": {
+            "description": "Verified user or membership not found"
+          },
+          "409": {
+            "description": "Conflict, self-management or last owner protection"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/team/{userId}/revoke": {
+      "post": {
+        "operationId": "revokeAdminAccess",
+        "summary": "OWNER revokes another active admin while retaining at least one owner",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminTeamRevokeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scoped admin membership response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTeamMemberEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Clerk session required"
+          },
+          "403": {
+            "description": "OWNER permission required"
+          },
+          "404": {
+            "description": "Verified user or membership not found"
+          },
+          "409": {
+            "description": "Conflict, self-management or last owner protection"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12276,6 +12500,171 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AdminTeamGrantInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "role",
+          "reason"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "OWNER",
+              "OPERATIONS",
+              "CATALOG",
+              "FINANCE",
+              "SUPPORT",
+              "AUDITOR"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 400
+          }
+        }
+      },
+      "AdminTeamRoleInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "reason"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "OWNER",
+              "OPERATIONS",
+              "CATALOG",
+              "FINANCE",
+              "SUPPORT",
+              "AUDITOR"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 400
+          }
+        }
+      },
+      "AdminTeamRevokeInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 400
+          }
+        }
+      },
+      "AdminTeamMember": {
+        "type": "object",
+        "required": [
+          "userId",
+          "role",
+          "active",
+          "displayName",
+          "email",
+          "createdAt",
+          "revokedAt"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "OWNER",
+              "OPERATIONS",
+              "CATALOG",
+              "FINANCE",
+              "SUPPORT",
+              "AUDITOR"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AdminTeamMemberEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminTeamMember"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminTeamListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "items",
+              "nextCursor"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AdminTeamMember"
+                }
+              },
+              "nextCursor": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "requestId": {
+            "type": "string"
           }
         }
       }

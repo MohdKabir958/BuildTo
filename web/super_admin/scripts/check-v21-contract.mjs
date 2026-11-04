@@ -8,6 +8,9 @@ const present=api.paths??{};
 const expected={
  '/health':['get'], '/ready':['get'], '/api/v2/system':['get'],
  '/api/v2/me':['get'], '/api/v2/admin/access':['get'],
+ '/api/v2/admin/team':['get','post'],
+ '/api/v2/admin/team/{userId}':['patch'],
+ '/api/v2/admin/team/{userId}/revoke':['post'],
  '/api/v2/admin/catalog/listings/pending':['get'],
  '/api/v2/admin/catalog/listings/{listingId}/review':['post'],
  '/api/v2/admin/delivery/cities':['post'],
@@ -23,7 +26,6 @@ for(const [route,methods] of Object.entries(expected)){
 }
 // These are *planned* additions, not secretly inherited from Grozo.
 for(const missing of [
- '/api/v2/admin/team',
  '/api/v2/admin/suppliers',
  '/api/v2/admin/overview',
  '/api/v2/admin/orders',
