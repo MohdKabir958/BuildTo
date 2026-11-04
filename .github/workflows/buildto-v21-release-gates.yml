@@ -50,6 +50,8 @@ jobs:
         run: |
           npm run db:v21:parity
           npm run db:v21:validate
+      - name: Independent baseline drift and redaction contract tests
+        run: npm run test:v21:contract
       - name: Deploy 3 migrations to disposable PostGIS database only
         run: npm run db:v21:deploy-empty
       - name: Seed reference units and catalog without live credentials
