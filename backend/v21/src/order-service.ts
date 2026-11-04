@@ -29,6 +29,7 @@ const orderSelect={
  id:true,publicNumber:true,customerId:true,checkoutQuoteId:true,status:true,
  subtotalPaise:true,discountPaise:true,taxPaise:true,deliveryPaise:true,totalPaise:true,
  placedAt:true,cancelledAt:true,addressSnapshot:true,
+ payments:{select:{status:true,capturedPaise:true},orderBy:{createdAt:'desc' as const}},
  supplierOrders:{select:{
   id:true,supplierId:true,sourceQuoteId:true,status:true,subtotalPaise:true,discountPaise:true,
   taxPaise:true,deliveryPaise:true,totalPaise:true,
@@ -44,7 +45,11 @@ function orderDTO(o:any){
   i.reservations.map((r:any)=>r.expiresAt?.toISOString()).filter(Boolean))).sort()[0]??null;
  return {
   id:o.id,publicNumber:o.publicNumber,checkoutQuoteId:o.checkoutQuoteId,
-  status:o.status,paymentStatus:'AWAITING_PAYMENT_INTEGRATION',
+  status:o.status,paymentStatus:o.payments.some((p:any)=>p.status==='CAPTURED')
+    ?(o.status==='CONFIRMED'?'CAPTURED':'CAPTURED_NEEDS_REVIEW')
+    :o.payments.some((p:any)=>p.status==='AUTHORIZED')?'AUTHORIZED'
+    :o.payments.some((p:any)=>['CREATED','PENDING'].includes(p.status))?'PENDING'
+    :o.payments.length?'NOT_CAPTURED':'NOT_STARTED',
   reservationExpiresAt:expiry,placedAt:o.placedAt.toISOString(),
   subtotalPaise:o.subtotalPaise.toString(),discountPaise:o.discountPaise.toString(),
   taxPaise:o.taxPaise.toString(),deliveryPaise:o.deliveryPaise.toString(),
