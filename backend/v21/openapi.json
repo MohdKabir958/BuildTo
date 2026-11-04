@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.18.0",
+    "version": "0.19.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -2629,6 +2629,29 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "adminCities",
+        "summary": "SERVICE_AREA_MANAGE list including inactive delivery configurations",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded list of configured cities/areas, both active and inactive"
+          },
+          "400": {
+            "description": "Invalid city filter"
+          },
+          "401": {
+            "description": "Clerk token required"
+          },
+          "403": {
+            "description": "SERVICE_AREA_MANAGE required"
+          }
+        }
       }
     },
     "/api/v2/admin/delivery/cities/{cityId}": {
@@ -2832,6 +2855,40 @@
                 }
               }
             }
+          }
+        }
+      },
+      "get": {
+        "operationId": "adminDeliveryAreas",
+        "summary": "SERVICE_AREA_MANAGE list including inactive delivery configurations",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded list of configured cities/areas, both active and inactive"
+          },
+          "400": {
+            "description": "Invalid city filter"
+          },
+          "401": {
+            "description": "Clerk token required"
+          },
+          "403": {
+            "description": "SERVICE_AREA_MANAGE required"
           }
         }
       }
