@@ -39,7 +39,7 @@ export async function createWarehouse(db:PrismaClient,actor:string,supplierId:st
  const o=record(input,['code','name','address']);
  const data={supplierId,code:warehouseCode(o.code),
   name:requiredString(o.name,'name',150),
-  address:o.address===undefined?undefined:warehouseAddress(o.address),active:false};
+  address:o.address===undefined?undefined:(o.address===null?Prisma.DbNull:warehouseAddress(o.address)!),active:false};
  return serializable(db,async tx=>{
   await lockSupplierInventory(tx,actor,supplierId);
   const row=await tx.warehouse.create({data,select:{
@@ -101,7 +101,7 @@ export async function listMovements(db:PrismaClient,actor:string,supplierId:stri
  const rows=await db.stockMovement.findMany({where:{
   balance:{warehouseId,warehouse:{supplierId},...(listingId?{listingId}:{})}
  },select:{id:true,kind:true,delta:true,reason:true,createdAt:true,
-  balance:{select:{listingId:true,warehouseId:true}}},
+  balance:{select:{listingId:true,warehouseId:true}},
  },orderBy:[{createdAt:'desc'},{id:'desc'}],take:100});
  return rows.map(row=>({
   id:row.id,kind:row.kind,delta:row.delta.toString(),reason:row.reason,
