@@ -124,7 +124,7 @@ export async function recordOrderPromotion(tx:Tx,args:{
  if(!/^[A-Z0-9][A-Z0-9_-]{2,59}$/.test(code))
   throw new ApiError(400,'INVALID_PROMOTION_CODE','Invalid promotion code.');
  const order=await tx.purchaseOrder.findFirst({where:{id:args.orderId,customerId:args.customerId},
-  select:{id:true,subtotalPaise:true,deliveryPaise:true,discountPaise:true}});
+  select:{id:true,subtotalPaise:true,deliveryPaise:true,discountPaise:true,checkoutQuoteId:true}});
  if(!order)throw new ApiError(404,'ORDER_NOT_FOUND','Customer order does not exist.');
  // An already committed discount remains replayable after its expiry/deactivation.
  // A new redemption must still lock the currently active promotion.
@@ -145,9 +145,31 @@ export async function recordOrderPromotion(tx:Tx,args:{
   throw new ApiError(409,'PROMOTION_LIMIT_REACHED','Promotion usage limit reached.');
  if(promotion.perUserLimit!==null&&customerUsed>=promotion.perUserLimit)
   throw new ApiError(409,'PROMOTION_USER_LIMIT','Promotion already used the maximum times.');
- const amount=computeDiscount(promotion,order.subtotalPaise,order.deliveryPaise);
- if(amount<=0n||order.discountPaise!==amount)
-  throw new ApiError(409,'PROMOTION_TOTAL_MISMATCH','Order discount must match its server-calculated promotion.');
+ let amount:bigint;
+ if(promotion.type==='FREE_DELIVERY'){
+  // Delivery coupons reduce the DELIVERY charge, not the taxable goods price.
+  // The immutable, server-calculated CheckoutQuote stores the original fee.
+  const quote=order.checkoutQuoteId?await tx.checkoutQuote.findUnique({
+   where:{id:order.checkoutQuoteId},select:{customerId:true,quoteSnapshot:true}
+  }):null;
+  const snapshot=quote?.quoteSnapshot;
+  if(!quote||quote.customerId!==args.customerId||!snapshot||
+     typeof snapshot!=='object'||Array.isArray(snapshot))
+   throw new ApiError(409,'PROMOTION_TOTAL_MISMATCH','Checkout quote is required for free delivery.');
+  const data=snapshot as Record<string,unknown>;
+  if(data.promotionCode!==code||data.promotionType!=='FREE_DELIVERY'||
+     typeof data.deliveryBeforePromotionPaise!=='string')
+   throw new ApiError(409,'PROMOTION_TOTAL_MISMATCH','Checkout discount is inconsistent.');
+  const gross=paise(data.deliveryBeforePromotionPaise,'deliveryBeforePromotionPaise');
+  amount=computeDiscount(promotion,order.subtotalPaise,gross);
+  if(amount<=0n||data.promotionAmountPaise!==amount.toString()||
+     order.deliveryPaise!==0n||order.discountPaise!==0n)
+   throw new ApiError(409,'PROMOTION_TOTAL_MISMATCH','Free delivery must not reduce taxable product prices.');
+ }else{
+  amount=computeDiscount(promotion,order.subtotalPaise,order.deliveryPaise);
+  if(amount<=0n||order.discountPaise!==amount)
+   throw new ApiError(409,'PROMOTION_TOTAL_MISMATCH','Order discount must match its server-calculated promotion.');
+ }
  await tx.promotionRedemption.create({data:{promotionId:promotion.id,
   customerId:args.customerId,orderId:args.orderId,amountPaise:amount}});
  return {amountPaise:amount.toString(),replayed:false};
