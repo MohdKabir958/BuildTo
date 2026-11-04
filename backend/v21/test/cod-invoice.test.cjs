@@ -34,10 +34,12 @@ test('fixture: customer, COD seller, separately staffed finance and warehouse-he
   const user=await db.user.create({data:{clerkUserId:sub(),displayName:'COD '+role}});
   store[role]=user;tokenSubjects[role]=user.clerkUserId;
  }
+ const gstin='36QWERT'+String(Math.floor(Math.random()*9000)+1000)+'F1Z1';
+ store.gstin=gstin;
  const supplier=await db.supplier.create({data:{
   slug:'cod-'+id(),legalName:'Buildto Cement Private Ltd',
   displayName:'Cement Supplier',approval:'APPROVED',verifiedAt:new Date(),
-  gstRegistration:'REGULAR',gstin:'36ABCDE1234F1Z1',
+  gstRegistration:'REGULAR',gstin,
   billingAddress:{line1:'Industrial Estate 12',city:'Hyderabad',
    stateCode:'TG',postalCode:'500001'}
  }});
@@ -208,7 +210,7 @@ test('supplier-finance issues exact GST snapshot invoice once; customer can only
  assert.equal(invoice.taxablePaise,'10000');assert.equal(invoice.taxPaise,'1800');
  assert.equal(invoice.cgstPaise,'900');assert.equal(invoice.sgstPaise,'900');
  assert.equal(invoice.totalPaise,'11800');assert.equal(invoice.lines.items.length,1);
- assert.equal(invoice.seller.gstin,'36ABCDE1234F1Z1');
+ assert.equal(invoice.seller.gstin,store.gstin);
  assert.equal(invoice.financialYear,financialYear(new Date()));
  const repeated=await call('post',path,'finance',{});
  assert.equal(repeated.status,200,JSON.stringify(repeated.body));
