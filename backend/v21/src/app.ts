@@ -11,6 +11,7 @@ import {verifyClerkWebhook,synchronizeClerkWebhook} from './clerk-webhooks';
 import {registerPublicCatalog,registerProtectedCatalog} from './catalog-routes';
 import {registerPublicDelivery,registerProtectedDelivery} from './delivery-routes';
 import {registerProtectedInventory} from './inventory-routes';
+import {registerRfqAndPromotions} from './rfq-routes';
 
 export interface AppDependencies {
   db:PrismaClient;
@@ -93,7 +94,7 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers'] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin'] as string[],
       },
       requestId:res.locals.requestId,
     });
@@ -107,6 +108,7 @@ export function createV21App(deps:AppDependencies) {
     registerProtectedCatalog(app,deps.db,auth);
     registerProtectedDelivery(app,deps.db,auth);
     registerProtectedInventory(app,deps.db,auth);
+    registerRfqAndPromotions(app,deps.db,auth);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
       try{
         const principal=res.locals.principal as {id:string;displayName:string};
