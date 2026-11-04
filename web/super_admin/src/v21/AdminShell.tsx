@@ -9,6 +9,7 @@ import {fetchPublicRelease,validateApiOrigin} from './publicRelease';
 import type {PublicRelease} from './publicRelease';
 import {canViewSection} from './auth/roles';
 import {TeamPanel} from './features/team/TeamPanel';
+import {SupplierPanel} from './features/suppliers/SupplierPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -129,6 +130,8 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
           </div>
           {active==='overview'
             ? <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
+            : active==='suppliers'&&administrator&&['OWNER','OPERATIONS'].includes(administrator.role)
+            ? <SupplierPanel currentAdminId={administrator.id}/>
             : active==='team'&&administrator?.role==='OWNER'
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
