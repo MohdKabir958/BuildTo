@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.21.0",
+    "version": "0.22.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -11253,6 +11253,95 @@
           },
           "404": {
             "description": "Unknown order"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/cod": {
+      "get": {
+        "operationId": "adminCodReceipts",
+        "summary": "FINANCE_MANAGE private supplier-held COD receipt queue, including unresolved receipts",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "RECORDED",
+                "VERIFIED",
+                "DISPUTED",
+                "REVERSED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact decimal paise strings and bounded COD receipts; no collector contact info"
+          },
+          "403": {
+            "description": "FINANCE_MANAGE required"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/suppliers": {
+      "get": {
+        "operationId": "financeSupplierChoices",
+        "summary": "FINANCE_MANAGE-only supplier names and IDs without KYC or banking secrets",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Minimal supplier identifiers and approval status"
+          },
+          "403": {
+            "description": "FINANCE_MANAGE required"
           }
         }
       }

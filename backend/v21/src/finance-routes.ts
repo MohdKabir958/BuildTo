@@ -1,6 +1,7 @@
 import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
+import {financeSupplierChoices} from './admin-finance-supplier-read';
 import {createSettlementDraft,approveSettlement,cancelHeldSettlement,
  supplierStatement,adminSupplierFinance,recognizeCodCommission,journalDetail} from './finance-service';
 
@@ -23,6 +24,12 @@ const go=(job:Job):RequestHandler=>async(req,res,next)=>{
 export function registerFinance(app:Express,db:PrismaClient,auth:RequestHandler){
  app.get('/api/v2/suppliers/:supplierId/finance/statement',auth,go((req,res)=>
   supplierStatement(db,actor(res),req.params.supplierId)));
+ app.get('/api/v2/admin/finance/suppliers',auth,go((req,res)=>{
+  const cursor=req.query.cursor,raw=req.query.limit;
+  if(cursor!==undefined&&typeof cursor!=='string')throw new ApiError(400,'INVALID_CURSOR','Invalid cursor.');
+  if(raw!==undefined&&(typeof raw!=='string'||!/^[1-9][0-9]?$/.test(raw)))throw new ApiError(400,'INVALID_LIMIT','Invalid page limit.');
+  return financeSupplierChoices(db,actor(res),{cursor:cursor as string|undefined,limit:raw===undefined?undefined:Number(raw)});
+ }));
  app.get('/api/v2/admin/finance/suppliers/:supplierId',auth,go((req,res)=>
   adminSupplierFinance(db,actor(res),req.params.supplierId)));
  app.post('/api/v2/admin/finance/settlements/drafts',auth,async(req,res,next)=>{

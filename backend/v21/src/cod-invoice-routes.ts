@@ -2,6 +2,7 @@ import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {selectCod,recordCod,reviewCod,listSupplierCod} from './cod-service';
+import {adminCodQueue} from './admin-cod-read';
 import {issueSupplierInvoice,supplierInvoices,customerInvoices} from './invoice-service';
 
 const actor=(res:Response):string=>{
@@ -41,6 +42,13 @@ export function registerCodAndInvoices(app:Express,db:PrismaClient,auth:RequestH
  });
  app.get(supplier+'/cod',auth,action((req,res)=>
   listSupplierCod(db,actor(res),req.params.supplierId,req.params.supplierOrderId)));
+ app.get('/api/v2/admin/finance/cod',auth,action((req,res)=>{
+  const one=(x:unknown)=>x===undefined?undefined:typeof x==='string'?x:(()=>{throw new ApiError(400,'INVALID_QUERY','Expected a single query parameter.');})();
+  const limit=one(req.query.limit);
+  if(limit!==undefined&&!/^[1-9][0-9]?$/.test(limit))throw new ApiError(400,'INVALID_LIMIT','Invalid page size.');
+  return adminCodQueue(db,actor(res),{status:one(req.query.status),cursor:one(req.query.cursor),
+   limit:limit===undefined?undefined:Number(limit)});
+ }));
  app.post('/api/v2/admin/finance/cod/:receiptId/review',auth,async(req,res,next)=>{
   try{
    const x=await reviewCod(db,actor(res),req.params.receiptId,req.body);
