@@ -63,7 +63,7 @@ function orderDTO(o:any){
   }))
  };
 }
-async function outbox(tx:Tx,entityId:string,userId:string,eventType:string){
+export async function outbox(tx:Tx,entityId:string,userId:string,eventType:string){
  await tx.auditEvent.create({data:{
   actorUserId:userId,actorRole:'CUSTOMER_ORDER',action:eventType,
   entityType:'PurchaseOrder',entityId
@@ -121,7 +121,7 @@ export async function getCustomerOrder(db:PrismaClient,userId:string,id:string){
  uuid(id,'orderId');
  return ensureOrder(db,userId,id);
 }
-async function reserveStock(tx:Tx,itemId:string,listingId:string,supplierId:string,quantity:string,expiresAt:Date){
+export async function reserveStock(tx:Tx,itemId:string,listingId:string,supplierId:string,quantity:string,expiresAt:Date){
  let need=new Prisma.Decimal(quantity);
  const balances=await tx.inventoryBalance.findMany({where:{
   listingId,warehouse:{supplierId,active:true}
