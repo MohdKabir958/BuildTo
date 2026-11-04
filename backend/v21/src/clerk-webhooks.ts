@@ -8,7 +8,7 @@ export interface ClerkWebhookHeaders {
  timestamp:string|undefined;
  signature:string|undefined;
 }
-export type ClerkSyncEvent={type:'user.created'|'user.updated'|'user.deleted';subject:string;displayName:string};
+export type ClerkSyncEvent={type:'user.created'|'user.updated'|'user.deleted';subject:string;displayName:string;email?:string|null;phoneE164?:string|null};
 export interface VerifiedClerkWebhook {
  messageId:string;event:ClerkSyncEvent;digest:string;
 }
@@ -42,15 +42,33 @@ export function verifyClerkWebhook(
   const p=payload as {type?:unknown;data?:unknown};
   if(p.type!=='user.created'&&p.type!=='user.updated'&&p.type!=='user.deleted')return null;
   if(!p.data||typeof p.data!=='object'||Array.isArray(p.data))throw new ApiError(400,'INVALID_WEBHOOK_PAYLOAD','Invalid user data.');
-  const data=p.data as {id?:unknown;first_name?:unknown;last_name?:unknown};
+  const data=p.data as {id?:unknown;first_name?:unknown;last_name?:unknown;
+    primary_email_address_id?:unknown;primary_phone_number_id?:unknown;
+    email_addresses?:unknown;phone_numbers?:unknown};
   if(typeof data.id!=='string'||!/^user_[a-zA-Z0-9]{6,150}$/.test(data.id))
     throw new ApiError(400,'INVALID_WEBHOOK_PAYLOAD','Invalid provider user subject.');
   const normalizeName=(v:unknown)=>typeof v==='string'?v.replace(/[\x00-\x1f\x7f]/g,' ').trim().slice(0,70):'';
   const displayName=[normalizeName(data.first_name),normalizeName(data.last_name)].filter(Boolean).join(' ').slice(0,160)||'Buildto customer';
+  // Honor Clerk's declared primary contacts, never an arbitrary array index.
+  // Collections missing from an update preserve the existing contact value.
+  function primaryContact(collection:unknown,primaryId:unknown,key:'email_address'|'phone_number'):string|null {
+    if(!Array.isArray(collection))return null;
+    const selected=collection.find(v=>v && typeof v==='object'&&!Array.isArray(v)&&v.id===primaryId);
+    if(!selected||typeof selected[key]!=='string')return null;
+    if(selected.verification && selected.verification.status!=='verified')return null;
+    const value=(selected[key] as string).trim();
+    if(key==='email_address')return value.length<=320&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)?value.toLowerCase():null;
+    return /^\+[1-9]\d{7,14}$/.test(value)?value:null;
+  }
+  const contacts:Pick<ClerkSyncEvent,'email'|'phoneE164'>={};
+  if(Array.isArray(data.email_addresses))
+    contacts.email=primaryContact(data.email_addresses,data.primary_email_address_id,'email_address');
+  if(Array.isArray(data.phone_numbers))
+    contacts.phoneE164=primaryContact(data.phone_numbers,data.primary_phone_number_id,'phone_number');
   return {
     messageId:id,
     digest:createHash('sha256').update(body).digest('hex'),
-    event:{type:p.type,subject:data.id,displayName}
+    event:{type:p.type,subject:data.id,displayName,...contacts}
   };
 }
 export async function synchronizeClerkWebhook(db:PrismaClient,verified:VerifiedClerkWebhook):
@@ -87,7 +105,7 @@ export async function synchronizeClerkWebhook(db:PrismaClient,verified:VerifiedC
       action='CLERK_USER_DELETED';
     }else if(!existing){
       const created=await tx.user.create({data:{
-        clerkUserId:event.subject,displayName:event.displayName,status:'ACTIVE'
+        clerkUserId:event.subject,displayName:event.displayName,email:event.email??null,phoneE164:event.phoneE164??null,status:'ACTIVE'
       },select:{id:true}});
       userId=created.id;action='CLERK_USER_PROVISIONED';
     }else{
@@ -95,7 +113,12 @@ export async function synchronizeClerkWebhook(db:PrismaClient,verified:VerifiedC
       // Deletion is terminal; stale user.updated/created must NEVER reopen a deleted account.
       if(existing.deletedAt||existing.status==='CLOSED')action='CLERK_UPDATE_IGNORED_CLOSED';
       else{
-        if(event.type==='user.updated')await tx.user.update({where:{id:userId},data:{displayName:event.displayName}});
+        if(event.type==='user.updated'||event.type==='user.created')
+          await tx.user.update({where:{id:userId},data:{
+            displayName:event.displayName,
+            ...(event.email!==undefined?{email:event.email}:{}),
+            ...(event.phoneE164!==undefined?{phoneE164:event.phoneE164}:{})
+          }});
         action='CLERK_USER_SYNCED';
       }
     }
