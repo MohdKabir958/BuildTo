@@ -266,6 +266,7 @@ test('supplier-admin conflict cannot publish; independent moderation publishes a
  assert.equal(publicReview.status,200,JSON.stringify(publicReview.body));
  assert.equal(publicReview.body.data.length,1);
  assert.equal(publicReview.body.data[0].customerId,undefined,'Public reviews must not expose customer identity');
+ assert.equal(publicReview.body.data[0].supplierOrderId,undefined,'Public reviews must not expose private supplier order references');
  assert.equal((await send('post',path,'supportAdmin',{decision:'PUBLISH'})).body.data.replayed,true);
  const hide=await send('post',path,'supportAdmin',{decision:'HIDE'});
  assert.equal(hide.status,200,JSON.stringify(hide.body));
