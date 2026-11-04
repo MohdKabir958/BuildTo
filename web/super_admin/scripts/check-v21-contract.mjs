@@ -33,6 +33,7 @@ const expected={
  '/api/v2/admin/finance/suppliers':['get'],
  '/api/v2/admin/finance/refunds':['get'],
  '/api/v2/admin/finance/payouts':['get'],
+ '/api/v2/admin/finance/beneficiaries':['get'],
 };
 for(const [route,methods] of Object.entries(expected)){
  for(const method of methods)assert.ok(present[route]?.[method],`Missing V2.1 ${method.toUpperCase()} ${route}`);
