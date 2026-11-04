@@ -13,11 +13,16 @@ import {registerPublicDelivery,registerProtectedDelivery} from './delivery-route
 import {registerProtectedInventory} from './inventory-routes';
 import {registerRfqAndPromotions} from './rfq-routes';
 import {registerProtectedCheckout} from './checkout-routes';
+import {registerProtectedPayments} from './payment-routes';
+import {verifyRazorpayWebhook,receiveRazorpayEvent} from './payment-service';
+import type {PaymentGateway} from './payment-gateway';
 
 export interface AppDependencies {
   db:PrismaClient;
   identityVerifier?:IdentityVerifier;
   clerkWebhookSecret?:string;
+  razorpayWebhookSecret?:string;
+  paymentGateway?:PaymentGateway;
   limiter:RateLimiter;
   log?:LogWriter;
   allowedOrigins:string[];
@@ -72,6 +77,20 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
+  if(deps.paymentGateway && deps.razorpayWebhookSecret){
+    app.post('/api/v2/webhooks/razorpay',makeLimit('razorpay-webhook',240),
+      express.raw({type:'application/json',limit:'128kb'}),async(req,res,next)=>{
+       try{
+        const event=verifyRazorpayWebhook(req.body,req.header('x-razorpay-signature'),
+         req.header('x-razorpay-event-id'),deps.razorpayWebhookSecret!);
+        const applied=await receiveRazorpayEvent(deps.db,event);
+        if(applied.retry)return res.status(503).json(errorDTO('PAYMENT_EVENT_RETRY',
+         'Payment event is awaiting its order record.',res.locals.requestId));
+        res.status(200).json({accepted:true,duplicate:applied.duplicate,
+         requestId:res.locals.requestId});
+       }catch(error){next(error);}
+      });
+  }
   app.use(express.json({limit:'64kb',strict:true}));
   app.use((req,res,next)=>{
     if(['POST','PUT','PATCH'].includes(req.method) && req.path.startsWith('/api/v2/') &&
@@ -95,7 +114,7 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer'] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer',...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },
       requestId:res.locals.requestId,
     });
@@ -111,6 +130,8 @@ export function createV21App(deps:AppDependencies) {
     registerProtectedInventory(app,deps.db,auth);
     registerRfqAndPromotions(app,deps.db,auth);
     registerProtectedCheckout(app,deps.db,auth);
+    if(deps.paymentGateway&&deps.razorpayWebhookSecret)
+      registerProtectedPayments(app,deps.db,auth,deps.paymentGateway);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
       try{
         const principal=res.locals.principal as {id:string;displayName:string};
@@ -134,7 +155,7 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
-  // Checkout holds warehouse stock transactionally. Payment capture remains disabled until PR 09.
+  // All provider calls occur outside DB transactions. COD and refunds remain gated to PR 10.
 
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);
