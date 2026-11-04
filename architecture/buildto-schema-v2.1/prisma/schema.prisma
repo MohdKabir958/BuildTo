@@ -1198,8 +1198,11 @@ model TaxInvoice {
 model SupplierPayoutAccount {
   id                String    @id @default(uuid()) @db.Uuid
   supplierId        String    @db.Uuid
-  providerTokenRef  String?   @db.VarChar(200) // no raw account number or UPI PIN
+  providerTokenRef  String?   @unique @db.VarChar(200) // no raw account number or UPI PIN
   bankAccountLast4  String?   @db.Char(4)
+  validationRef     String?   @unique @db.VarChar(180)
+  registeredById    String?   @db.Uuid
+  approvedById      String?   @db.Uuid
   accountHolder     String?   @db.VarChar(160)
   ifsc              String?   @db.VarChar(11)
   upiIdEnc          String?   // encrypted token, never plain text for sensitive settlement data
@@ -1259,6 +1262,7 @@ model PayoutTransfer {
   settlement       Settlement           @relation(fields: [settlementId], references: [id], onDelete: Restrict)
   account          SupplierPayoutAccount @relation(fields: [payoutAccountId], references: [id], onDelete: Restrict)
   @@unique([settlementId, requestKey])
+  @@unique([settlementId])
   @@index([status, createdAt])
 }
 // Each journal must be balanced by posting logic; a verified database posting procedure is a release gate.

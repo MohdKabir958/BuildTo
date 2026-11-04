@@ -47,12 +47,23 @@ const ADDITIONS={
  'TaxInvoice_sourceInvoiceId_idx'],
  triggers:['buildto_return_refund_guard','buildto_return_credit_note_guard']
 };
+const PAYOUT_ADDITIONS={
+ columns:['SupplierPayoutAccount.validationRef','SupplierPayoutAccount.registeredById',
+  'SupplierPayoutAccount.approvedById'],
+ constraints:['payout_beneficiary_approval_proof',
+  'payout_transfer_terminal_proof'],
+ indexes:['SupplierPayoutAccount_providerTokenRef_key',
+  'SupplierPayoutAccount_validationRef_key','PayoutTransfer_settlementId_key',
+  'buildto_one_active_payout_beneficiary'],
+ triggers:['buildto_payout_beneficiary_guard','buildto_payout_transfer_guard',
+  'buildto_settlement_paid_guard']
+};
 const LATEST={
  ...BASELINE,
- columns:BASELINE.columns.concat(ADDITIONS.columns),
- constraints:BASELINE.constraints.concat(ADDITIONS.constraints),
- indexes:BASELINE.indexes.concat(ADDITIONS.indexes),
- triggers:BASELINE.triggers.concat(ADDITIONS.triggers)
+ columns:BASELINE.columns.concat(ADDITIONS.columns,PAYOUT_ADDITIONS.columns),
+ constraints:BASELINE.constraints.concat(ADDITIONS.constraints,PAYOUT_ADDITIONS.constraints),
+ indexes:BASELINE.indexes.concat(ADDITIONS.indexes,PAYOUT_ADDITIONS.indexes),
+ triggers:BASELINE.triggers.concat(ADDITIONS.triggers,PAYOUT_ADDITIONS.triggers)
 };
 
 async function verifyExistingSchema(prisma,{baselineOnly=false}={}) {
