@@ -5,14 +5,16 @@ import {uuid,stockQty} from './inventory-validation';
 // Checkout (PR 08) will invoke these helpers INSIDE its order database transaction.
 // Never expose a public reservation endpoint that accepts arbitrary order-item IDs.
 type Tx=Prisma.TransactionClient;
-type OrderRow={id:string;listingId:string|null;quantity:Prisma.Decimal;supplierId:string};
+type OrderRow={id:string;listingId:string|null;quantity:Prisma.Decimal;supplierId:string;orderStatus:string;approval:string;suspendedAt:Date|null};
 type BalanceRow={id:string;listingId:string;warehouseId:string;
  onHandQty:Prisma.Decimal;reservedQty:Prisma.Decimal;version:number};
 async function lockOrderItem(tx:Tx,orderItemId:string):Promise<OrderRow> {
  const rows=await tx.$queryRaw<OrderRow[]>(Prisma.sql`
-  SELECT item.id,item."listingId",item.quantity,orders."supplierId"
+  SELECT item.id,item."listingId",item.quantity,orders."supplierId",
+    orders.status AS "orderStatus",supplier.approval,supplier."suspendedAt"
   FROM "SupplierOrderItem" item
   JOIN "SupplierOrder" orders ON orders.id=item."supplierOrderId"
+  JOIN "Supplier" supplier ON supplier.id=orders."supplierId"
   WHERE item.id=${orderItemId}::uuid FOR UPDATE OF item
  `);
  if(!rows[0])throw new ApiError(404,'ORDER_ITEM_NOT_FOUND','Order item not found.');
@@ -42,13 +44,16 @@ export async function holdOrderItemStock(tx:Tx,cmd:HoldStockCommand) {
  const orderItem=await lockOrderItem(tx,cmd.orderItemId);
  if(orderItem.supplierId!==cmd.supplierId||!orderItem.listingId)
   throw new ApiError(404,'ORDER_ITEM_NOT_FOUND','Order item not found.');
+ if(['CANCELLED','REJECTED'].includes(orderItem.orderStatus)||
+    orderItem.approval!=='APPROVED'||orderItem.suspendedAt)
+  throw new ApiError(409,'ORDER_STOCK_UNAVAILABLE','Order or supplier cannot reserve stock.');
  const warehouse=await tx.warehouse.findFirst({where:{
   id:cmd.warehouseId,supplierId:cmd.supplierId,active:true
  },select:{id:true}});
  if(!warehouse)throw new ApiError(404,'WAREHOUSE_NOT_FOUND','Active warehouse not found.');
  const listing=await tx.supplierListing.findFirst({where:{
   id:orderItem.listingId,supplierId:cmd.supplierId,status:'APPROVED',
-  active:true,deletedAt:null,
+  active:true,deletedAt:null,product:{active:true,category:{active:true}},
  },select:{id:true}});
  if(!listing)throw new ApiError(409,'LISTING_UNAVAILABLE','Listing is not available for checkout.');
  const balance=await tx.inventoryBalance.findUnique({where:{
