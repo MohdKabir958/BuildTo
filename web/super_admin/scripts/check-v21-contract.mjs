@@ -11,6 +11,7 @@ const expected={
  '/api/v2/admin/team':['get','post'],
  '/api/v2/admin/team/{userId}':['patch'],
  '/api/v2/admin/team/{userId}/revoke':['post'],
+ '/api/v2/admin/overview':['get'],
  '/api/v2/admin/suppliers':['get'],
  '/api/v2/admin/suppliers/{supplierId}':['get'],
  '/api/v2/admin/suppliers/{supplierId}/review':['post'],
@@ -34,7 +35,6 @@ for(const [route,methods] of Object.entries(expected)){
 }
 // These are *planned* additions, not secretly inherited from Grozo.
 for(const missing of [
- '/api/v2/admin/overview',
  '/api/v2/admin/orders',
  '/api/v2/admin/audit',
 ])assert.ok(!Object.hasOwn(present,missing),`New endpoint ${missing} exists: update A00 map before implementing a client`);

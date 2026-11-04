@@ -12,6 +12,7 @@ import {TeamPanel} from './features/team/TeamPanel';
 import {SupplierPanel} from './features/suppliers/SupplierPanel';
 import {CatalogAdminPanel} from './features/catalog/CatalogAdminPanel';
 import {DeliveryAdminPanel} from './features/delivery/DeliveryAdminPanel';
+import {DashboardPanel} from './features/overview/DashboardPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -131,7 +132,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             </div>
           </div>
           {active==='overview'
-            ? <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
+            ? administrator ? <DashboardPanel/> : <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
             : active==='suppliers'&&administrator&&['OWNER','OPERATIONS'].includes(administrator.role)
             ? <SupplierPanel currentAdminId={administrator.id}/>
             : active==='catalog'&&administrator&&['OWNER','CATALOG'].includes(administrator.role)

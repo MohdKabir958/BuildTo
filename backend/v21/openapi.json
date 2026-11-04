@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.19.0",
+    "version": "0.20.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -11136,6 +11136,28 @@
                 "type": "object"
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/overview": {
+      "get": {
+        "operationId": "adminOverview",
+        "summary": "Role-aware live marketplace counts and finance-only capture evidence",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live timestamped database aggregates"
+          },
+          "401": {
+            "description": "Sign-in required"
+          },
+          "403": {
+            "description": "ADMIN_READ permission required"
           }
         }
       }
