@@ -155,7 +155,7 @@ function Overview({onNavigate,connection,administrator}:{onNavigate:(id:SectionI
         <span className="text-xs font-medium text-slate-500">Implementation in progress</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {FEATURE_ORDER.map(id=>{
+        {FEATURE_ORDER.filter(id=>!administrator||canViewSection(administrator.role,id)).map(id=>{
           const section=byId(id),Icon=section.icon;
           return <button type="button" key={id} onClick={()=>onNavigate(id)} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#95AAC2] hover:shadow-md">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF1FA] text-[#174C86]"><Icon size={20}/></span>
