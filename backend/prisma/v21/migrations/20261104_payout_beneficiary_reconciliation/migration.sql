@@ -22,8 +22,6 @@ ALTER TABLE "SupplierPayoutAccount"
    AND "registeredById"<>"approvedById" AND "verifiedAt" IS NOT NULL)
  );
 ALTER TABLE "PayoutTransfer"
- ADD CONSTRAINT "payout_transfer_positive" CHECK ("amountPaise">0);
-ALTER TABLE "PayoutTransfer"
  ADD CONSTRAINT "payout_transfer_terminal_proof" CHECK (
   ("status" NOT IN ('PROCESSING','SUCCEEDED','FAILED') OR
     "providerRef" ~ '^pout_[A-Za-z0-9]{8,60}$')
