@@ -41,7 +41,14 @@ jobs:
         run: npm run build
       - name: Verify compiled V2.1 staging and exact CSP origins
         run: npm run check:v21:staging
-      - name: All existing admin UI regression tests
+      - name: V2.1 feature regressions with staging Clerk auth mode
+        run: npx vitest run src/v21
+      - name: Old portal compatibility tests with legacy-only test config
+        # The deployed bundle above is built with clerk-test. Legacy test helpers
+        # call the old passcode token setter and must not run in staging mode.
+        env:
+          VITE_ADMIN_VERSION: legacy
+          VITE_AUTH_MODE: legacy
         run: npm test -- --run
   public-staging-smoke:
     if: github.event_name == 'workflow_dispatch'
