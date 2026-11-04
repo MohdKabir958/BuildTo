@@ -283,3 +283,106 @@ test('bank statement independently attested against exact provider UTR, never ca
  assert.equal(vendor.body.data[0].status,'SUCCEEDED');
  assert.equal(vendor.body.data[0].maskedBankAccount,'****5678');
 });
+
+
+test('PostgreSQL rejects forged payout success, duplicate payout and bank destination mutation',async()=>{
+ await assert.rejects(db.supplierPayoutAccount.update({where:{id:s.accountId},
+  data:{bankAccountLast4:'9999'}}));
+ await assert.rejects(db.payoutTransfer.update({where:{id:s.payout.id},
+  data:{amountPaise:100n}}));
+ await assert.rejects(db.payoutTransfer.create({data:{
+  settlementId:s.settlement,payoutAccountId:s.accountId,
+  requestKey:k(),status:'PENDING',amountPaise:9200n
+ }}));
+ await assert.rejects(db.settlement.update({where:{id:s.settlement},
+  data:{status:'PROCESSING',paidAt:null}}));
+ assert.equal(await db.payoutTransfer.count({where:{settlementId:s.settlement}}),1);
+ assert.equal((await db.settlement.findUniqueOrThrow({where:{id:s.settlement}})).status,'PAID');
+ provider.status='reversed';
+ const after=await send('post',admin('/payouts/'+s.payout.id+'/reconcile'),
+  'externalReviewer',{providerPayoutId:provider.payoutId});
+ assert.equal(after.status,409,JSON.stringify(after.body));
+ assert.equal(after.body.error.code,'PAYOUT_ALREADY_FINALIZED');
+ provider.status='processed';
+});
+test('RazorpayX reversed payout stays FAILED and cannot quietly generate a second transfer',async()=>{
+ const order=await createDelivered();
+ const drafted=await send('post',admin('/settlements/drafts'),'maker',{
+  supplierId:s.supplier.id,settlementKey:k(),
+  periodStart:new Date(Date.now()-86400000).toISOString(),
+  periodEnd:new Date(Date.now()+3600000).toISOString(),
+  supplierOrderIds:[order.child.id]
+ },k());
+ assert.equal(drafted.status,201,JSON.stringify(drafted.body));
+ const approved=await send('post',admin('/settlements/'+drafted.body.data.id+'/approve'),
+  'checker',{bankStatementReference:'BANK-SECOND-'+uid().slice(0,21)});
+ assert.equal(approved.status,200,JSON.stringify(approved.body));
+ const intent=await send('post',admin('/settlements/'+drafted.body.data.id+'/payout-intent'),
+  'payoutMaker',{payoutAccountId:s.accountId},k());
+ assert.equal(intent.status,201,JSON.stringify(intent.body));
+ const old={...provider};
+ provider.payoutId='pout_'+uid().replaceAll('-').slice(0,18);
+ provider.referenceId=intent.body.data.externalReferenceId;
+ provider.status='reversed';provider.utr=null;
+ const failed=await send('post',admin('/payouts/'+intent.body.data.id+'/reconcile'),
+  'externalReviewer',{providerPayoutId:provider.payoutId});
+ assert.equal(failed.status,200,JSON.stringify(failed.body));
+ assert.equal(failed.body.data.payout.status,'FAILED');
+ assert.equal((await db.settlement.findUniqueOrThrow({
+  where:{id:drafted.body.data.id}})).status,'FAILED');
+ assert.equal(await db.ledgerJournal.count({where:{
+  referenceKey:'payout:processed:'+intent.body.data.id}}),0);
+ assert.equal((await send('post',admin('/payouts/'+intent.body.data.id+'/reconcile'),
+  'externalReviewer',{providerPayoutId:provider.payoutId})).status,409);
+ assert.equal((await send('post',admin('/settlements/'+drafted.body.data.id+'/payout-intent'),
+  'payoutMaker',{payoutAccountId:s.accountId},k())).status,409);
+ assert.equal((await send('post',admin('/payouts/'+intent.body.data.id+'/bank-attest'),
+  'bankAttestor',{bankStatementReference:'BANK-FAILED-PAYOUT-2026',
+   providerUtr:'UTR12345678901111'})).status,409);
+ Object.assign(provider,old);
+});
+test('RazorpayX adapter only fetches provider GET and never exposes full account number',async()=>{
+ const {RazorpayXPayoutEvidence}=require('../dist/payout-gateway.js');
+ const gateway=new RazorpayXPayoutEvidence('rzp_test_fakefinance','fake-secret');
+ const oldFetch=global.fetch,calls=[];
+ global.fetch=async(url,init)=>{
+  calls.push({url,method:init.method});
+  if(url.endsWith('/fund_accounts/'+provider.fundId))
+   return {ok:true,json:async()=>({
+    id:provider.fundId,active:true,account_type:'bank_account',
+    bank_account:{name:provider.bankHolder,ifsc:provider.ifsc,account_number:'123456785678'}
+   })};
+  if(url.endsWith('/fund_accounts/validations/'+provider.validationId))
+   return {ok:true,json:async()=>({
+    id:provider.validationId,status:'completed',
+    fund_account:{id:provider.fundId},
+    results:{account_status:'active',registered_name:provider.registered}
+   })};
+  return {ok:true,json:async()=>({
+   id:provider.payoutId,entity:'payout',fund_account_id:provider.fundId,
+   amount:9200,currency:'INR',purpose:'payout',
+   reference_id:s.payout.externalReferenceId,status:'processed',utr:'UTR12345678900123'
+  })};
+ };
+ try{
+  const account=await gateway.fetchFundAccount(provider.fundId);
+  assert.equal(account.last4,'5678');
+  assert(!JSON.stringify(account).includes('123456785678'));
+  const validation=await gateway.fetchValidation(provider.validationId);
+  assert.equal(validation.fundAccountId,provider.fundId);
+  const payout=await gateway.fetchPayout(provider.payoutId);
+  assert.equal(payout.amount,9200n);
+  assert.equal(payout.status,'processed');
+  assert.equal(calls.length,3);
+  assert(calls.every(c=>c.method==='GET'));
+ }finally{global.fetch=oldFetch;}
+});
+test('staging refuses live RazorpayX evidence keys; no half-configured finance gateway',()=>{
+ const base={BUILDTO_V21_ENV:'local',
+  DATABASE_URL:'postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test'};
+ assert.throws(()=>readConfig({...base,
+  RAZORPAYX_READ_ONLY_KEY_ID:'rzp_test_validonly'}),/RAZORPAYX_READ_ONLY_CONFIG_INVALID/);
+ assert.throws(()=>readConfig({...base,BUILDTO_V21_ENV:'staging',
+  DATABASE_URL:'postgresql://placeholder:placeholder@ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech/neondb',
+  RAZORPAYX_READ_ONLY_KEY_ID:'rzp_live_danger',RAZORPAYX_READ_ONLY_KEY_SECRET:'fake'}),/RAZORPAYX_STAGING_LIVE_KEY_DENIED/);
+});
