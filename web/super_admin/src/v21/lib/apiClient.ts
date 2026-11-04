@@ -77,7 +77,7 @@ export class V21ApiClient {
        const message=typeof error.message==='string'?error.message.slice(0,200):'Request could not be completed';
        throw new V21ApiError(response.status,code,message,requestId);
      }
-     if(!Object.hasOwn(raw,'data'))
+     if(!Object.prototype.hasOwnProperty.call(raw,'data'))
        throw new V21ApiError(response.status,'INVALID_RESPONSE','Missing API data',requestId);
      return {data:raw.data as T,requestId};
    }finally{
