@@ -1,0 +1,62 @@
+name: Buildto V2.1 controlled refunds and GST credit notes
+on:
+  push:
+    branches: [backend/v21-14-controlled-refunds-gst-credit-notes]
+  pull_request:
+    paths:
+      - 'backend/v21/**'
+      - 'backend/prisma/v21/**'
+      - 'architecture/buildto-schema-v2.1/prisma/schema.prisma'
+      - 'backend/package.json'
+      - '.github/workflows/buildto-v21-refunds.yml'
+permissions:
+  contents: read
+jobs:
+  controlled-finance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: buildto_v21_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d buildto_v21_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test
+      PGPASSWORD: postgres
+      NODE_ENV: test
+      BUILDTO_V21_BASELINE_CONFIRM: ci-test
+      BUILDTO_V21_ENV: local
+      BUILDTO_V21_DELIVERY_OTP_HMAC_SECRET: ci-only-hmac-secret-0123456789abcdefghijklmnop
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Confirm contract parity and Prisma structure
+        run: |
+          npm run db:v21:parity
+          npm run db:v21:validate
+      - name: Deploy all V2.1 migrations to disposable database
+        run: npm run db:v21:deploy-empty
+      - name: Seed contract UOM and catalog
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/reference-seed.sql
+      - name: Build strict V2.1 API
+        run: npm run build:v21
+      - name: Full HTTP and finance database regression
+        run: npm run test:v21:api
+      - name: Independently compile legacy backend
+        run: |
+          npx prisma generate
+          npm run build
