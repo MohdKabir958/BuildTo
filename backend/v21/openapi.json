@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.16.0",
+    "version": "0.17.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -10597,6 +10597,353 @@
           },
           "409": {
             "description": "Conflict, self-management or last owner protection"
+          }
+        }
+      }
+    },
+    "/api/v2/supplier-applications": {
+      "post": {
+        "operationId": "submitSupplierApplication",
+        "summary": "Verified customer submits pending construction supplier application",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/supplier-applications": {
+      "get": {
+        "operationId": "mySupplierApplications",
+        "summary": "Current Clerk user's supplier applications; private",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        }
+      }
+    },
+    "/api/v2/supplier-applications/{supplierId}/documents": {
+      "post": {
+        "operationId": "attachSupplierEvidence",
+        "summary": "Owner attaches pre-provisioned private owned media with verified digest; NOT an upload endpoint",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/suppliers": {
+      "get": {
+        "operationId": "adminSupplierQueue",
+        "summary": "SUPPLIER_APPROVE list with bounded keyset pagination",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DRAFT",
+                "PENDING",
+                "UNDER_REVIEW",
+                "APPROVED",
+                "REJECTED",
+                "SUSPENDED"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/admin/suppliers/{supplierId}": {
+      "get": {
+        "operationId": "adminSupplierDetail",
+        "summary": "Private supplier profile and review states, no object keys or KYC downloads",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/admin/suppliers/{supplierId}/documents/{documentId}/review": {
+      "post": {
+        "operationId": "adminReviewSupplierDocument",
+        "summary": "Independent evidence verification with mandatory audit reason",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/suppliers/{supplierId}/review": {
+      "post": {
+        "operationId": "adminReviewSupplierApplication",
+        "summary": "Independent approval with GST and business evidence, reason and audit",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "V2.1 success with requestId and data"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied or self-review"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict, missing verified evidence or duplicate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
           }
         }
       }
