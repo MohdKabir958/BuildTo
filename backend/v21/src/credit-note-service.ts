@@ -124,6 +124,39 @@ export async function issueReturnCreditNote(db:PrismaClient,userId:string,
    origin.lineSnapshot.items.length!==order.items.length)
    throw new ApiError(409,'CREDIT_NOTE_SOURCE_SNAPSHOT_REQUIRED',
     'Original invoice requires complete immutable statutory line snapshots.');
+  const totals={taxablePaise:0n,taxPaise:0n,cgstPaise:0n,
+   sgstPaise:0n,utgstPaise:0n,igstPaise:0n,cessPaise:0n,
+   lineTotalPaise:0n};
+  if(origin.sellerSnapshot.gstin!==order.supplier.gstin)
+   throw new ApiError(409,'CREDIT_NOTE_SELLER_GSTIN_MISMATCH',
+    'Original statutory GST seller identity does not reconcile.');
+  for(const item of order.items){
+   if(item.taxablePaise<item.discountPaise||item.discountPaise<0n||
+     item.taxPaise!==item.cgstPaise+item.sgstPaise+item.utgstPaise+
+       item.igstPaise+item.cessPaise||
+     item.lineTotalPaise!==item.taxablePaise-item.discountPaise+item.taxPaise||
+     item.taxPaise>0n&&(!item.hsnSnapshot||!/^[0-9]{4,8}$/.test(item.hsnSnapshot)))
+    throw new ApiError(409,'CREDIT_NOTE_SOURCE_TAX_INVALID',
+     'Tax decomposition or HSN for original line cannot be verified.');
+   totals.taxablePaise+=item.taxablePaise-item.discountPaise;
+   totals.taxPaise+=item.taxPaise;
+   totals.cgstPaise+=item.cgstPaise;
+   totals.sgstPaise+=item.sgstPaise;
+   totals.utgstPaise+=item.utgstPaise;
+   totals.igstPaise+=item.igstPaise;
+   totals.cessPaise+=item.cessPaise;
+   totals.lineTotalPaise+=item.lineTotalPaise;
+  }
+  if(totals.taxablePaise!==origin.taxablePaise||
+    totals.taxPaise!==origin.taxPaise||
+    totals.cgstPaise!==origin.cgstPaise||
+    totals.sgstPaise!==origin.sgstPaise||
+    totals.utgstPaise!==origin.utgstPaise||
+    totals.igstPaise!==origin.igstPaise||
+    totals.cessPaise!==origin.cessPaise||
+    totals.lineTotalPaise!==origin.totalPaise)
+   throw new ApiError(409,'CREDIT_NOTE_TOTALS_INVALID',
+    'Every original seller tax component and invoice total must reconcile.');
   for(let i=0;i<order.items.length;i++){
    const row=origin.lineSnapshot.items[i],item=order.items[i];
    if(!isObject(row)||row.sku!==item.skuSnapshot||
