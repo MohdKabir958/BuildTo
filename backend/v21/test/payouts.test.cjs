@@ -384,5 +384,6 @@ test('staging refuses live RazorpayX evidence keys; no half-configured finance g
   RAZORPAYX_READ_ONLY_KEY_ID:'rzp_test_validonly'}),/RAZORPAYX_READ_ONLY_CONFIG_INVALID/);
  assert.throws(()=>readConfig({...base,BUILDTO_V21_ENV:'staging',
   DATABASE_URL:'postgresql://placeholder:placeholder@ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech/neondb',
+  BUILDTO_V21_CORS_ORIGINS:'https://staging.buildto.test',
   RAZORPAYX_READ_ONLY_KEY_ID:'rzp_live_danger',RAZORPAYX_READ_ONLY_KEY_SECRET:'fake'}),/RAZORPAYX_STAGING_LIVE_KEY_DENIED/);
 });
