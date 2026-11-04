@@ -49,8 +49,8 @@ export async function startPayment(db:PrismaClient,userId:string,orderId:string,
   if(!await lockOrder(tx,orderId))throw new ApiError(404,'NOT_FOUND','Order not found.');
   const order=await tx.purchaseOrder.findFirst({where:{id:orderId,customerId:userId},
    select:{id:true,totalPaise:true,currency:true,status:true,
-    supplierOrders:{select:{items:{select:{listingId:true,reservations:{
-     select:{state:true,expiresAt:true}}}}}}}});
+    supplierOrders:{select:{items:{select:{listingId:true,quantity:true,reservations:{
+     select:{state:true,quantity:true,expiresAt:true}}}}}}}});
   if(!order)throw new ApiError(404,'NOT_FOUND','Order not found.');
   const previous=await tx.paymentAttempt.findUnique({where:{
    purchaseOrderId_idempotencyKey:{purchaseOrderId:orderId,idempotencyKey:key}
@@ -65,8 +65,10 @@ export async function startPayment(db:PrismaClient,userId:string,orderId:string,
   if(order.currency!=='INR'||order.totalPaise<100n||order.totalPaise>100000000000n)
    throw new ApiError(422,'PAYMENT_AMOUNT_UNSUPPORTED','Order total cannot be paid online.');
   const all=order.supplierOrders.flatMap(s=>s.items);
-  if(!all.length||all.some(i=>i.listingId && !i.reservations.some(r=>r.state==='HELD')))
-   throw new ApiError(409,'STOCK_NOT_RESERVED','Order stock is not reserved.');
+  if(!all.length||all.some(i=>i.listingId &&
+       !i.reservations.filter(r=>r.state==='HELD')
+        .reduce((sum,r)=>sum.plus(r.quantity),new Prisma.Decimal(0)).eq(i.quantity)))
+   throw new ApiError(409,'STOCK_NOT_RESERVED','The entire ordered quantity must be reserved.');
   if(all.some(i=>i.reservations.some(r=>r.state==='HELD'&&
        (!r.expiresAt||r.expiresAt.getTime()<=Date.now()+10_000))))
    throw new ApiError(409,'STOCK_RESERVATION_EXPIRED','Recreate the checkout order; stock hold expired.');
@@ -196,7 +198,7 @@ export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGateway
   const order=await tx.purchaseOrder.findUniqueOrThrow({where:{id:found.purchaseOrderId},
    select:{id:true,customerId:true,status:true,totalPaise:true,currency:true,
     supplierOrders:{select:{items:{select:{
-     listingId:true,reservations:{select:{id:true,state:true,expiresAt:true}}
+     listingId:true,quantity:true,reservations:{select:{id:true,quantity:true,state:true,expiresAt:true}}
     }}}}}});
   if(payment.amount!==attempt.amountPaise||payment.amount!==order.totalPaise||
    payment.currency!=='INR'||order.currency!=='INR'||attempt.providerOrderRef!==payment.orderId){
@@ -234,7 +236,8 @@ export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGateway
   const items=order.supplierOrders.flatMap(s=>s.items);
   const holds=items.flatMap(i=>i.reservations.filter(r=>r.state==='HELD'));
   const invalidStock=items.some(i=>i.listingId&&
-   !i.reservations.some(r=>r.state==='HELD'||r.state==='COMMITTED'))||
+   !i.reservations.filter(r=>r.state==='HELD')
+    .reduce((sum,r)=>sum.plus(r.quantity),new Prisma.Decimal(0)).eq(i.quantity))||
    holds.some(r=>!r.expiresAt||r.expiresAt.getTime()<=Date.now());
   if(other||order.status!=='PLACED'||invalidStock){
    // Money has arrived but fulfillment is NOT authorized. Finance must
