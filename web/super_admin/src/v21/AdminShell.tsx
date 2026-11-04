@@ -16,6 +16,7 @@ import {DashboardPanel} from './features/overview/DashboardPanel';
 import {AdminOrdersPanel} from './features/orders/AdminOrdersPanel';
 import {SupportAdminPanel} from './features/support/SupportAdminPanel';
 import {FinanceOperationsPanel} from './features/finance/FinanceOperationsPanel';
+import {RefundPayoutPanel} from './features/finance/RefundPayoutPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
@@ -147,7 +148,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             : active==='support'&&administrator&&['OWNER','OPERATIONS','SUPPORT'].includes(administrator.role)
             ? <SupportAdminPanel/>
             : active==='finance'&&administrator&&['OWNER','FINANCE'].includes(administrator.role)
-            ? <FinanceOperationsPanel/>
+            ? <div className="space-y-7"><FinanceOperationsPanel/><RefundPayoutPanel/></div>
             : active==='team'&&administrator?.role==='OWNER'
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
