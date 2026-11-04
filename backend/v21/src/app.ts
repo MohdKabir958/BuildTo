@@ -15,6 +15,7 @@ import {registerRfqAndPromotions} from './rfq-routes';
 import {registerProtectedCheckout} from './checkout-routes';
 import {registerProtectedPayments} from './payment-routes';
 import {registerCodAndInvoices} from './cod-invoice-routes';
+import {registerFulfillment} from './fulfillment-routes';
 import {verifyRazorpayWebhook,receiveRazorpayEvent} from './payment-service';
 import type {PaymentGateway} from './payment-gateway';
 
@@ -24,6 +25,7 @@ export interface AppDependencies {
   clerkWebhookSecret?:string;
   razorpayWebhookSecret?:string;
   paymentGateway?:PaymentGateway;
+  deliveryOtpSecret?:string;
   limiter:RateLimiter;
   log?:LogWriter;
   allowedOrigins:string[];
@@ -115,7 +117,8 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier',...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking',
+          ...(deps.deliveryOtpSecret?['shipments.otp']:[]),...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },
       requestId:res.locals.requestId,
     });
@@ -132,6 +135,7 @@ export function createV21App(deps:AppDependencies) {
     registerRfqAndPromotions(app,deps.db,auth);
     registerProtectedCheckout(app,deps.db,auth);
     registerCodAndInvoices(app,deps.db,auth);
+    registerFulfillment(app,deps.db,auth,deps.deliveryOtpSecret);
     if(deps.paymentGateway&&deps.razorpayWebhookSecret)
       registerProtectedPayments(app,deps.db,auth,deps.paymentGateway);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
@@ -157,7 +161,7 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
-  // Provider HTTP stays outside transactions; COD is separately recorded and independently verified.
+  // Supplier-only dispatch is always gated by provider capture or selected COD; OTP verification requires an HMAC secret.
 
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);
