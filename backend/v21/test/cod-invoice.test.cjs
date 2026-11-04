@@ -8,6 +8,7 @@ const {createV21App}=require('../dist/app.js');
 const {InMemoryTestLimiter}=require('../dist/rateLimit.js');
 const {ApiError}=require('../dist/errors.js');
 const {financialYear}=require('../dist/invoice-service.js');
+const {customerPayments}=require('../dist/payment-service.js');
 
 const db=new PrismaClient();
 test.after(async()=>db.$disconnect());
@@ -119,6 +120,8 @@ test('COD is owner-authorized, exact-amount, idempotent and not an online captur
  assert.equal(reservation.state,'COMMITTED');
  assert.equal((await db.inventoryBalance.findUniqueOrThrow({where:{id:store.balance.id}})).onHandQty.toString(),'3');
  assert.equal((await call('get',customerUrl(),'customer')).body.data.paymentStatus,'COD_DUE');
+ assert.deepEqual(await customerPayments(db,store.customer.id,store.parent.id,'rzp_test_fixture'),[],
+  'MANUAL COD records must not be mislabeled Razorpay payment attempts');
  assert.equal((await call('post',customerUrl()+'/cancel','customer',{})).status,409);
 });
 test('a prior Razorpay attempt, even FAILED, blocks COD method switching',async()=>{
