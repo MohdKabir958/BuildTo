@@ -226,3 +226,80 @@ test('Razorpay pending is never SUCCEEDED; processed posts one balanced immutabl
  assert.equal(customer.body.data[0].status,'SUCCEEDED');
  assert.equal(customer.body.data[0].customerBankCredit,'NOT_VERIFIED');
 });
+
+
+test('partial returns cannot fabricate line tax credits or manual refund amounts',async()=>{
+ const partial=await orderWithReturn({returnedQty:1});
+ const attempt=await send('post',credit(partial.ret),'issuer',{});
+ assert.equal(attempt.status,409,JSON.stringify(attempt.body));
+ assert.equal(attempt.body.error.code,'CREDIT_NOTE_PARTIAL_UNSUPPORTED');
+ assert.equal(await db.taxInvoice.count({where:{returnRequestId:partial.ret.id}}),0);
+ assert.equal((await send('post',finance('/refunds/requests/'+partial.ret.id),
+  'maker',{},key())).status,409);
+});
+test('supplier-collected COD never becomes an online Razorpay refund',async()=>{
+ const cod=await orderWithReturn({method:'MANUAL'});
+ const note=await send('post',credit(cod.ret),'issuer',{});
+ assert.equal(note.status,201,JSON.stringify(note.body));
+ const rejected=await send('post',finance('/refunds/requests/'+cod.ret.id),
+  'maker',{},key());
+ assert.equal(rejected.status,409,JSON.stringify(rejected.body));
+ assert.equal(rejected.body.error.code,'REFUND_VERIFIED_CAPTURE_REQUIRED');
+ assert.equal(await db.refundRequest.count({where:{returnRequestId:cod.ret.id}}),0);
+});
+test('an active settlement blocks credit notes and refunds until independently unwound',async()=>{
+ const held=await orderWithReturn({});
+ const settle=await db.settlement.create({data:{
+  supplierId:state.supplier.id,settlementKey:key(),status:'ON_HOLD',
+  periodStart:new Date(Date.now()-86400000),periodEnd:new Date(Date.now()+86400000),
+  grossPaise:held.child.totalPaise,commissionPaise:held.child.platformFeePaise,
+  payablePaise:held.child.totalPaise-held.child.platformFeePaise,
+  lines:{create:{supplierOrderId:held.child.id,
+   grossPaise:held.child.totalPaise,commissionPaise:held.child.platformFeePaise,
+   netPaise:held.child.totalPaise-held.child.platformFeePaise}}
+ }});
+ const refused=await send('post',credit(held.ret),'issuer',{});
+ assert.equal(refused.status,409,JSON.stringify(refused.body));
+ assert.equal(refused.body.error.code,'CREDIT_NOTE_FINANCIAL_HOLD');
+ await db.settlement.update({where:{id:settle.id},data:{status:'CANCELLED'}});
+ const creditAfter=await send('post',credit(held.ret),'issuer',{});
+ assert.equal(creditAfter.status,201,JSON.stringify(creditAfter.body));
+});
+test('provider-failed status stays MANUAL_REVIEW with reserved budget, not SUCCEEDED',async()=>{
+ const failure=await orderWithReturn({});
+ assert.equal((await send('post',credit(failure.ret),'issuer',{})).status,201);
+ const created=await send('post',finance('/refunds/requests/'+failure.ret.id),'maker',{},key());
+ assert.equal(created.status,201,JSON.stringify(created.body));
+ assert.equal((await send('post',finance('/refunds/'+created.body.data.id+'/approve'),
+  'checker',{})).status,200);
+ const old={...paymentProvider};
+ paymentProvider.id='rfnd_'+id().replaceAll('-').slice(0,21);
+ paymentProvider.paymentId=failure.payment.providerPayRef;
+ paymentProvider.status='failed';
+ const failed=await send('post',finance('/refunds/'+created.body.data.id+'/reconcile'),
+  'checker',{providerRefundId:paymentProvider.id});
+ assert.equal(failed.status,200,JSON.stringify(failed.body));
+ assert.equal(failed.body.data.refund.status,'MANUAL_REVIEW');
+ assert.equal(failed.body.data.refund.customerBankCredit,'NOT_VERIFIED');
+ assert.equal(await db.ledgerJournal.count({where:{
+  referenceKey:'refund:processed:'+created.body.data.id}}),0);
+ assert.equal((await send('post',finance('/refunds/requests/'+failure.ret.id),
+  'maker',{},key())).status,409);
+ assert.equal((await send('post',finance('/refunds/'+created.body.data.id+'/approve'),
+  'checker',{})).status,409);
+ Object.assign(paymentProvider,old);
+});
+test('database rejects mutation of posted refund, issued GST credit and its original invoice',async()=>{
+ await assert.rejects(db.refundRequest.update({where:{id:state.refund.id},
+  data:{amountPaise:42n}}),e=>e.code==='P2004'||e.code==='P2010'||/immutable/i.test(e.message));
+ await assert.rejects(db.taxInvoice.update({where:{id:state.credit.id},
+  data:{totalPaise:13000n}}),e=>e.code==='P2004'||e.code==='P2010'||/immutable/i.test(e.message));
+ await assert.rejects(db.taxInvoice.update({where:{id:state.online.invoice.id},
+  data:{status:'CREDITED'}}),e=>e.code==='P2004'||e.code==='P2010'||/immutable/i.test(e.message));
+ const j=await db.ledgerJournal.findUniqueOrThrow({where:{
+  referenceKey:'refund:processed:'+state.refund.id},include:{lines:true}});
+ await assert.rejects(db.ledgerLine.update({where:{
+  journalId_lineNumber:{journalId:j.id,lineNumber:1}
+ },data:{debitPaise:10n}}));
+ assert.equal(await db.refundRequest.count({where:{id:state.refund.id,status:'SUCCEEDED'}}),1);
+});
