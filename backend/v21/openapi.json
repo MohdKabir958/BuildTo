@@ -4314,6 +4314,17 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 180
+            },
+            "description": "Same key and payload always replay the same quote version."
           }
         ],
         "requestBody": {

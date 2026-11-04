@@ -9,7 +9,7 @@ The RFQ and promotions modules run in the existing **single Express API + Postgr
 2. Customer opens the draft and explicitly invites approved suppliers. Multiple invitations are supported but only customer-authorized invitations are stored. Duplicate invitations are idempotent.
 3. Only active supplier memberships with `RFQ_QUOTE` can view the invitation or submit/revise a quote. Supplier status must remain approved and unsuspended. VIEWER and other suppliers cannot access it.
 4. A quote must price **every RFQ line exactly once**, using exactly the requested quantity and unit. Listing-backed lines must belong to that supplier and match the RFQ product. Bespoke nonlisting quotes are permitted. Quote amounts use exact PostgreSQL Decimal and BigInt paise.
-5. Quotes are versioned. Revising a submitted quote marks the prior version `REVISED`; the latest remains `SUBMITTED`. Historical quote lines and prices are preserved.
+5. Quotes require an `Idempotency-Key` so a network retry cannot create an accidental revision. Quotes are versioned. Revising a submitted quote with a **new** key marks the prior version `REVISED`; the latest remains `SUBMITTED`. Historical quote lines and prices are preserved.
 6. Only the RFQ customer can award one current, valid, submitted quote. A transaction locks the RFQ row, marks the selected quote `ACCEPTED`, rejects competing submitted quotes and sets the RFQ to `AWARDED`. Two concurrent awards cannot both win. Other users receive a 404.
 7. **Awarding an RFQ is not payment or order placement.** A subsequent checkout PR will create the actual supplier order with `sourceQuoteId`, reconfirm the supplier and delivery arrangements, reserve stock and handle payment/COD.
 
@@ -44,7 +44,7 @@ Customer:
 
 Supplier:
 - `GET /api/v2/suppliers/:supplierId/rfqs`
-- `GET/POST /api/v2/suppliers/:supplierId/rfqs/:rfqId/quotes`
+- `GET/POST /api/v2/suppliers/:supplierId/rfqs/:rfqId/quotes` (POST requires `Idempotency-Key`)
 
 Admin:
 - `GET/POST /api/v2/admin/promotions`
