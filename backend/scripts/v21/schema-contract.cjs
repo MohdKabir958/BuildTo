@@ -50,7 +50,7 @@ const ADDITIONS={
 const PAYOUT_ADDITIONS={
  columns:['SupplierPayoutAccount.validationRef','SupplierPayoutAccount.registeredById',
   'SupplierPayoutAccount.approvedById'],
- constraints:['payout_beneficiary_approval_proof','payout_transfer_positive',
+ constraints:['payout_beneficiary_approval_proof',
   'payout_transfer_terminal_proof'],
  indexes:['SupplierPayoutAccount_providerTokenRef_key',
   'SupplierPayoutAccount_validationRef_key','PayoutTransfer_settlementId_key',
