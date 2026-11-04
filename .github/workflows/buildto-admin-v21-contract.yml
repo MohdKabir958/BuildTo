@@ -1,0 +1,22 @@
+name: BuildTo Admin V2.1 contract
+on:
+  pull_request:
+    paths:
+      - 'web/super_admin/**'
+      - 'backend/v21/openapi.json'
+      - '.github/workflows/buildto-admin-v21-contract.yml'
+  push:
+    branches: [admin/a00-v21-contract-audit]
+permissions:
+  contents: read
+jobs:
+  api-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only V2.1 Admin OpenAPI baseline
+        run: node web/super_admin/scripts/check-v21-contract.mjs
