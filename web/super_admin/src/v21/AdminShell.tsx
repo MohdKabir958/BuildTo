@@ -1,25 +1,28 @@
 import {useEffect,useMemo,useState} from 'react';
 import {
   ArrowRight, Building2, CircleHelp, Command, ExternalLink, LockKeyhole,
-  Menu, RefreshCw, ShieldCheck, X,
+  LogOut, Menu, RefreshCw, ShieldCheck, X,
 } from 'lucide-react';
 import type {Section,SectionId} from './navigation';
 import {FEATURE_ORDER,SECTIONS} from './navigation';
 import {fetchPublicRelease,validateApiOrigin} from './publicRelease';
 import type {PublicRelease} from './publicRelease';
+import {canViewSection} from './auth/roles';
+import type {VerifiedAdminSession} from './auth/adminSession';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
-type Props={apiBaseUrl?:string};
+type Props={apiBaseUrl?:string;administrator?:VerifiedAdminSession;onSignOut?:()=>void};
 const groupNames=['Marketplace','Operations','Administration'] as const;
 const byId=(id:SectionId):Section=>SECTIONS.find(s=>s.id===id)!;
 
-export function AdminShell({apiBaseUrl}:Props) {
+export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
   const [active,setActive]=useState<SectionId>('overview');
   const [mobileOpen,setMobileOpen]=useState(false);
   const origin=apiBaseUrl??import.meta.env.VITE_API_BASE_URL??'';
   const [connection,setConnection]=useState<Connection>({state:origin?'checking':'unconfigured'});
   const [refresh,setRefresh]=useState(0);
   const current=useMemo(()=>byId(active),[active]);
+  const visibleSections=useMemo(()=>SECTIONS.filter(s=>!administrator||canViewSection(administrator.role,s.id)),[administrator]);
 
   useEffect(()=>{
     if(!origin){setConnection({state:'unconfigured'});return;}
@@ -62,7 +65,7 @@ export function AdminShell({apiBaseUrl}:Props) {
           <div key={group} className="mb-7">
             <p className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[0.19em] text-slate-400">{group}</p>
             <div className="space-y-1">
-              {SECTIONS.filter(section=>section.group===group).map(section=>{
+              {visibleSections.filter(section=>section.group===group).map(section=>{
                 const Icon=section.icon;
                 return <button
                   key={section.id}
@@ -82,8 +85,8 @@ export function AdminShell({apiBaseUrl}:Props) {
         <div className="flex gap-3 rounded-xl bg-white/10 p-3">
           <LockKeyhole className="mt-0.5 shrink-0 text-amber-300" size={18} aria-hidden="true"/>
           <div>
-            <p className="text-xs font-bold text-white">Staging only</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-300">Clerk sign-in and admin roles arrive in A02. No private data is loaded by this preview.</p>
+            <p className="text-xs font-bold text-white">{administrator?'Verified admin session':'Staging preview only'}</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-300">{administrator?administrator.displayName+' · '+administrator.role+' · Permissions enforced by the server.':'Clerk sign-in is required before any private module is enabled. Preview loads no private data.'}</p>
           </div>
         </div>
       </div>
@@ -109,9 +112,10 @@ export function AdminShell({apiBaseUrl}:Props) {
               <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{current.label}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800" title="Production is disabled">
-            <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true"/>
-            Staging
+          <div className="flex items-center gap-2">
+            {administrator&&<span className="hidden rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 sm:inline-flex">{administrator.role}</span>}
+            <span className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800" title="Production is disabled"><span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true"/>Staging</span>
+            {administrator&&onSignOut&&<button type="button" onClick={onSignOut} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"><LogOut size={15}/>Sign out</button>}
           </div>
         </header>
         <main id="main-content" className="mx-auto max-w-[1250px] px-4 py-8 sm:px-8 sm:py-10">
@@ -123,26 +127,26 @@ export function AdminShell({apiBaseUrl}:Props) {
             </div>
           </div>
           {active==='overview'
-            ? <Overview onNavigate={navigate} connection={connection} />
+            ? <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
             : <ModulePlaceholder section={current} />}
         </main>
         <footer className="mx-auto flex max-w-[1250px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
-          <span>BuildTo V2.1 · Admin preview (A01)</span>
-          <span>Only public release metadata is loaded. Admin access is not enabled in this preview.</span>
+          <span>BuildTo V2.1 · Administrator workspace</span>
+          <span>{administrator?'Clerk identity verified; server permissions remain authoritative.':'Public preview only. No administrator data is loaded.'}</span>
         </footer>
       </div>
     </div>
   </div>;
 }
 
-function Overview({onNavigate,connection}:{onNavigate:(id:SectionId)=>void;connection:Connection}){
+function Overview({onNavigate,connection,administrator}:{onNavigate:(id:SectionId)=>void;connection:Connection;administrator?:VerifiedAdminSession}){
   return <>
     <section className="relative overflow-hidden rounded-[26px] bg-[#102B4D] px-6 py-9 text-white shadow-lg sm:px-10 sm:py-11">
       <div className="pointer-events-none absolute -right-14 -top-24 h-64 w-64 rounded-full border-[40px] border-white/5" aria-hidden="true"/>
       <div className="relative max-w-2xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-200"><ShieldCheck size={15}/> BuildTo V2.1</div>
         <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">Built for better marketplace operations.</h2>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-slate-200">Your construction-materials operations workspace is being connected to the V2.1 backend. Modules appear as they pass role and integration testing—without mock transactions or invented totals.</p>
+        <p className="mt-4 max-w-xl text-sm leading-7 text-slate-200">{administrator?'Your Clerk session and admin role are verified by the V2.1 API. Modules will appear as they pass business-workflow tests—without mock totals or unauthorized actions.':'Your construction-materials operations workspace is being connected to the V2.1 backend. Modules appear as they pass role and integration testing—without mock transactions or invented totals.'}</p>
       </div>
     </section>
     <section aria-labelledby="setup-title" className="mt-8">
@@ -151,7 +155,7 @@ function Overview({onNavigate,connection}:{onNavigate:(id:SectionId)=>void;conne
         <span className="text-xs font-medium text-slate-500">Implementation in progress</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {FEATURE_ORDER.map(id=>{
+        {FEATURE_ORDER.filter(id=>!administrator||canViewSection(administrator.role,id)).map(id=>{
           const section=byId(id),Icon=section.icon;
           return <button type="button" key={id} onClick={()=>onNavigate(id)} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#95AAC2] hover:shadow-md">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF1FA] text-[#174C86]"><Icon size={20}/></span>
@@ -172,8 +176,8 @@ function Overview({onNavigate,connection}:{onNavigate:(id:SectionId)=>void;conne
           : <p className="mt-4 text-sm leading-6 text-slate-500">No verified backend metadata loaded. Configure the exact public staging API origin to check its release flags; this panel never guesses readiness.</p>}
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="flex items-center gap-3"><CircleHelp size={20} className="text-[#174C86]"/><h3 className="font-bold">Next milestone: secure admin sign-in</h3></div>
-        <p className="mt-4 text-sm leading-6 text-slate-500">A02 connects Clerk to the database-backed <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">/api/v2/admin/access</code> endpoint. Until then, this preview intentionally exposes no admin data, management buttons or financial actions.</p>
+        <div className="flex items-center gap-3"><CircleHelp size={20} className="text-[#174C86]"/><h3 className="font-bold">{administrator?'Next milestone: typed API integration':'Next milestone: secure admin sign-in'}</h3></div>
+        <p className="mt-4 text-sm leading-6 text-slate-500">{administrator?'A03 introduces the typed V2.1 request client and conflict handling. Business modules are not activated until their API permissions and tests are complete.':<>A02 connects Clerk to the database-backed <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">/api/v2/admin/access</code> endpoint. Until then, this preview intentionally exposes no admin data, management buttons or financial actions.</>}</p>
       </div>
     </section>
   </>;
