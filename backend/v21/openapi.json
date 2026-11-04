@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Buildto V2 API — Foundation",
-    "version": "0.22.0",
+    "version": "0.23.0",
     "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
   },
   "paths": {
@@ -10039,6 +10039,37 @@
             "description": "Required read-only provider unavailable"
           }
         }
+      },
+      "get": {
+        "operationId": "financeMaskedBeneficiaries",
+        "summary": "FINANCE_MANAGE only masked payout account destinations; no provider references",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to 20 masked, independently approved beneficiary records"
+          },
+          "403": {
+            "description": "Finance role required"
+          },
+          "404": {
+            "description": "Supplier unavailable"
+          }
+        }
       }
     },
     "/api/v2/admin/finance/beneficiaries/{accountId}/approve": {
@@ -11342,6 +11373,44 @@
           },
           "403": {
             "description": "FINANCE_MANAGE required"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/refund-candidates": {
+      "get": {
+        "operationId": "financeRefundCandidates",
+        "summary": "FINANCE_MANAGE private received-return candidates; eligibility never implied",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Received returns without refund requests, masked exact paise; only candidates"
+          },
+          "403": {
+            "description": "Finance role required"
           }
         }
       }

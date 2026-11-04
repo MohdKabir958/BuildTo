@@ -3,21 +3,17 @@ import {ClipboardList,RefreshCw,Search,ShieldCheck} from 'lucide-react';
 import {useV21Api} from '../../lib/ApiProvider';
 import {V21ApiError} from '../../lib/apiClient';
 
-type SupplierOrderSummary={id:string;supplierId:string;supplierName:string;status:string};
 type Order={id:string;publicNumber:string;status:string;currency:string;totalPaise:string;placedAt:string;
- supplierOrders:SupplierOrderSummary[]};
+ supplierOrders:{id:string;supplierId:string;supplierName:string;status:string}[]};
 type OrderPage={asOf:string;items:Order[];nextCursor:string|null;note:string};
-// The detail endpoint includes additional fields for supplier orders. Do not intersect two
-// incompatible array element shapes: a dedicated detail type keeps render-time contracts sound.
-type SupplierOrderDetail=SupplierOrderSummary&{
- totalPaise:string;
- items:{id:string;sku:string;name:string;quantity:string;unitCode:string;unitPrice:string;lineTotalPaise:string}[];
- shipments:{id:string;number:string;status:string;deliveredAt:string|null;handoverMethod:string|null;exceptionApproved:boolean}[];
-};
 type Detail=Omit<Order,'supplierOrders'>&{
  subtotalPaise:string;discountPaise:string;taxPaise:string;deliveryPaise:string;executionAllowed:false;
  privacy:string;payments:{id:string;status:string;paymentMethod:string;amountPaise:string;capturedPaise:string;verifiedAt:string|null;createdAt:string}[];
- supplierOrders:SupplierOrderDetail[];
+ supplierOrders:{
+  id:string;supplierId:string;supplierName:string;status:string;totalPaise:string;
+  items:{id:string;sku:string;name:string;quantity:string;unitCode:string;unitPrice:string;lineTotalPaise:string}[];
+  shipments:{id:string;number:string;status:string;deliveredAt:string|null;handoverMethod:string|null;exceptionApproved:boolean}[];
+ }[];
 };
 const STATES=['ALL','PLACED','CONFIRMED','PARTIALLY_FULFILLED','PARTIALLY_CANCELLED','FULFILLED','CANCELLED','CLOSED'] as const;
 const msg=(error:unknown)=>error instanceof V21ApiError?

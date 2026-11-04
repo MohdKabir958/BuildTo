@@ -21,7 +21,7 @@ function setup(){
   if(path.includes('/finance/suppliers/'+sup))return {data:history,requestId:'history'};
   throw new Error(path);
  });
- const write=vi.fn(async (_method:string,_path:string,_body?:unknown)=>({data:{},requestId:'updated'}));
+ const write=vi.fn(async(_method:string,_path:string,_body?:unknown)=>({data:{},requestId:'updated'}));
  render(<V21ApiProvider client={{get,write} as unknown as V21ApiClient}><FinanceOperationsPanel/></V21ApiProvider>);
  return {get,write};
 }
