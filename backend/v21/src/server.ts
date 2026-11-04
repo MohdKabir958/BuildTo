@@ -6,7 +6,7 @@ import {SingleInstanceRateLimiter} from './rateLimit';
 import {RazorpayGateway} from './payment-gateway';
 import {RazorpayXPayoutEvidence} from './payout-gateway';
 import {jsonLogger} from './logging';
-import {assertV21BaselineApplied} from './baseline';
+import {assertV21ReleaseIntegrity,assertV21AllMigrationsApplied} from './release-integrity';
 
 import {PrismaClient} from '../../generated/buildto-v21';
 
@@ -23,7 +23,7 @@ async function main() {
     const schema=await verifyExistingSchema(db);
     if(!schema.migrationHistoryExists)
       throw new Error('V21_MIGRATION_LEDGER_REQUIRED: complete staging Prisma baseline before API startup.');
-    await assertV21BaselineApplied(db);
+    await assertV21ReleaseIntegrity(db);
     // One API instance by design. No additional Redis service or network hop.
     const limiter=new SingleInstanceRateLimiter();
     if(!config.clerkIssuer||!config.clerkSecretKey||!config.clerkAuthorizedParties.length||!config.clerkWebhookSecret)
@@ -42,6 +42,7 @@ async function main() {
       proxyHops:config.proxyHops,identityVerifier,clerkWebhookSecret:config.clerkWebhookSecret,
       razorpayWebhookSecret:config.razorpayWebhookSecret??undefined,paymentGateway,
       payoutEvidenceGateway,
+      readinessCheck:()=>assertV21AllMigrationsApplied(db),
       deliveryOtpSecret:config.deliveryOtpHmacSecret??undefined});
     server=http.createServer(app);
     await new Promise<void>((resolve,reject)=>{
