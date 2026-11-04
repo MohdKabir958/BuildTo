@@ -21,7 +21,7 @@ test('only safe public foundation routes are exposed',async()=>{
  assert.equal(ready.body.ready,true);
  const sys=await request(app).get('/api/v2/system');
  assert.equal(sys.status,200);
- assert.deepEqual(sys.body.data.capabilities,['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer']);
+ assert.deepEqual(sys.body.data.capabilities,['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier']);
  assert.equal(sys.body.data.moneyFormat,'decimal-string-paise');
  assert.equal((await request(app).post('/api/v2/orders').send({})).status,404);
  assert.equal((await request(app).get('/api/v2/suppliers')).status,404);
