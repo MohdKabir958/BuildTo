@@ -31,6 +31,8 @@ const expected={
  '/api/v2/admin/reviews':['get'],
  '/api/v2/admin/finance/cod':['get'],
  '/api/v2/admin/finance/suppliers':['get'],
+ '/api/v2/admin/finance/refund-candidates':['get'],
+ '/api/v2/admin/finance/suppliers/{supplierId}/beneficiaries':['get','post'],
  '/api/v2/admin/finance/refunds':['get'],
  '/api/v2/admin/finance/payouts':['get'],
 };

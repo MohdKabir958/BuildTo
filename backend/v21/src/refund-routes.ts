@@ -5,6 +5,15 @@ import type {PaymentGateway} from './payment-gateway';
 import {issueReturnCreditNote} from './credit-note-service';
 import {requestFullRefund,approveFullRefund,customerRefunds,financeRefundQueue} from './refund-service';
 import {reconcileRefund} from './refund-reconciliation';
+import {refundCandidates} from './admin-money-reads';
+function moneyListQuery(req:Request){
+ const limit=req.query.limit,cursor=req.query.cursor;
+ if(cursor!==undefined&&typeof cursor!=='string')throw new ApiError(400,'INVALID_CURSOR','Invalid cursor.');
+ if(limit!==undefined&&(typeof limit!=='string'||!/^[1-9][0-9]?$/.test(limit)))
+  throw new ApiError(400,'INVALID_LIMIT','Invalid list page size.');
+ return {cursor:cursor as string|undefined,limit:limit===undefined?undefined:Number(limit)};
+}
+
 
 const user=(res:Response):string=>{
  const id=(res.locals.principal as {id?:unknown}|undefined)?.id;
@@ -34,6 +43,8 @@ export function registerReturnsFinance(app:Express,db:PrismaClient,auth:RequestH
   });
  app.get('/api/v2/orders/:orderId/refunds',auth,op((req,res)=>
   customerRefunds(db,user(res),req.params.orderId)));
+ app.get('/api/v2/admin/finance/refund-candidates',auth,op((req,res)=>
+  refundCandidates(db,user(res),moneyListQuery(req))));
  app.get('/api/v2/admin/finance/refunds',auth,op((_req,res)=>
   financeRefundQueue(db,user(res))));
  app.post('/api/v2/admin/finance/refunds/requests/:returnId',auth,

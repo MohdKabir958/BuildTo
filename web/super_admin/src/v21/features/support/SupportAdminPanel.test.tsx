@@ -20,7 +20,7 @@ function setup(){
   if(path.endsWith('/reviews'))return {data:reviews,requestId:'reviews'};
   throw new Error(path);
  });
- const write=vi.fn(async (_method:string,_path:string,_body?:unknown)=>({data:{},requestId:'written'}));
+ const write=vi.fn(async(_method:string,_path:string,_body?:unknown)=>({data:{},requestId:'written'}));
  render(<V21ApiProvider client={{get,write} as unknown as V21ApiClient}><SupportAdminPanel/></V21ApiProvider>);
  return {get,write};
 }
