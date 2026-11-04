@@ -74,6 +74,9 @@ async function eligibility(tx:Tx,supplierId:string,supplierOrderId:string){
   select:{id:true,supplierId:true,purchaseOrderId:true,createdAt:true,
    status:true,totalPaise:true,platformFeePaise:true,
    invoices:{where:{status:'ISSUED'},select:{id:true,totalPaise:true,kind:true}},
+   items:{select:{id:true,quantity:true,shipmentLines:{select:{
+    deliveredQty:true,shipment:{select:{status:true,deliveredAt:true,
+     handoverMethod:true,otpVerifiedAt:true,exceptionApprovedAt:true}}}}}},} ,
    returnRequests:{where:{status:{in:[...blockedReturns]}},select:{id:true}},
    purchaseOrder:{select:{currency:true,totalPaise:true,
     payments:{select:{provider:true,status:true,capturedPaise:true,amountPaise:true,
@@ -98,6 +101,12 @@ async function eligibility(tx:Tx,supplierId:string,supplierOrderId:string){
  // Only legally issued, exact-value invoices are eligible for a settlement proposal.
  if(s.invoices.length!==1||s.invoices[0].totalPaise!==s.totalPaise)
   throw new ApiError(409,'SETTLEMENT_INVOICE_REQUIRED','An exact issued invoice is required.');
+ if(!s.items.length||s.items.some(i=>!i.shipmentLines.length||!
+  i.shipmentLines.filter(l=>l.shipment.status==='DELIVERED'&&l.shipment.deliveredAt&&
+    (l.shipment.handoverMethod==='OTP'&&l.shipment.otpVerifiedAt||
+     l.shipment.handoverMethod==='APPROVED_EXCEPTION'&&l.shipment.exceptionApprovedAt))
+  .reduce((n,l)=>n.plus(l.deliveredQty),new Prisma.Decimal(0)).eq(i.quantity)))
+  throw new ApiError(409,'SETTLEMENT_HANDOVER_REQUIRED','Full verified shipment handover is required.');
  const duplicate=await tx.settlementLine.findFirst({where:{
   supplierOrderId:s.id,settlement:{status:{not:'CANCELLED'}}
  },select:{id:true}});
@@ -269,6 +278,9 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
     id:line.supplierOrderId,supplierId:current.supplierId
    },select:{id:true,createdAt:true,status:true,totalPaise:true,platformFeePaise:true,
     invoices:{where:{status:'ISSUED'},select:{totalPaise:true}},
+    items:{select:{quantity:true,shipmentLines:{select:{deliveredQty:true,
+     shipment:{select:{status:true,deliveredAt:true,handoverMethod:true,
+      otpVerifiedAt:true,exceptionApprovedAt:true}}}}}}},
     purchaseOrder:{select:{currency:true,totalPaise:true,
      payments:{select:{provider:true,status:true,amountPaise:true,capturedPaise:true,
       verifiedAt:true,providerPayRef:true}},
@@ -279,6 +291,11 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
    }});
    if(!order||order.status!=='DELIVERED'||order.returnRequests.length||
     order.purchaseOrder.refunds.length||order.settlementLines.length||
+    !order.items.length||order.items.some(i=>!i.shipmentLines.length||!
+     i.shipmentLines.filter(l=>l.shipment.status==='DELIVERED'&&l.shipment.deliveredAt&&
+      (l.shipment.handoverMethod==='OTP'&&l.shipment.otpVerifiedAt||
+       l.shipment.handoverMethod==='APPROVED_EXCEPTION'&&l.shipment.exceptionApprovedAt))
+     .reduce((n,l)=>n.plus(l.deliveredQty),new Prisma.Decimal(0)).eq(i.quantity))||
     order.invoices.length!==1||order.invoices[0].totalPaise!==order.totalPaise||
     order.purchaseOrder.payments.length!==1)
     throw new ApiError(409,'SETTLEMENT_REVALIDATION_FAILED','Financial or fulfillment evidence changed after drafting.');
