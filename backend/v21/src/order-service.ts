@@ -49,7 +49,7 @@ function orderDTO(o:any){
     ?(o.supplierOrders.every((s:any)=>s.codVerifiedPaise===s.totalPaise)?'COD_VERIFIED'
       :o.supplierOrders.some((s:any)=>s.codRecordedPaise>0n)?'COD_RECORDED_UNVERIFIED':'COD_DUE')
     :o.payments.some((p:any)=>p.status==='CAPTURED')
-    ?(o.status==='CONFIRMED'?'CAPTURED':'CAPTURED_NEEDS_REVIEW')
+    ?(['CONFIRMED','PARTIALLY_FULFILLED','FULFILLED'].includes(o.status)?'CAPTURED':'CAPTURED_NEEDS_REVIEW')
     :o.payments.some((p:any)=>p.status==='AUTHORIZED')?'AUTHORIZED'
     :o.payments.some((p:any)=>['CREATED','PENDING'].includes(p.status))?'PENDING'
     :o.payments.length?'NOT_CAPTURED':'NOT_STARTED',
