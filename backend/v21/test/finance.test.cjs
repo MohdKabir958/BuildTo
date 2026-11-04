@@ -65,9 +65,9 @@ async function makeOrder(method='RAZORPAY',amount=10000n,fee=800n){
   quantity:new Prisma.Decimal(1),deliveredQty:new Prisma.Decimal(1)
  }});
  await db.paymentAttempt.create({data:{
-  purchaseOrderId:parent.id,provider:method,paymentMethod:method==='MANUAL'?'COD':'UPI',
-  status:method==='MANUAL'?'PENDING':'CAPTURED',
-  idempotencyKey:key(),amountPaise:amount,capturedPaise:method==='MANUAL'?0n:amount,
+  purchaseOrderId:parent.id,provider:method==='MANUAL'?'MANUAL':'RAZORPAY',paymentMethod:method==='MANUAL'?'COD':'UPI',
+  status:method==='MANUAL'?'PENDING':method==='AUTHORIZED'?'AUTHORIZED':'CAPTURED',
+  idempotencyKey:key(),amountPaise:amount,capturedPaise:method==='RAZORPAY'?amount:0n,
   ...(method==='RAZORPAY'?{providerOrderRef:'order_'+id().replaceAll('-').slice(0,23),
    providerPayRef:'pay_'+id().replaceAll('-').slice(0,23),verifiedAt:new Date()}:{})
  }});
@@ -113,9 +113,7 @@ test('unverified or COD supplier cash is NEVER counted as platform-held settleme
  st.cod=await makeOrder('MANUAL',20000n,1700n);
  const b=makeDraft(st.cod.child.id,key());
  assert.equal((await send('post',admin('/settlements/drafts'),'maker',b,key())).status,409);
- const unpaid=await makeOrder('RAZORPAY',12000n,700n);
- await db.paymentAttempt.updateMany({where:{purchaseOrderId:unpaid.parent.id},
-  data:{status:'AUTHORIZED',capturedPaise:0n,verifiedAt:null,providerPayRef:null}});
+ const unpaid=await makeOrder('AUTHORIZED',12000n,700n);
  const r=await send('post',admin('/settlements/drafts'),'maker',
   makeDraft(unpaid.child.id,key()),key());
  assert.equal(r.status,409,JSON.stringify(r.body));
