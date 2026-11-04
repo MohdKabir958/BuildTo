@@ -241,7 +241,9 @@ test('taxable freight is not misclassified as exempt GST in issued invoices',asy
  }});
  await db.paymentAttempt.create({data:{
   purchaseOrderId:parent.id,provider:'RAZORPAY',paymentMethod:'UPI',
-  idempotencyKey:key(),status:'CAPTURED',amountPaise:12800n,capturedPaise:12800n
+  idempotencyKey:key(),status:'CAPTURED',amountPaise:12800n,capturedPaise:12800n,
+  providerOrderRef:'order_'+id().replaceAll('-').slice(0,20),
+  providerPayRef:'pay_'+id().replaceAll('-').slice(0,20),verifiedAt:new Date()
  }});
  const route='/api/v2/suppliers/'+store.supplier.id+'/orders/'+child.id+'/invoices';
  const r=await call('post',route,'finance',{});
