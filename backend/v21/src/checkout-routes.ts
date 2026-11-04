@@ -2,6 +2,7 @@ import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {readCart,putCartLine,removeCartLine,clearCart} from './cart-service';
+import {placeAcceptedRfqOrder} from './rfq-order-service';
 import {previewCheckout,getCheckoutQuote,placeCheckoutOrder,
  listCustomerOrders,getCustomerOrder,cancelCustomerOrder} from './order-service';
 
@@ -42,6 +43,15 @@ export function registerProtectedCheckout(app:Express,db:PrismaClient,auth:Reque
   try{
    const x=await placeCheckoutOrder(db,actor(res),req.params.quoteId,idem(req),req.body);
    res.status(x.replayed?200:201).json({data:x.order,replayed:x.replayed,requestId:res.locals.requestId});
+  }catch(error){next(error);}
+ });
+ app.post('/api/v2/rfqs/:rfqId/quotes/:quoteId/order',auth,async(req,res,next)=>{
+  try{
+   const placed=await placeAcceptedRfqOrder(db,actor(res),req.params.rfqId,
+    req.params.quoteId,idem(req),req.body);
+   res.status(placed.replayed?200:201).json({
+    data:placed.order,replayed:placed.replayed,requestId:res.locals.requestId
+   });
   }catch(error){next(error);}
  });
  const orders='/api/v2/orders';

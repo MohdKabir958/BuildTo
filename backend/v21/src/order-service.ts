@@ -30,7 +30,7 @@ const orderSelect={
  subtotalPaise:true,discountPaise:true,taxPaise:true,deliveryPaise:true,totalPaise:true,
  placedAt:true,cancelledAt:true,addressSnapshot:true,
  supplierOrders:{select:{
-  id:true,supplierId:true,status:true,subtotalPaise:true,discountPaise:true,
+  id:true,supplierId:true,sourceQuoteId:true,status:true,subtotalPaise:true,discountPaise:true,
   taxPaise:true,deliveryPaise:true,totalPaise:true,
   items:{select:{id:true,listingId:true,skuSnapshot:true,nameSnapshot:true,
    unitCode:true,quantity:true,unitPrice:true,taxablePaise:true,
@@ -50,7 +50,7 @@ function orderDTO(o:any){
   taxPaise:o.taxPaise.toString(),deliveryPaise:o.deliveryPaise.toString(),
   totalPaise:o.totalPaise.toString(),addressSnapshot:o.addressSnapshot,
   suppliers:o.supplierOrders.map((s:any)=>({
-   id:s.id,supplierId:s.supplierId,status:s.status,
+   id:s.id,supplierId:s.supplierId,sourceQuoteId:s.sourceQuoteId,status:s.status,
    subtotalPaise:s.subtotalPaise.toString(),discountPaise:s.discountPaise.toString(),
    taxPaise:s.taxPaise.toString(),deliveryPaise:s.deliveryPaise.toString(),
    totalPaise:s.totalPaise.toString(),
