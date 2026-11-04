@@ -14,6 +14,7 @@ import {registerProtectedInventory} from './inventory-routes';
 import {registerRfqAndPromotions} from './rfq-routes';
 import {registerProtectedCheckout} from './checkout-routes';
 import {registerProtectedPayments} from './payment-routes';
+import {registerCodAndInvoices} from './cod-invoice-routes';
 import {verifyRazorpayWebhook,receiveRazorpayEvent} from './payment-service';
 import type {PaymentGateway} from './payment-gateway';
 
@@ -114,7 +115,7 @@ export function createV21App(deps:AppDependencies) {
         currency:'INR',
         moneyFormat:'decimal-string-paise',
         releaseStage:'foundation',
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer',...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier',...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },
       requestId:res.locals.requestId,
     });
@@ -130,6 +131,7 @@ export function createV21App(deps:AppDependencies) {
     registerProtectedInventory(app,deps.db,auth);
     registerRfqAndPromotions(app,deps.db,auth);
     registerProtectedCheckout(app,deps.db,auth);
+    registerCodAndInvoices(app,deps.db,auth);
     if(deps.paymentGateway&&deps.razorpayWebhookSecret)
       registerProtectedPayments(app,deps.db,auth,deps.paymentGateway);
     app.get('/api/v2/me',auth,async(_req,res,next)=>{
@@ -155,7 +157,7 @@ export function createV21App(deps:AppDependencies) {
       }catch(error){next(error);}
     });
   }
-  // All provider calls occur outside DB transactions. COD and refunds remain gated to PR 10.
+  // Provider HTTP stays outside transactions; COD is separately recorded and independently verified.
 
   app.use((_req,res)=>res.status(404).json(errorDTO('NOT_FOUND','Endpoint not found.',res.locals.requestId||randomUUID())));
   app.use(errorHandler);
