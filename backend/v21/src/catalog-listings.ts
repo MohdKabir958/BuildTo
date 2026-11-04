@@ -1,3 +1,4 @@
+import {serializable} from './transaction';
 import {randomUUID} from 'node:crypto';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
@@ -8,8 +9,7 @@ import {publishOutbox} from './outbox';
 import {executeIdempotently} from './idempotency';
 
 type Tx=Prisma.TransactionClient;
-const serial=<T>(db:PrismaClient,fn:(tx:Tx)=>Promise<T>)=>
- db.$transaction(fn,{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:5000,timeout:10000});
+const serial=serializable;
 const select={
  id:true,productId:true,supplierId:true,sku:true,unitCode:true,packSize:true,
  minOrderQty:true,stepQty:true,maxOrderQty:true,unitPrice:true,mrpPaise:true,

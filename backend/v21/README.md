@@ -4,7 +4,7 @@
 
 This is a **separate, deliberately restricted Express API**, not the legacy Kraveo/Grozo API. It builds from `backend/v21/src` into `backend/v21/dist`, using the isolated `backend/generated/buildto-v21` Prisma client created in PR 01. No legacy route, migration, or rider worker is imported.
 
-**Not yet production-ready.** The only public routes are `GET /health`, `GET /ready`, and `GET /api/v2/system`. OpenAPI describes those three routes. No customer, supplier, financial, or admin API is available before Clerk + database RBAC in PR 03.
+**Not yet production-ready.** The V2.1 service now includes PR 03 Clerk-secured identity/RBAC, PR 04 construction catalog and supplier pricing, and PR 05 cities/addresses/delivery-area previews. OpenAPI lists the implemented routes. Inventory, checkout, finance and payment APIs remain disabled until their domain PRs.
 
 ## Enterprise safeguards
 
@@ -12,7 +12,7 @@ This is a **separate, deliberately restricted Express API**, not the legacy Krav
 - At startup, the PR 01 inspector checks tables, enum types, columns, indexes, constraints, PostGIS, triggers and the presence of the Prisma migration ledger. If the ledger is missing, **the HTTP port does not open**.
 - Request IDs, request-body-free JSON logging, strict CORS origins, security headers, 64 KB JSON body limit and safe standardized errors.
 - Decimal money values and paise are JSON decimal strings, never floats; all DTOs are explicitly allowlisted.
-- Staging rate limits use a central Redis REST endpoint with an atomic Lua fixed-window counter and HMAC-hashed identity keys; unavailable Redis **fails closed**. In-memory limits are only allowed in local development/tests.
+- Rate limiting is bounded and **in-process** for a single API instance, with a separate Clerk webhook budget. No Redis. Add shared limits only if deploying multiple API replicas.
 - No private media uploads or Socket.IO rooms exist yet. These require authenticated storage and permissions first.
 
 ## Transactional infrastructure
@@ -32,7 +32,7 @@ npm run build:v21
 npm run test:v21:api
 ```
 
-For a staging server, configure `BUILDTO_V21_ENV=staging`, the allowlisted staging `DATABASE_URL`, `BUILDTO_V21_CORS_ORIGINS` (HTTPS exact origin), `BUILDTO_V21_REDIS_REST_URL`, `BUILDTO_V21_REDIS_REST_TOKEN`, and a unique 32+ character `BUILDTO_V21_RATE_LIMIT_HMAC_KEY`, then use `node v21/dist/server.js`.
+For a staging server, configure `BUILDTO_V21_ENV=staging`, the allowlisted staging `DATABASE_URL`, `BUILDTO_V21_CORS_ORIGINS` (HTTPS exact origin), then use `node v21/dist/server.js`.
 
 ### Staging migration history blocker
 

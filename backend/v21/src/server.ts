@@ -2,7 +2,7 @@ import http from 'node:http';
 import {readConfig} from './config';
 import {createV21App} from './app';
 import {createClerkIdentityVerifier} from './identity';
-import {RedisRestRateLimiter,InMemoryTestLimiter} from './rateLimit';
+import {SingleInstanceRateLimiter} from './rateLimit';
 import {jsonLogger} from './logging';
 import {assertV21BaselineApplied} from './baseline';
 
@@ -22,10 +22,8 @@ async function main() {
     if(!schema.migrationHistoryExists)
       throw new Error('V21_MIGRATION_LEDGER_REQUIRED: complete staging Prisma baseline before API startup.');
     await assertV21BaselineApplied(db);
-    const limiter=config.redisRestUrl&&config.redisRestToken&&config.rateLimitHashKey
-      ? new RedisRestRateLimiter(config.redisRestUrl,config.redisRestToken,config.rateLimitHashKey)
-      : config.environment==='local' ? new InMemoryTestLimiter()
-      : (()=>{throw new Error('V21_CENTRAL_RATE_LIMIT_REQUIRED');})();
+    // One API instance by design. No additional Redis service or network hop.
+    const limiter=new SingleInstanceRateLimiter();
     if(!config.clerkIssuer||!config.clerkSecretKey||!config.clerkAuthorizedParties.length||!config.clerkWebhookSecret)
       throw new Error('V21_CLERK_CONFIG_REQUIRED: verified authentication and signed webhook config required.');
     const identityVerifier=createClerkIdentityVerifier({

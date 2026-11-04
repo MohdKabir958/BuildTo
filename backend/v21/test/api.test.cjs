@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const request=require('supertest');
 const {createV21App}=require('../dist/app.js');
-const {InMemoryTestLimiter,RedisRestRateLimiter}=require('../dist/rateLimit.js');
+const {InMemoryTestLimiter,SingleInstanceRateLimiter}=require('../dist/rateLimit.js');
 const {paiseString,parsePaise,decimalString,utcTimestamp,publicMoneyDTO,stableRequestHash}=require('../dist/contracts.js');
 const {readConfig}=require('../dist/config.js');
 const {ApiError}=require('../dist/errors.js');
@@ -21,7 +21,7 @@ test('only safe public foundation routes are exposed',async()=>{
  assert.equal(ready.body.ready,true);
  const sys=await request(app).get('/api/v2/system');
  assert.equal(sys.status,200);
- assert.deepEqual(sys.body.data.capabilities,['catalog.discovery','catalog.supplier','catalog.review']);
+ assert.deepEqual(sys.body.data.capabilities,['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees']);
  assert.equal(sys.body.data.moneyFormat,'decimal-string-paise');
  assert.equal((await request(app).post('/api/v2/orders').send({})).status,404);
  assert.equal((await request(app).get('/api/v2/suppliers')).status,404);
@@ -54,20 +54,31 @@ test('CORS is exact-match, OPTIONS safe and default response secure',async()=>{
  assert(!bad.headers['access-control-allow-origin']);
  assert.equal((await request(app).options('/api/v2/system').set('Origin','https://staging.buildto.test')).status,204);
 });
-test('Redis rate limiter runs an atomic script and hashes sensitive subjects',async()=>{
- const redis=new RedisRestRateLimiter('https://redis.example','secret','unique-hmac',async(_,options)=>{
-   assert.equal(options.headers.Authorization,'Bearer secret');
-   const command=JSON.parse(options.body);
-   assert.equal(command[0],'EVAL');
-   assert(!options.body.includes('private-ip-or-account'));
-   return {ok:true,json:async()=>({result:1})};
+test('in-process limiter enforces limits without external services',async()=>{
+ let now=0;
+ const limiter=new SingleInstanceRateLimiter(20,()=>now);
+ assert.deepEqual(await limiter.check('office-ip',2,60),{remaining:1});
+ assert.deepEqual(await limiter.check('office-ip',2,60),{remaining:0});
+ await assert.rejects(limiter.check('office-ip',2,60),e=>e.status===429);
+ now=61000;
+ assert.deepEqual(await limiter.check('office-ip',2,60),{remaining:1});
+});
+test('rate limiter bounds memory and fails closed when full',async()=>{
+ const limiter=new SingleInstanceRateLimiter(10,()=>0);
+ for(let i=0;i<10;i++)await limiter.check('subject:'+i,20,60);
+ await assert.rejects(limiter.check('eleventh',20,60),e=>e.status===503);
+});
+test('signed Clerk webhooks have a separate request budget',async()=>{
+ const calls=[];
+ const app=createV21App({
+  db:{$queryRaw:async()=>[{one:1}]},limiter:{check:async(subject,max)=>{calls.push({subject,max});return {remaining:1};}},
+  allowedOrigins:[],proxyHops:0,log:()=>{},clerkWebhookSecret:'whsec_fake',
  });
- const r=await redis.check('private-ip-or-account',2,60);
- assert.deepEqual(r,{remaining:1});
- const exhausted=new RedisRestRateLimiter('https://redis.example','secret','unique-hmac',async()=>({ok:true,json:async()=>({result:3})}));
- await assert.rejects(exhausted.check('ip',2,60),e=>e instanceof ApiError&&e.status===429);
- const broken=new RedisRestRateLimiter('https://redis.example','secret','unique-hmac',async()=>{throw new Error('private connection details');});
- await assert.rejects(broken.check('ip',2,60),e=>e.status===503&&!e.message.includes('private'));
+ await request(app).get('/api/v2/system');
+ await request(app).post('/api/v2/webhooks/clerk').set('Content-Type','application/json').send('{}');
+ assert.equal(calls[0].max,300);
+ assert.equal(calls[1].max,240);
+ assert.notEqual(calls[0].subject,calls[1].subject);
 });
 test('app maps expected limiter failure to 429',async()=>{
  const app=appWith({limiter:{check:async()=>{throw new ApiError(429,'RATE_LIMITED','Too many requests.');}}});
@@ -101,7 +112,7 @@ test('config refuses production, unrelated Neon databases and wildcard CORS',()=
 });
 test('documented OpenAPI includes exactly implemented routes',()=>{
  const spec=require('../openapi.json');
- assert.deepEqual(Object.keys(spec.paths).sort(),['/api/v2/system','/health','/ready','/api/v2/me','/api/v2/admin/access','/api/v2/suppliers/{supplierId}/access','/api/v2/webhooks/clerk',...['categories','brands','units','products','listings'].map(s=>'/api/v2/catalog/'+s),'/api/v2/admin/catalog/categories','/api/v2/admin/catalog/categories/{categoryId}','/api/v2/admin/catalog/brands','/api/v2/admin/catalog/products','/api/v2/admin/catalog/products/{productId}','/api/v2/admin/catalog/products/{productId}/conversions','/api/v2/admin/catalog/listings/pending','/api/v2/admin/catalog/listings/{listingId}/review','/api/v2/suppliers/{supplierId}/listings','/api/v2/suppliers/{supplierId}/listings/{listingId}','/api/v2/suppliers/{supplierId}/listings/{listingId}/submit','/api/v2/suppliers/{supplierId}/listings/{listingId}/price-tiers'].sort());
+ assert.deepEqual(Object.keys(spec.paths).sort(),["/health","/ready","/api/v2/system","/api/v2/me","/api/v2/admin/access","/api/v2/suppliers/{supplierId}/access","/api/v2/webhooks/clerk","/api/v2/catalog/categories","/api/v2/catalog/brands","/api/v2/catalog/units","/api/v2/catalog/products","/api/v2/catalog/listings","/api/v2/admin/catalog/categories","/api/v2/admin/catalog/categories/{categoryId}","/api/v2/admin/catalog/brands","/api/v2/admin/catalog/products","/api/v2/admin/catalog/products/{productId}","/api/v2/admin/catalog/products/{productId}/conversions","/api/v2/admin/catalog/listings/pending","/api/v2/admin/catalog/listings/{listingId}/review","/api/v2/suppliers/{supplierId}/listings","/api/v2/suppliers/{supplierId}/listings/{listingId}","/api/v2/suppliers/{supplierId}/listings/{listingId}/submit","/api/v2/suppliers/{supplierId}/listings/{listingId}/price-tiers","/api/v2/delivery/cities","/api/v2/delivery/areas","/api/v2/me/addresses","/api/v2/me/addresses/{addressId}","/api/v2/delivery/suppliers/{supplierId}/eligibility","/api/v2/admin/delivery/cities","/api/v2/admin/delivery/cities/{cityId}","/api/v2/admin/delivery/areas","/api/v2/admin/delivery/areas/{areaId}","/api/v2/suppliers/{supplierId}/delivery","/api/v2/suppliers/{supplierId}/delivery/areas/{areaId}","/api/v2/suppliers/{supplierId}/delivery/areas/{areaId}/flat-rate"].sort());
  assert.equal(spec.openapi,'3.0.3');
 });
 
@@ -128,4 +139,20 @@ test('serialization conflicts are safe 409s rather than unknown 500s',()=>{
  assert.equal(err.status,409);
  assert.equal(err.code,'CONCURRENT_MODIFICATION');
  assert(!err.message.includes('private'));
+});
+
+test('staging boots its configuration without Redis credentials while keeping Clerk mandatory',()=>{
+ const config=readConfig({
+  BUILDTO_V21_ENV:'staging',
+  DATABASE_URL:'postgresql://app:placeholder@ep-sparkling-sun-b5imzmjj.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require',
+  BUILDTO_V21_CORS_ORIGINS:'https://staging.buildto.test',
+  CLERK_ISSUER:'https://example.clerk.accounts.dev',
+  CLERK_SECRET_KEY:'sk_test_config-only',
+  CLERK_WEBHOOK_SIGNING_SECRET:'whsec_placeholder',
+  CLERK_AUTHORIZED_PARTIES:'https://staging.buildto.test',
+ });
+ assert.equal(config.environment,'staging');
+ assert.equal(config.corsOrigins.length,1);
+ assert(!('redisRestUrl' in config));
+ assert(!('redisRestToken' in config));
 });
