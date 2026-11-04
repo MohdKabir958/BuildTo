@@ -85,7 +85,31 @@ export async function startPayment(db:PrismaClient,userId:string,orderId:string,
   return {id:created.id,created:true};
  });
  if(!state.created){
-  const previous=await db.paymentAttempt.findUniqueOrThrow({where:{id:state.id}});
+  let previous=await db.paymentAttempt.findUniqueOrThrow({where:{id:state.id}});
+  if(previous.status==='CREATED'&&!previous.providerOrderRef&&gateway.lookupOrderByReceipt){
+   // A previous timeout may have created the gateway order. Read-only lookup
+   // by unique receipt, not a second create request.
+   let found;
+   try{found=await gateway.lookupOrderByReceipt('BT'+state.id.replaceAll('-',''));}
+   catch(error){
+    if(error instanceof ApiError && error.code==='PAYMENT_PROVIDER_MISMATCH')throw error;
+    found=null; // Provider unavailable => conservative 202, no new charge.
+   }
+   if(found){
+    previous=await serializable(db,async tx=>{
+     await lockOrder(tx,orderId);
+     const p=await tx.paymentAttempt.findUniqueOrThrow({where:{id:state.id}});
+     if(found!.amount!==p.amountPaise||found!.currency!=='INR'||
+      found!.receipt!=='BT'+p.id.replaceAll('-',''))
+      throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Receipt amount did not match.');
+     if(p.status==='CREATED'&&!p.providerOrderRef)
+      return tx.paymentAttempt.update({where:{id:p.id},data:{
+       providerOrderRef:found!.id,status:'PENDING'
+      }});
+     return p;
+    });
+   }
+  }
   return {payment:dto(previous,gateway.publicKey),replayed:true,
    initializing:previous.status==='CREATED'};
  }
@@ -160,6 +184,8 @@ export function verifyRazorpayWebhook(body:Buffer,signature:string|undefined,
 }
 export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGatewayEvent){
  return serializable(db,async tx=>{
+  // Serialize simultaneous deliveries of the same event before its unique insert.
+  await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${event.id},87510)) IS NULL AS locked`);
   // Event-ID unique across retries; reject same ID with a different signed body.
   const existing=await tx.providerWebhookEvent.findUnique({where:{
    provider_providerEventId:{provider:'RAZORPAY',providerEventId:event.id}
