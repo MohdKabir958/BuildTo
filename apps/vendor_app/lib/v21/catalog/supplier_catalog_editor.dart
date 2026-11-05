@@ -28,7 +28,7 @@ class _CatalogProductPickerState extends State<CatalogProductPicker> {
   @override
   void dispose() { ticket++; search.dispose(); super.dispose(); }
   Future<void> load({bool more = false}) async {
-    if (loading) return;
+    if (more && (loading || nextCursor == null)) return;
     final marker = ++ticket;
     setState(() {
       loading = true; message = null;
