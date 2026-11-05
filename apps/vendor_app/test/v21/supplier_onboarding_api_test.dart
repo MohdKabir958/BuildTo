@@ -99,7 +99,7 @@ void main() {
       expect(request.url.path, '/api/v2/supplier-applications');
       expect(request.method, 'POST');
       expect(
-          request.headers['Authorization'], '***');
+          request.headers['Authorization'], 'Bearer test-only-clerk-session');
       postCount++;
       final data = jsonDecode(request.body) as Map<String, dynamic>;
       expect(data['contactEmail'], 'applicant@example.com');
