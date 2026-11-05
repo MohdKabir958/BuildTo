@@ -23,13 +23,17 @@ class UiClerk implements SupplierClerkPort {
   @override
   Future<bool> authenticate({String mode = 'signInOrUp'}) async {
     state.value = const ClerkIdentity(
-        ready: true, signedIn: true,
-        userId: 'user_SupplierTest', sessionId: 'sess_SupplierTest',
+        ready: true,
+        signedIn: true,
+        userId: 'user_SupplierTest',
+        sessionId: 'sess_SupplierTest',
         email: 'supplier@example.invalid');
     return true;
   }
+
   @override
-  Future<String?> token({bool forceRefresh = false}) async => 'widget-test-only';
+  Future<String?> token({bool forceRefresh = false}) async =>
+      'widget-test-only';
   @override
   Future<bool> signOut() async {
     state.value = const ClerkIdentity(ready: true, signedIn: false);
@@ -43,23 +47,30 @@ SupplierAuthController makeController(UiClerk clerk, {bool multi = false}) {
     token: () => clerk.token(),
     httpClient: MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
-        return http.Response(jsonEncode({
-          'data': {
-            'id': 'db-account',
-            'displayName': 'BuildTo Verified',
-            'adminRole': null,
-            'suppliers': [
-              {'supplierId': supplier, 'role': 'OWNER'},
-              if (multi) {'supplierId': second, 'role': 'VIEWER'},
-            ],
-          },
-        }), 200);
+        return http.Response(
+            jsonEncode({
+              'data': {
+                'id': 'db-account',
+                'displayName': 'BuildTo Verified',
+                'adminRole': null,
+                'suppliers': [
+                  {'supplierId': supplier, 'role': 'OWNER'},
+                  if (multi) {'supplierId': second, 'role': 'VIEWER'},
+                ],
+              },
+            }),
+            200);
       }
       if (request.url.path.endsWith('/access')) {
         final id = request.url.path.split('/')[4];
-        return http.Response(jsonEncode({
-          'data': {'supplierId': id, 'role': id == supplier ? 'OWNER' : 'VIEWER'}
-        }), 200);
+        return http.Response(
+            jsonEncode({
+              'data': {
+                'supplierId': id,
+                'role': id == supplier ? 'OWNER' : 'VIEWER'
+              }
+            }),
+            200);
       }
       return http.Response('{"error":{"code":"NOT_FOUND"}}', 404);
     }),
@@ -81,11 +92,15 @@ Future<void> pumpPhone(WidgetTester tester, Widget child, Size size) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('BuildTo Clerk sign-in leads to backend-authorized supplier shell',
+  testWidgets(
+      'BuildTo Clerk sign-in leads to backend-authorized supplier shell',
       (tester) async {
     final clerk = UiClerk();
     final controller = makeController(clerk);
-    addTearDown(() { controller.dispose(); clerk.state.dispose(); });
+    addTearDown(() {
+      controller.dispose();
+      clerk.state.dispose();
+    });
     await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
         const Size(393, 852));
     expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
@@ -103,7 +118,10 @@ void main() {
       (tester) async {
     final clerk = UiClerk();
     final controller = makeController(clerk, multi: true);
-    addTearDown(() { controller.dispose(); clerk.state.dispose(); });
+    addTearDown(() {
+      controller.dispose();
+      clerk.state.dispose();
+    });
     await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
         const Size(393, 852));
     await tester.tap(find.text('Continue securely with Clerk'));
@@ -126,11 +144,14 @@ void main() {
   testWidgets('Clerk status and empty supplier permission state stay readable',
       (tester) async {
     for (final size in [
-      const Size(320, 800), const Size(360, 800), const Size(412, 915)
+      const Size(320, 800),
+      const Size(360, 800),
+      const Size(412, 915)
     ]) {
       final clerk = UiClerk();
       final controller = makeController(clerk);
-      await pumpPhone(tester, BuildToSupplierV21App(controller: controller), size);
+      await pumpPhone(
+          tester, BuildToSupplierV21App(controller: controller), size);
       expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'overflow at $size');
       await tester.pumpWidget(const SizedBox.shrink());
