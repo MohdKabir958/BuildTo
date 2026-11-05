@@ -85,6 +85,17 @@ void main() {
     }
   });
 
+  test('GST percent is exactly converted to basis points for V2.1', () {
+    expect(catalogTaxBasisPoints('18'), 1800);
+    expect(catalogTaxBasisPoints('18.50'), 1850);
+    expect(catalogTaxBasisPoints('0'), 0);
+    expect(catalogPercentFromBps(1850), '18.5');
+    expect(catalogPercentFromBps(1800), '18');
+    for (final invalid in ['-1', '101', '18.123', '18e2', '01']) {
+      expect(() => catalogTaxBasisPoints(invalid), throwsFormatException);
+    }
+  });
+
   test('tier quantities and discounts are ordered without floating-point math',
       () {
     validateCatalogTiers([
