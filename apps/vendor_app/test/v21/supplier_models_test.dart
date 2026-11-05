@@ -18,30 +18,37 @@ void main() {
   });
 
   test('unknown role cannot become an approved supplier', () {
-    expect(() => SupplierV21Membership.fromJson({
-      'supplierId': supplierId, 'role': 'SUPER_ADMIN'
-    }), throwsFormatException);
-    expect(() => SupplierV21Membership.fromJson({
-      'supplierId': supplierId, 'role': null
-    }), throwsFormatException);
+    expect(
+        () => SupplierV21Membership.fromJson(
+            {'supplierId': supplierId, 'role': 'SUPER_ADMIN'}),
+        throwsFormatException);
+    expect(
+        () => SupplierV21Membership.fromJson(
+            {'supplierId': supplierId, 'role': null}),
+        throwsFormatException);
   });
 
   test('missing and invalid membership identity fail closed', () {
-    expect(() => SupplierV21Membership.fromJson({
-      'supplierId': '', 'role': 'OWNER'
-    }), throwsFormatException);
-    expect(() => SupplierV21Identity.fromJson({
-      'id': 'db-id', 'displayName': 'Example'
-    }), throwsFormatException);
+    expect(
+        () =>
+            SupplierV21Membership.fromJson({'supplierId': '', 'role': 'OWNER'}),
+        throwsFormatException);
+    expect(
+        () => SupplierV21Identity.fromJson(
+            {'id': 'db-id', 'displayName': 'Example'}),
+        throwsFormatException);
   });
 
   test('membership spoofing or duplicate supplier scope is rejected', () {
-    expect(() => SupplierV21Identity.fromJson({
-      'id': 'user', 'displayName': 'Example',
-      'suppliers': [
-        {'supplierId': supplierId, 'role': 'OWNER'},
-        {'supplierId': supplierId, 'role': 'VIEWER'},
-      ],
-    }), throwsFormatException);
+    expect(
+        () => SupplierV21Identity.fromJson({
+              'id': 'user',
+              'displayName': 'Example',
+              'suppliers': [
+                {'supplierId': supplierId, 'role': 'OWNER'},
+                {'supplierId': supplierId, 'role': 'VIEWER'},
+              ],
+            }),
+        throwsFormatException);
   });
 }
