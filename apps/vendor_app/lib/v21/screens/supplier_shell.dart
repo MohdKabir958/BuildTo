@@ -4,6 +4,8 @@ import '../design/buildto_theme.dart';
 import '../api/supplier_v21_models.dart';
 import '../dashboard/supplier_dashboard_repository.dart';
 import '../dashboard/supplier_dashboard_view.dart';
+import '../catalog/supplier_catalog_repository.dart';
+import '../catalog/supplier_catalog_view.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -27,6 +29,7 @@ class BuildToSupplierShell extends StatefulWidget {
     super.key,
     this.verifiedSupplier,
     this.dashboardRepository,
+    this.catalogRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -37,6 +40,7 @@ class BuildToSupplierShell extends StatefulWidget {
 
   final SupplierV21Membership? verifiedSupplier;
   final SupplierDashboardRepository? dashboardRepository;
+  final SupplierCatalogRepository? catalogRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -155,13 +159,31 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                     'Review committed orders, prepare shipments and track handover.',
                 icon: Icons.receipt_long_outlined,
               ),
-              _RestrictedTab(
-                verifiedSupplier: widget.verifiedSupplier,
-                title: 'Material catalog',
-                subtitle:
-                    'Manage construction material listings, price tiers and approvals.',
-                icon: Icons.category_outlined,
-              ),
+              if (widget.verifiedSupplier != null &&
+                  widget.catalogRepository != null &&
+                  selected == BuildToSupplierTab.catalog)
+                SupplierCatalogView(
+                  key: ValueKey(widget.verifiedSupplier!.supplierId),
+                  supplierId: widget.verifiedSupplier!.supplierId,
+                  repository: widget.catalogRepository!,
+                  canWrite: const {
+                    SupplierV21Role.owner,
+                    SupplierV21Role.manager,
+                    SupplierV21Role.catalog,
+                  }.contains(widget.verifiedSupplier!.role),
+                  onRecheckAccess: widget.onRefresh,
+                )
+              else if (widget.verifiedSupplier != null &&
+                  widget.catalogRepository != null)
+                const SizedBox.shrink()
+              else
+                _RestrictedTab(
+                  verifiedSupplier: widget.verifiedSupplier,
+                  title: 'Material catalog',
+                  subtitle:
+                      'Manage construction material listings, price tiers and approvals.',
+                  icon: Icons.category_outlined,
+                ),
               _RestrictedTab(
                 verifiedSupplier: widget.verifiedSupplier,
                 title: 'Warehouse stock',
