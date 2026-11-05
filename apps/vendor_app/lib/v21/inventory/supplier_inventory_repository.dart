@@ -168,10 +168,14 @@ class SupplierInventoryRepository {
       },
     );
     final result = catalogObject(response.data);
+    final receivedQty = exactStockQuantity(result['quantity']);
+    final sameQuantity =
+        catalogScaled(receivedQty, whole: 15, scale: 3) ==
+        catalogScaled(quantity, whole: 15, scale: 3);
     if (catalogId(result['listingId']) != listingId ||
         catalogId(result['fromWarehouseId']) != fromWarehouseId ||
         catalogId(result['toWarehouseId']) != toWarehouseId ||
-        exactStockQuantity(result['quantity']) != quantity) {
+        !sameQuantity) {
       throw const FormatException('Unexpected stock transfer confirmation');
     }
   }
