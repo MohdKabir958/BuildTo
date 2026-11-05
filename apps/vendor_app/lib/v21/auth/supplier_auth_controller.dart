@@ -177,7 +177,9 @@ class SupplierAuthController extends ChangeNotifier {
     if (_disposed ||
         _locallyBlocked ||
         _fingerprint == null ||
-        _account == null) { return; }
+        _account == null) {
+      return;
+    }
     final choices =
         _account!.suppliers.where((item) => item.supplierId == supplierId);
     if (choices.length != 1) {
@@ -236,7 +238,9 @@ class SupplierAuthController extends ChangeNotifier {
     if (_disposed ||
         _stage != SupplierAccessStage.authorized ||
         _account == null ||
-        _account!.suppliers.length < 2) { return; }
+        _account!.suppliers.length < 2) {
+      return;
+    }
     _generation++;
     _activeSupplier = null;
     _selectedId = null;
