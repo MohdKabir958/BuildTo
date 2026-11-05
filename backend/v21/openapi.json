@@ -10896,6 +10896,19 @@
         }
       }
     },
+    "/api/v2/me/supplier-applications/{supplierId}": {
+      "get": {
+        "operationId": "mySupplierApplicationDetail",
+        "summary": "Applicant-owned supplier review progress, document statuses and reviewer feedback; never exposes private media keys",
+        "security": [{"clerkBearer": []}],
+        "parameters": [{"name": "supplierId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "responses": {
+          "200": {"description": "Owned application and evidence review status, wrapped in data and requestId"},
+          "401": {"description": "Clerk identity required"},
+          "404": {"description": "Application not owned or not found"}
+        }
+      }
+    },
     "/api/v2/supplier-applications/{supplierId}/documents": {
       "post": {
         "operationId": "attachSupplierEvidence",
