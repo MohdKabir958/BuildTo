@@ -124,8 +124,9 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         tooltip: 'Supplier account actions',
                         onSelected: (value) {
                           if (value == 'refresh') widget.onRefresh?.call();
-                          if (value == 'switch')
+                          if (value == 'switch') {
                             widget.onSwitchSupplier?.call();
+                          }
                           if (value == 'signout') widget.onSignOut?.call();
                           if (value == 'applications') {
                             widget.onOpenApplications?.call();
