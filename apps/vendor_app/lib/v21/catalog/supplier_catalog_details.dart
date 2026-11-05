@@ -108,8 +108,9 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
               'Cannot submit this listing. Verify the product and try again.',
           });
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => error = 'Could not verify submission response.');
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
