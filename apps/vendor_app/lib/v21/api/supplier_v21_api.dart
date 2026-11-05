@@ -168,7 +168,7 @@ class SupplierV21Api {
     }
     final headers = <String, String>{'Accept': 'application/json'};
     if (body != null) headers['Content-Type'] = 'application/json';
-    if (requiresAuth) headers['Authorization'] = '***';
+    if (requiresAuth) headers['Authorization'] = 'Bearer ${token!.trim()}';
     if (idempotencyKey != null) headers['Idempotency-Key'] = idempotencyKey;
     if (ifMatch != null) headers['If-Match'] = ifMatch;
 
