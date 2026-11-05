@@ -234,7 +234,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       text: widget.original?.mrpPaise == null
           ? '' : catalogRupeesFromPaise(widget.original!.mrpPaise!));
   late final taxBps = TextEditingController(
-      text: (widget.original?.taxRateBps ?? 1800).toString());
+      text: catalogPercentFromBps(widget.original?.taxRateBps ?? 1800));
   CatalogProduct? product;
   String? unit, error;
   late bool inclusive = widget.original?.taxInclusive ?? true;
@@ -347,7 +347,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
         maxOrderQty: maximum.text.trim().isEmpty ? null : maximum.text.trim(),
         unitPrice: price.text.trim(),
         mrpPaise: mrp.text.trim().isEmpty ? null : catalogPaiseFromRupees(mrp.text),
-        taxRateBps: int.parse(taxBps.text.trim()),
+        taxRateBps: catalogTaxBasisPoints(taxBps.text.trim()),
         taxInclusive: inclusive,
       );
 
@@ -532,11 +532,13 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                   return 'Enter rupees up to 2 decimal places.';
                 }
               }),
-              _field('Tax rate (basis points)', taxBps, validator: (v) {
-                final n = int.tryParse((v ?? '').trim());
-                return n == null || n < 0 || n > 10000
-                    ? 'Enter 0–10000 basis points (1800 = 18%).'
-                    : null;
+              _field('GST rate (%)', taxBps, validator: (v) {
+                try {
+                  catalogTaxBasisPoints((v ?? '').trim());
+                  return null;
+                } on FormatException {
+                  return 'Enter 0–100% (up to 2 decimals).';
+                }
               }),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
