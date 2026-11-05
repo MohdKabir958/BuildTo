@@ -119,7 +119,7 @@ void main() {
     final routes = <String>[];
     final controller = makeController(clerk, MockClient((request) async {
       routes.add(request.url.path);
-      expect(request.headers['Authorization'], '***');
+      expect(request.headers['Authorization'], 'Bearer clerk-session-fixture');
       if (request.url.path == '/api/v2/me') {
         return me([member(idA, 'INVENTORY')]);
       }
