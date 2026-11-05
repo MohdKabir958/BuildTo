@@ -116,11 +116,11 @@ void main() {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.owner);
     expect(find.text('Material catalog'), findsOneWidget);
+    expect(find.text('Add material listing'), findsOneWidget);
     await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     expect(find.textContaining('₹315.25'), findsWidgets);
     expect(find.text('Draft'), findsWidgets);
-    expect(find.text('Add material listing'), findsOneWidget);
     expect(server.reads, 3);
     expect(tester.takeException(), isNull);
   });
@@ -129,9 +129,9 @@ void main() {
       (tester) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.viewer);
+    expect(find.text('Add material listing'), findsNothing);
     await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
-    expect(find.text('Add material listing'), findsNothing);
     expect(server.reads, 1);
     await tester.tap(find.text('CEMENT-43'));
     await tester.pumpAndSettle();
@@ -148,6 +148,15 @@ void main() {
     await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     server.forbidden = true;
+    await tester.scrollUntilVisible(
+      find.byTooltip('Refresh supplier listings'),
+      -180,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('supplier-catalog-loaded')),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Refresh supplier listings'));
     await tester.pumpAndSettle();
     expect(find.text('Catalog unavailable'), findsOneWidget);
