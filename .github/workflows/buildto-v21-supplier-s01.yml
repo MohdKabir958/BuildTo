@@ -1,0 +1,40 @@
+name: BuildTo Supplier S01 design foundation
+on:
+  pull_request:
+    paths:
+      - 'apps/vendor_app/lib/v21/**'
+      - 'apps/vendor_app/test/v21/**'
+      - 'apps/vendor_app/lib/main.dart'
+      - 'apps/vendor_app/docs/v21/S01-FOUNDATION.md'
+      - '.github/workflows/buildto-v21-supplier-s01.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s01-ui-and-transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve pinned Flutter dependencies
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Verify format of new S01 source and tests
+        working-directory: apps/vendor_app
+        run: dart format --output=none --set-exit-if-changed lib/v21 test/v21
+      - name: Analyze S01 only (legacy modules tracked separately)
+        working-directory: apps/vendor_app
+        run: flutter analyze --no-pub lib/v21 test/v21
+      - name: Run responsive widget and API contract tests
+        working-directory: apps/vendor_app
+        run: flutter test --no-pub --concurrency=2 test/v21
+      - name: Build opt-in S01 preview bundle
+        working-directory: apps/vendor_app
+        run: flutter build bundle --debug --no-pub --dart-define=BUILDTO_SUPPLIER_V21_PREVIEW=true
