@@ -15,17 +15,18 @@ class SupplierRfqRepository {
 
   Future<List<SupplierRfq>> invitations(String supplierId) async {
     final response = await client.get(_scope(supplierId));
-    return rfqRecords(response.data, SupplierRfq.parse,
-        (SupplierRfq rfq) => rfq.id);
+    return rfqRecords(
+        response.data, SupplierRfq.parse, (SupplierRfq rfq) => rfq.id);
   }
 
-  Future<List<SupplierQuote>> quotes(
-      String supplierId, String rfqId) async {
+  Future<List<SupplierQuote>> quotes(String supplierId, String rfqId) async {
     final id = catalogId(rfqId);
     final response = await client.get('${_scope(supplierId)}/$id/quotes');
-    return rfqRecords(response.data,
+    return rfqRecords(
+        response.data,
         (raw) => SupplierQuote.parse(raw, supplierId, id),
-        (SupplierQuote quote) => quote.id, max: 50);
+        (SupplierQuote quote) => quote.id,
+        max: 50);
   }
 
   Future<SupplierQuote> submit({
@@ -41,20 +42,22 @@ class SupplierRfqRepository {
     }
     verifyQuotedLines(rfq, lines);
     deliveryPaise(deliveryPaiseValue);
-    if (deliveryTerms != null && (deliveryTerms.isEmpty ||
-        deliveryTerms.length > 500 ||
-        RegExp(r'[\x00-\x1f\x7f]').hasMatch(deliveryTerms))) {
+    if (deliveryTerms != null &&
+        (deliveryTerms.isEmpty ||
+            deliveryTerms.length > 500 ||
+            RegExp(r'[\x00-\x1f\x7f]').hasMatch(deliveryTerms))) {
       throw const FormatException('Invalid quote delivery terms');
     }
-    final envelope = (await client.request('POST',
-        '${_scope(supplierId)}/${catalogId(rfq.id)}/quotes',
-        idempotencyKey: intent,
-        body: {
+    final envelope = (await client.request(
+            'POST', '${_scope(supplierId)}/${catalogId(rfq.id)}/quotes',
+            idempotencyKey: intent,
+            body: {
           'lines': lines.map((line) => line.toJson()).toList(growable: false),
           'deliveryPaise': deliveryPaiseValue,
           'deliveryTerms': deliveryTerms,
           'validUntil': null,
-        })).data;
+        }))
+        .data;
     final data = catalogObject(envelope);
     return SupplierQuote.parse(data['quote'], supplierId, rfq.id);
   }

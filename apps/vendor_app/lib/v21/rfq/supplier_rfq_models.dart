@@ -16,8 +16,9 @@ DateTime rfqTimestamp(Object? input) {
 String rfqMoney(String amount) =>
     '₹${catalogRupeesFromPaise(deliveryPaise(amount))}';
 
-List<T> rfqRecords<T>(Object? raw, T Function(Object?) parse,
-    String Function(T) identity, {int max = 100}) {
+List<T> rfqRecords<T>(
+    Object? raw, T Function(Object?) parse, String Function(T) identity,
+    {int max = 100}) {
   if (raw is! List<dynamic> || raw.length > max) {
     throw const FormatException('Invalid bounded RFQ data');
   }
@@ -47,7 +48,8 @@ class SupplierRfqItem {
     }
     return SupplierRfqItem(
       id: catalogId(data['id']),
-      productId: data['productId'] == null ? null : catalogId(data['productId']),
+      productId:
+          data['productId'] == null ? null : catalogId(data['productId']),
       description: catalogString(data['description'], max: 500),
       quantity: catalogQty(data['quantity']),
       unitCode: unit,
@@ -79,8 +81,9 @@ class SupplierRfq {
     if (data['status'] != 'OPEN') {
       throw const FormatException('RFQ invitation is not open');
     }
-    final items = rfqRecords(data['items'], SupplierRfqItem.parse,
-        (SupplierRfqItem item) => item.id, max: 30);
+    final items = rfqRecords(
+        data['items'], SupplierRfqItem.parse, (SupplierRfqItem item) => item.id,
+        max: 30);
     if (items.isEmpty) {
       throw const FormatException('RFQ has no material lines');
     }
@@ -88,38 +91,46 @@ class SupplierRfq {
       id: catalogId(data['id']),
       publicNumber: catalogString(data['publicNumber'], max: 40),
       items: items,
-      notes: data['notes'] == null ? null :
-          catalogString(data['notes'], max: 1000),
+      notes: data['notes'] == null
+          ? null
+          : catalogString(data['notes'], max: 1000),
       invitedAt: rfqTimestamp(data['invitedAt']),
       createdAt: rfqTimestamp(data['createdAt']),
-      responseDueAt: data['responseDueAt'] == null ? null :
-          rfqTimestamp(data['responseDueAt']),
+      responseDueAt: data['responseDueAt'] == null
+          ? null
+          : rfqTimestamp(data['responseDueAt']),
     );
   }
 }
 
 enum SupplierQuoteStatus {
-  draft, submitted, revised, accepted, rejected, withdrawn, expired;
+  draft,
+  submitted,
+  revised,
+  accepted,
+  rejected,
+  withdrawn,
+  expired;
 
   static SupplierQuoteStatus parse(Object? raw) => switch (raw) {
-    'DRAFT' => draft,
-    'SUBMITTED' => submitted,
-    'REVISED' => revised,
-    'ACCEPTED' => accepted,
-    'REJECTED' => rejected,
-    'WITHDRAWN' => withdrawn,
-    'EXPIRED' => expired,
-    _ => throw const FormatException('Unknown supplier quote status'),
-  };
+        'DRAFT' => draft,
+        'SUBMITTED' => submitted,
+        'REVISED' => revised,
+        'ACCEPTED' => accepted,
+        'REJECTED' => rejected,
+        'WITHDRAWN' => withdrawn,
+        'EXPIRED' => expired,
+        _ => throw const FormatException('Unknown supplier quote status'),
+      };
   String get label => switch (this) {
-    draft => 'Draft',
-    submitted => 'Submitted',
-    revised => 'Revised',
-    accepted => 'Awarded by customer',
-    rejected => 'Not selected',
-    withdrawn => 'Withdrawn',
-    expired => 'Expired',
-  };
+        draft => 'Draft',
+        submitted => 'Submitted',
+        revised => 'Revised',
+        accepted => 'Awarded by customer',
+        rejected => 'Not selected',
+        withdrawn => 'Withdrawn',
+        expired => 'Expired',
+      };
 }
 
 class SupplierQuoteLine {
@@ -140,7 +151,8 @@ class SupplierQuoteLine {
     final data = catalogObject(raw);
     return SupplierQuoteLine(
       rfqItemId: catalogId(data['rfqItemId']),
-      listingId: data['listingId'] == null ? null : catalogId(data['listingId']),
+      listingId:
+          data['listingId'] == null ? null : catalogId(data['listingId']),
       quantity: catalogQty(data['quantity']),
       unitCode: catalogString(data['unitCode'], max: 20),
       unitPrice: catalogPrice(data['unitPrice']),
@@ -186,14 +198,15 @@ class SupplierQuote {
     final tax = deliveryPaise(data['taxPaise']);
     final delivery = deliveryPaise(data['deliveryPaise']);
     final total = deliveryPaise(data['totalPaise']);
-    if (BigInt.parse(subtotal) + BigInt.parse(tax) +
-        BigInt.parse(delivery) != BigInt.parse(total)) {
+    if (BigInt.parse(subtotal) + BigInt.parse(tax) + BigInt.parse(delivery) !=
+        BigInt.parse(total)) {
       throw const FormatException('RFQ amount breakdown does not balance');
     }
     final version = catalogInt(data['version'], max: 50);
     if (version == 0) throw const FormatException('Invalid quotation version');
     final lines = rfqRecords(data['lines'], SupplierQuoteLine.parse,
-        (SupplierQuoteLine line) => line.rfqItemId, max: 30);
+        (SupplierQuoteLine line) => line.rfqItemId,
+        max: 30);
     if (lines.isEmpty) throw const FormatException('Empty supplier quote');
     return SupplierQuote(
       id: catalogId(data['id']),
@@ -208,10 +221,11 @@ class SupplierQuote {
       totalPaise: total,
       lines: lines,
       createdAt: rfqTimestamp(data['createdAt']),
-      validUntil: data['validUntil'] == null ? null :
-          rfqTimestamp(data['validUntil']),
-      deliveryTerms: data['deliveryTerms'] == null ? null :
-          catalogString(data['deliveryTerms'], max: 500),
+      validUntil:
+          data['validUntil'] == null ? null : rfqTimestamp(data['validUntil']),
+      deliveryTerms: data['deliveryTerms'] == null
+          ? null
+          : catalogString(data['deliveryTerms'], max: 500),
     );
   }
 }
@@ -233,7 +247,8 @@ class SupplierQuoteLineInput {
     catalogId(rfqItemId);
     catalogQty(quantity);
     catalogPrice(unitPrice);
-    if (taxRateBps < 0 || taxRateBps > 10000 ||
+    if (taxRateBps < 0 ||
+        taxRateBps > 10000 ||
         listingId != null && listingId!.isEmpty) {
       throw const FormatException('Invalid quote tax or listing');
     }

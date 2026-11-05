@@ -76,21 +76,22 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
           ],
         ),
       ),
-      Expanded(child: section == 0
-          ? SupplierDeliveryView(
-              key: ValueKey('delivery-${widget.supplierId}'),
-              supplierId: widget.supplierId,
-              repository: widget.delivery,
-              canWrite: canManageDelivery,
-              onRecheckAccess: widget.onRecheckAccess,
-            )
-          : SupplierRfqView(
-              key: ValueKey('rfq-${widget.supplierId}'),
-              supplierId: widget.supplierId,
-              repository: widget.rfqs,
-              canQuote: canQuote,
-              onRecheckAccess: widget.onRecheckAccess,
-            )),
+      Expanded(
+          child: section == 0
+              ? SupplierDeliveryView(
+                  key: ValueKey('delivery-${widget.supplierId}'),
+                  supplierId: widget.supplierId,
+                  repository: widget.delivery,
+                  canWrite: canManageDelivery,
+                  onRecheckAccess: widget.onRecheckAccess,
+                )
+              : SupplierRfqView(
+                  key: ValueKey('rfq-${widget.supplierId}'),
+                  supplierId: widget.supplierId,
+                  repository: widget.rfqs,
+                  canQuote: canQuote,
+                  onRecheckAccess: widget.onRecheckAccess,
+                )),
     ]);
   }
 }

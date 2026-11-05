@@ -23,7 +23,8 @@ void main() {
         return http.Response(jsonEncode({'data': <Object>[]}), 200);
       }),
     );
-    await tester.pumpWidget(MaterialApp(home: Scaffold(
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
       body: SupplierBusinessView(
         supplierId: supplier,
         role: SupplierV21Role.viewer,

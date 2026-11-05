@@ -84,7 +84,8 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
           SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
           SupplierV21Exception(problem: SupplierV21Problem.notFound) =>
             'Supplier RFQ access was changed or revoked.',
-          _ => 'Could not verify invitations. Previously loaded RFQs are hidden.',
+          _ =>
+            'Could not verify invitations. Previously loaded RFQs are hidden.',
         };
       });
     }
@@ -118,7 +119,8 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
         children: [
           BuildToStatePanel(
             title: 'RFQ access restricted',
-            message: 'A current OWNER, MANAGER or CATALOG supplier role is required to read invited RFQs and submit quotes.',
+            message:
+                'A current OWNER, MANAGER or CATALOG supplier role is required to read invited RFQs and submit quotes.',
             icon: Icons.shield_outlined,
           ),
         ],
@@ -156,8 +158,9 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
         children: [
           Row(children: [
-            Expanded(child: Text('Quotation requests',
-                style: Theme.of(context).textTheme.headlineMedium)),
+            Expanded(
+                child: Text('Quotation requests',
+                    style: Theme.of(context).textTheme.headlineMedium)),
             IconButton(
               tooltip: 'Refresh RFQs',
               onPressed: () => unawaited(refresh()),
@@ -175,15 +178,21 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('BUILDTO • MATERIAL PROCUREMENT',
-                  style: TextStyle(color: BuildToPalette.orange,
-                      fontWeight: FontWeight.w800, fontSize: 12)),
+                    style: TextStyle(
+                        color: BuildToPalette.orange,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12)),
                 const SizedBox(height: 12),
-                Text('${invitations.length == 100 ? '100+' : invitations.length} open invitations',
-                  style: const TextStyle(color: Colors.white,
-                      fontSize: 22, fontWeight: FontWeight.w800)),
+                Text(
+                    '${invitations.length == 100 ? '100+' : invitations.length} open invitations',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800)),
                 const SizedBox(height: 5),
-                const Text('Price every requested material. A submitted or awarded quote is not a paid order.',
-                  style: TextStyle(color: Color(0xFFE0EEFA))),
+                const Text(
+                    'Price every requested material. A submitted or awarded quote is not a paid order.',
+                    style: TextStyle(color: Color(0xFFE0EEFA))),
               ],
             ),
           ),
@@ -196,36 +205,39 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
           if (invitations.isEmpty)
             const BuildToStatePanel(
               title: 'No open invitations',
-              message: 'When customers invite this supplier to an open construction RFQ, it appears here.',
+              message:
+                  'When customers invite this supplier to an open construction RFQ, it appears here.',
               icon: Icons.request_quote_outlined,
             ),
           ...invitations.map((request) => BuildToCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Icon(Icons.description_outlined,
-                      color: BuildToPalette.navy),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(request.publicNumber,
-                    style: Theme.of(context).textTheme.titleMedium)),
-                  const BuildToStatusChip(label: 'OPEN',
-                      status: BuildToStatus.pending),
-                ]),
-                const SizedBox(height: 8),
-                Text('${request.items.length} material lines'),
-                if (request.responseDueAt != null)
-                  Text('Response due: ${request.responseDueAt!.toLocal().toString().split('.').first}',
-                      style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => unawaited(openRfq(request)),
-                  icon: const Icon(Icons.request_quote_outlined),
-                  label: const Text('View and quote'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Icon(Icons.description_outlined,
+                          color: BuildToPalette.navy),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: Text(request.publicNumber,
+                              style: Theme.of(context).textTheme.titleMedium)),
+                      const BuildToStatusChip(
+                          label: 'OPEN', status: BuildToStatus.pending),
+                    ]),
+                    const SizedBox(height: 8),
+                    Text('${request.items.length} material lines'),
+                    if (request.responseDueAt != null)
+                      Text(
+                          'Response due: ${request.responseDueAt!.toLocal().toString().split('.').first}',
+                          style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => unawaited(openRfq(request)),
+                      icon: const Icon(Icons.request_quote_outlined),
+                      label: const Text('View and quote'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )),
+              )),
           if (invitations.length == 100)
             const Text('Showing the latest 100 active invited RFQs.'),
         ],
@@ -260,14 +272,19 @@ class _RfqDetailsState extends State<_RfqDetails> {
   Future<List<SupplierQuote>> loadQuotes() =>
       widget.repository.quotes(widget.supplierId, widget.request.id);
 
-  void reload() => setState(() { quoteFuture = loadQuotes(); });
+  void reload() => setState(() {
+        quoteFuture = loadQuotes();
+      });
 
   Future<void> quote(List<SupplierQuote> previous) async {
     if (!widget.request.isWithinDeadline) return;
     final latest = previous.isEmpty ? null : previous.first;
     if (latest != null &&
-        !{SupplierQuoteStatus.submitted, SupplierQuoteStatus.revised,
-          SupplierQuoteStatus.withdrawn}.contains(latest.status)) {
+        !{
+          SupplierQuoteStatus.submitted,
+          SupplierQuoteStatus.revised,
+          SupplierQuoteStatus.withdrawn
+        }.contains(latest.status)) {
       return;
     }
     final saved = await showModalBottomSheet<bool>(
@@ -299,13 +316,15 @@ class _RfqDetailsState extends State<_RfqDetails> {
         const SizedBox(height: 6),
         const Text('Exact quantities and all requested units must match.'),
         const Divider(height: 24),
-        Expanded(child: FutureBuilder<List<SupplierQuote>>(
+        Expanded(
+            child: FutureBuilder<List<SupplierQuote>>(
           future: quoteFuture,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return const BuildToStatePanel(
                 title: 'Quote history unavailable',
-                message: 'Cannot verify current revisions. No quote can be sent until the server responds.',
+                message:
+                    'Cannot verify current revisions. No quote can be sent until the server responds.',
               );
             }
             if (!snapshot.hasData) {
@@ -314,62 +333,77 @@ class _RfqDetailsState extends State<_RfqDetails> {
             final previous = snapshot.data!;
             final latest = previous.isEmpty ? null : previous.first;
             final canRevise = latest == null ||
-                {SupplierQuoteStatus.submitted, SupplierQuoteStatus.revised,
-                  SupplierQuoteStatus.withdrawn}.contains(latest.status);
+                {
+                  SupplierQuoteStatus.submitted,
+                  SupplierQuoteStatus.revised,
+                  SupplierQuoteStatus.withdrawn
+                }.contains(latest.status);
             return ListView(children: [
               const BuildToSectionHeading(title: 'Requested materials'),
               const SizedBox(height: 9),
               ...request.items.map((item) => BuildToCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.description,
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text('${item.quantity} ${item.unitCode}'),
-                  ],
-                ),
-              )),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.description,
+                            style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text('${item.quantity} ${item.unitCode}'),
+                      ],
+                    ),
+                  )),
               if (request.notes != null)
                 Text('Customer notes: ${request.notes}'),
               const SizedBox(height: 18),
               const BuildToSectionHeading(
                 title: 'Quote revisions',
-                subtitle: 'A customer award is not payment or order fulfillment.',
+                subtitle:
+                    'A customer award is not payment or order fulfillment.',
               ),
               const SizedBox(height: 8),
-              if (previous.isEmpty)
-                const Text('No quotation submitted yet.'),
+              if (previous.isEmpty) const Text('No quotation submitted yet.'),
               ...previous.map((quote) => BuildToCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Expanded(child: Text(
-                        'Version ${quote.version} · ${quote.quoteNumber}',
-                        style: Theme.of(context).textTheme.titleMedium)),
-                      BuildToStatusChip(label: quote.status.label,
-                        status: quote.status == SupplierQuoteStatus.accepted
-                            ? BuildToStatus.success
-                            : quote.status == SupplierQuoteStatus.submitted
-                                ? BuildToStatus.pending : BuildToStatus.neutral),
-                    ]),
-                    const SizedBox(height: 7),
-                    Text('Quoted total (provisional): ${rfqMoney(quote.totalPaise)}',
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                    Text('Includes GST estimate ${rfqMoney(quote.taxPaise)} and delivery ${rfqMoney(quote.deliveryPaiseValue)}'),
-                  ],
-                ),
-              )),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Expanded(
+                              child: Text(
+                                  'Version ${quote.version} · ${quote.quoteNumber}',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium)),
+                          BuildToStatusChip(
+                              label: quote.status.label,
+                              status:
+                                  quote.status == SupplierQuoteStatus.accepted
+                                      ? BuildToStatus.success
+                                      : quote.status ==
+                                              SupplierQuoteStatus.submitted
+                                          ? BuildToStatus.pending
+                                          : BuildToStatus.neutral),
+                        ]),
+                        const SizedBox(height: 7),
+                        Text(
+                            'Quoted total (provisional): ${rfqMoney(quote.totalPaise)}',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(
+                            'Includes GST estimate ${rfqMoney(quote.taxPaise)} and delivery ${rfqMoney(quote.deliveryPaiseValue)}'),
+                      ],
+                    ),
+                  )),
               const SizedBox(height: 16),
               if (canRevise && request.isWithinDeadline)
                 BuildToPrimaryButton(
-                  label: previous.isEmpty ? 'Prepare quotation' : 'Revise quotation',
+                  label: previous.isEmpty
+                      ? 'Prepare quotation'
+                      : 'Revise quotation',
                   icon: Icons.edit_note_rounded,
                   onPressed: () => unawaited(quote(previous)),
                 ),
               if (!request.isWithinDeadline)
-                const Text('RFQ response deadline passed. New quotes are disabled.'),
+                const Text(
+                    'RFQ response deadline passed. New quotes are disabled.'),
             ]);
           },
         )),
@@ -411,16 +445,20 @@ class _QuoteEditorState extends State<_QuoteEditor> {
       for (final line in widget.latest?.lines ?? <SupplierQuoteLine>[])
         line.rfqItemId: line,
     };
-    prices = widget.request.items.map((item) => TextEditingController(
-      text: last[item.id]?.unitPrice ?? '',
-    )).toList();
-    taxes = widget.request.items.map((item) => TextEditingController(
-      text: last[item.id] == null ? '18' :
-          catalogPercentFromBps(last[item.id]!.taxRateBps),
-    )).toList();
+    prices = widget.request.items
+        .map((item) => TextEditingController(
+              text: last[item.id]?.unitPrice ?? '',
+            ))
+        .toList();
+    taxes = widget.request.items
+        .map((item) => TextEditingController(
+              text: last[item.id] == null
+                  ? '18'
+                  : catalogPercentFromBps(last[item.id]!.taxRateBps),
+            ))
+        .toList();
     if (widget.latest != null) {
-      delivery.text = catalogRupeesFromPaise(
-          widget.latest!.deliveryPaiseValue);
+      delivery.text = catalogRupeesFromPaise(widget.latest!.deliveryPaiseValue);
       terms.text = widget.latest!.deliveryTerms ?? '';
     }
   }
@@ -435,7 +473,10 @@ class _QuoteEditorState extends State<_QuoteEditor> {
 
   Future<void> submit() async {
     if (saving || outcomeUncertain) return;
-    setState(() { saving = true; error = null; });
+    setState(() {
+      saving = true;
+      error = null;
+    });
     try {
       final lines = <SupplierQuoteLineInput>[];
       for (var i = 0; i < widget.request.items.length; i++) {
@@ -490,29 +531,34 @@ class _QuoteEditorState extends State<_QuoteEditor> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 10, 20,
-          MediaQuery.viewInsetsOf(context).bottom + 14),
+      padding: EdgeInsets.fromLTRB(
+          20, 10, 20, MediaQuery.viewInsetsOf(context).bottom + 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Supplier quotation',
               style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 5),
-          const Text('Every material is required. Final totals and GST are calculated by BuildTo.'),
+          const Text(
+              'Every material is required. Final totals and GST are calculated by BuildTo.'),
           const Divider(height: 24),
-          Expanded(child: ListView(children: [
+          Expanded(
+              child: ListView(children: [
             for (var i = 0; i < widget.request.items.length; i++)
-              BuildToCard(child: Column(
+              BuildToCard(
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(widget.request.items[i].description,
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 4),
-                  Text('${widget.request.items[i].quantity} ${widget.request.items[i].unitCode}'),
+                  Text(
+                      '${widget.request.items[i].quantity} ${widget.request.items[i].unitCode}'),
                   const SizedBox(height: 12),
                   TextField(
                     controller: prices[i],
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'Unit price excluding GST (₹)',
                       helperText: 'Exact amount, up to 4 decimals',
@@ -521,7 +567,8 @@ class _QuoteEditorState extends State<_QuoteEditor> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: taxes[i],
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'GST estimate (%)',
                     ),
@@ -531,7 +578,8 @@ class _QuoteEditorState extends State<_QuoteEditor> {
             const SizedBox(height: 10),
             TextField(
               controller: delivery,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
                 labelText: 'Quoted delivery charge (₹)',
               ),
@@ -547,16 +595,19 @@ class _QuoteEditorState extends State<_QuoteEditor> {
             ),
             const SizedBox(height: 8),
             if (error != null)
-              Text(error!, style: const TextStyle(color: BuildToPalette.danger)),
+              Text(error!,
+                  style: const TextStyle(color: BuildToPalette.danger)),
             const SizedBox(height: 12),
             BuildToPrimaryButton(
-              label: outcomeUncertain ? 'Refresh quote history first'
+              label: outcomeUncertain
+                  ? 'Refresh quote history first'
                   : 'Submit server-priced quotation',
               busy: saving,
               onPressed: outcomeUncertain ? null : () => unawaited(submit()),
             ),
             const SizedBox(height: 12),
-            const Text('Submitting another revision replaces your previous submitted version. Customer award and payment are separate steps.'),
+            const Text(
+                'Submitting another revision replaces your previous submitted version. Customer award and payment are separate steps.'),
           ])),
         ],
       ),

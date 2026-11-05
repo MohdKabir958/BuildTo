@@ -78,8 +78,7 @@ class SupplierAuthController extends ChangeNotifier {
   late final SupplierDeliveryRepository deliveryRepository =
       SupplierDeliveryRepository(_api);
 
-  late final SupplierRfqRepository rfqRepository =
-      SupplierRfqRepository(_api);
+  late final SupplierRfqRepository rfqRepository = SupplierRfqRepository(_api);
 
   bool _current(int generation, String? fingerprint) =>
       !_disposed &&
