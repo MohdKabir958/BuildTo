@@ -1,0 +1,26 @@
+name: BuildTo V2.1 supplier S00 contract
+on:
+  pull_request:
+    paths:
+      - 'apps/vendor_app/tool/**'
+      - 'apps/vendor_app/docs/v21/**'
+      - 'backend/v21/openapi.json'
+      - '.github/workflows/buildto-v21-supplier-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supplier-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate contract checker behavior
+        run: node --test apps/vendor_app/tool/check_v21_contract.test.mjs
+      - name: Verify supplier API screen contract against canonical V2.1 OpenAPI
+        run: node apps/vendor_app/tool/check_v21_contract.mjs
