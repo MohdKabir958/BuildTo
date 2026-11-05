@@ -4,6 +4,7 @@ import 'package:kraveo_ui/kraveo_ui.dart' show ClerkIdentity;
 import '../api/supplier_v21_api.dart';
 import '../api/supplier_v21_models.dart';
 import 'supplier_clerk_port.dart';
+import '../onboarding/supplier_applications_api.dart';
 
 enum SupplierAccessStage {
   starting,
@@ -50,6 +51,13 @@ class SupplierAuthController extends ChangeNotifier {
   String? get notice => _notice;
   bool get busy => _busy;
   String? get signedInEmail => _clerk.identity.value.email;
+
+  /// Invalidates open onboarding screens across session and account changes.
+  String? get sessionKey => _fingerprint;
+
+  /// Reuses the token-injecting V2.1 client; applicants do not need active
+  /// supplier membership to manage their own pending application.
+  SupplierApplicationsApi get applications => SupplierApplicationsApi(_api);
 
   bool _current(int generation, String? fingerprint) =>
       !_disposed &&
