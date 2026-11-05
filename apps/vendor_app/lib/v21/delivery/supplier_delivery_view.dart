@@ -170,8 +170,9 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                     if (snapshot.hasError) {
                       return const Text('Could not verify active areas.');
                     }
-                    if (!snapshot.hasData)
+                    if (!snapshot.hasData) {
                       return const LinearProgressIndicator();
+                    }
                     final areas = snapshot.data!;
                     if (areas.isEmpty) {
                       return const Text(
@@ -233,12 +234,13 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                             );
                             if (sheet.mounted) Navigator.pop(sheet, true);
                           } catch (_) {
-                            if (sheet.mounted)
+                            if (sheet.mounted) {
                               change(() {
                                 note =
                                     'Cannot confirm coverage. Close and refresh before retrying.';
                                 saving = false;
                               });
+                            }
                           }
                         },
                 ),
@@ -399,12 +401,13 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                       );
                       if (sheet.mounted) Navigator.pop(sheet, true);
                     } catch (_) {
-                      if (sheet.mounted)
+                      if (sheet.mounted) {
                         change(() {
                           note =
                               'Cannot confirm the rate. Close and refresh before retrying.';
                           saving = false;
                         });
+                      }
                     }
                   },
                 ),
