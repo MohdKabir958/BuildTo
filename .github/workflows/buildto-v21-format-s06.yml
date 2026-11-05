@@ -32,3 +32,5 @@ jobs:
             git commit -m "style(s06): package-aware Dart formatting"
             git push origin HEAD:supplier/v21-s06-warehouse-inventory
           fi
+
+# Final S06 delta formatting.
