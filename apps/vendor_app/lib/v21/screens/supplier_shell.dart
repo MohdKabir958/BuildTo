@@ -95,7 +95,9 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                       if (value == 'refresh') widget.onRefresh?.call();
                       if (value == 'switch') widget.onSwitchSupplier?.call();
                       if (value == 'signout') widget.onSignOut?.call();
-                      if (value == 'applications') widget.onOpenApplications?.call();
+                      if (value == 'applications') {
+                        widget.onOpenApplications?.call();
+                      }
                     },
                     itemBuilder: (context) => [
                       if (widget.onRefresh != null)
