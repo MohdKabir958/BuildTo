@@ -99,11 +99,24 @@ Future<void> buildShell(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  Future<void> showFirstListing(WidgetTester tester) async {
+    await tester.scrollUntilVisible(
+      find.text('CEMENT-43'),
+      180,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('supplier-catalog-loaded')),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('professional owner catalog shows real rows and create control',
       (tester) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.owner);
     expect(find.text('Material catalog'), findsOneWidget);
+    await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     expect(find.textContaining('₹315.25'), findsWidgets);
     expect(find.text('Draft'), findsWidgets);
@@ -116,10 +129,10 @@ void main() {
       (tester) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.viewer);
+    await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     expect(find.text('Add material listing'), findsNothing);
     expect(server.reads, 1);
-    await tester.ensureVisible(find.text('CEMENT-43'));
     await tester.tap(find.text('CEMENT-43'));
     await tester.pumpAndSettle();
     expect(find.text('Listing details'), findsOneWidget);
@@ -132,6 +145,7 @@ void main() {
       (tester) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.catalog);
+    await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     server.forbidden = true;
     await tester.tap(find.byTooltip('Refresh supplier listings'));
