@@ -118,9 +118,10 @@ class SupplierV21Api {
     String? idempotencyKey,
     String? ifMatch,
   }) async {
-    if (_closed)
+    if (_closed) {
       throw const SupplierV21Exception(SupplierV21Problem.configuration,
           code: 'CLIENT_CLOSED');
+    }
     if (!{'GET', 'POST', 'PATCH', 'PUT', 'DELETE'}.contains(method)) {
       throw ArgumentError.value(method, 'method', 'Unsupported HTTP method');
     }
