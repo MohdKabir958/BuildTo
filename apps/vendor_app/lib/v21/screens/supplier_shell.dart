@@ -57,9 +57,12 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                 const Expanded(child: BuildToBrandMark(compact: true)),
                 const SizedBox(width: 8),
                 BuildToStatusChip(
-                    label: widget.verifiedSupplier == null ? 'Staging' : 'Verified',
+                    label: widget.verifiedSupplier == null
+                        ? 'Staging'
+                        : 'Verified',
                     status: widget.verifiedSupplier == null
-                        ? BuildToStatus.pending : BuildToStatus.success),
+                        ? BuildToStatus.pending
+                        : BuildToStatus.success),
               ]),
             ),
             const Divider(),
@@ -70,17 +73,18 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                   const Icon(Icons.business_outlined,
                       size: 18, color: BuildToPalette.navy),
                   const SizedBox(width: 8),
-                  Expanded(child: Column(
+                  Expanded(
+                      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(widget.displayName ?? 'Supplier workspace',
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleMedium),
-                      Text('Supplier • ' +
-                           widget.verifiedSupplier!.supplierId.substring(
-                             widget.verifiedSupplier!.supplierId.length - 8) +
-                           '  ·  ' + widget.verifiedSupplier!.role.name.toUpperCase(),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                      Text(
+                          'Supplier • ${widget.verifiedSupplier!.supplierId.substring(widget.verifiedSupplier!.supplierId.length - 8)} · ${widget.verifiedSupplier!.role.name.toUpperCase()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall),
                     ],
                   )),
@@ -93,11 +97,16 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                     },
                     itemBuilder: (context) => [
                       if (widget.onRefresh != null)
-                        const PopupMenuItem(value: 'refresh', child: Text('Refresh permissions')),
-                      if (widget.canSwitchSupplier && widget.onSwitchSupplier != null)
-                        const PopupMenuItem(value: 'switch', child: Text('Switch supplier')),
+                        const PopupMenuItem(
+                            value: 'refresh',
+                            child: Text('Refresh permissions')),
+                      if (widget.canSwitchSupplier &&
+                          widget.onSwitchSupplier != null)
+                        const PopupMenuItem(
+                            value: 'switch', child: Text('Switch supplier')),
                       if (widget.onSignOut != null)
-                        const PopupMenuItem(value: 'signout', child: Text('Sign out')),
+                        const PopupMenuItem(
+                            value: 'signout', child: Text('Sign out')),
                     ],
                     icon: const Icon(Icons.more_vert_rounded),
                   ),
@@ -114,18 +123,21 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                 icon: Icons.receipt_long_outlined,
               ),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Material catalog',
                 subtitle:
                     'Manage construction material listings, price tiers and approvals.',
                 icon: Icons.category_outlined,
               ),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Warehouse stock',
                 subtitle:
                     'See warehouse balances, movements and controlled stock changes.',
                 icon: Icons.warehouse_outlined,
               ),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Business workspace',
                 subtitle:
                     'RFQs, delivery areas, returns, finance and account settings.',
@@ -236,9 +248,10 @@ class _HomeTab extends StatelessWidget {
                       size: 16, color: BuildToPalette.white),
                   const SizedBox(width: 7),
                   Flexible(
-                      child: Text(verifiedSupplier == null
-                          ? 'Secure account access coming in S02'
-                          : 'Supplier identity verified by BuildTo',
+                      child: Text(
+                          verifiedSupplier == null
+                              ? 'Secure account access coming in S02'
+                              : 'Supplier identity verified by BuildTo',
                           style: const TextStyle(
                               color: BuildToPalette.white,
                               fontSize: 12,
@@ -290,14 +303,16 @@ class _HomeTab extends StatelessWidget {
           const SizedBox(height: 22),
           BuildToStatePanel(
             icon: verifiedSupplier == null
-                ? Icons.shield_outlined : Icons.verified_user_outlined,
+                ? Icons.shield_outlined
+                : Icons.verified_user_outlined,
             title: verifiedSupplier == null
-                ? 'Account connection required' : 'Supplier access verified',
+                ? 'Account connection required'
+                : 'Supplier access verified',
             message: verifiedSupplier == null
                 ? 'This is the S01 design foundation. Clerk sign-in and your live supplier dashboard will be enabled in the next PR. No sample business figures are displayed.'
                 : 'Your active supplier membership was checked with the BuildTo backend. '
-                  'Catalog, order, inventory and finance screens activate in their dedicated PRs; '
-                  'no sample business figures are shown.',
+                    'Catalog, order, inventory and finance screens activate in their dedicated PRs; '
+                    'no sample business figures are shown.',
           ),
         ],
       );
@@ -344,8 +359,10 @@ class _ActionTile extends StatelessWidget {
 
 class _RestrictedTab extends StatelessWidget {
   const _RestrictedTab(
-      {required this.title, required this.subtitle, required this.icon,
-       this.verifiedSupplier});
+      {required this.title,
+      required this.subtitle,
+      required this.icon,
+      this.verifiedSupplier});
   final String title;
   final String subtitle;
   final IconData icon;
@@ -359,12 +376,11 @@ class _RestrictedTab extends StatelessWidget {
           const SizedBox(height: 22),
           BuildToStatePanel(
             title: verifiedSupplier == null
-                ? 'Secure workspace' : 'Supplier access verified',
+                ? 'Secure workspace'
+                : 'Supplier access verified',
             message: verifiedSupplier == null
                 ? 'Sign in with an approved supplier account to view real data. Clerk authentication and supplier permissions are scheduled for S02.'
-                : 'You have an active, backend-verified ' +
-                    verifiedSupplier!.role.name.toUpperCase() +
-                    ' membership. This feature will connect to real data in its dedicated PR.',
+                : 'You have an active, backend-verified ${verifiedSupplier!.role.name.toUpperCase()} membership. This feature will connect to real data in its dedicated PR.',
             icon: icon,
           ),
         ],
