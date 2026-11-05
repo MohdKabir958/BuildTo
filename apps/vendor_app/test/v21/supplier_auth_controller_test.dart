@@ -32,17 +32,23 @@ class FakeClerk implements SupplierClerkPort {
     login('user_SupplierOne', 'sess_SupplierOne');
     return true;
   }
+
   void login(String user, String session) {
     state.value = ClerkIdentity(
-      ready: true, signedIn: true, userId: user, sessionId: session,
+      ready: true,
+      signedIn: true,
+      userId: user,
+      sessionId: session,
       email: 'supplier@example.invalid',
     );
   }
+
   @override
   Future<String?> token({bool forceRefresh = false}) async {
     tokenCalls++;
     return sessionToken;
   }
+
   @override
   Future<bool> signOut() async {
     signOutCalls++;
@@ -60,26 +66,34 @@ SupplierAuthController makeController(FakeClerk clerk, http.Client client) {
   return SupplierAuthController(clerk: clerk, api: api);
 }
 
-http.Response me(List<Map<String, Object?>> suppliers) =>
-    http.Response(jsonEncode({
-      'data': {'id': 'local-account', 'displayName': 'Verified BuildTo Supplier',
-        'adminRole': null, 'suppliers': suppliers},
+http.Response me(List<Map<String, Object?>> suppliers) => http.Response(
+    jsonEncode({
+      'data': {
+        'id': 'local-account',
+        'displayName': 'Verified BuildTo Supplier',
+        'adminRole': null,
+        'suppliers': suppliers
+      },
       'requestId': 'request-me',
-    }), 200);
+    }),
+    200);
 
 Map<String, Object?> member(String id, String role) =>
     {'supplierId': id, 'role': role};
 
-http.Response access(String id, String role) => http.Response(jsonEncode({
-  'data': {'supplierId': id, 'role': role}, 'requestId': 'request-access',
-}), 200);
+http.Response access(String id, String role) => http.Response(
+    jsonEncode({
+      'data': {'supplierId': id, 'role': role},
+      'requestId': 'request-access',
+    }),
+    200);
 
 Future<void> until(SupplierAuthController c, SupplierAccessStage stage) async {
   for (var i = 0; i < 120; i++) {
     if (c.stage == stage) return;
     await Future<void>.delayed(const Duration(milliseconds: 5));
   }
-  fail('Did not reach desired access state; actual: ' + c.stage.toString());
+  fail('Did not reach desired access state; actual: ${c.stage}');
 }
 
 void main() {
@@ -105,9 +119,13 @@ void main() {
     final routes = <String>[];
     final controller = makeController(clerk, MockClient((request) async {
       routes.add(request.url.path);
-      expect(request.headers['Authorization'], 'Bearer clerk-session-fixture');
-      if (request.url.path == '/api/v2/me') return me([member(idA, 'INVENTORY')]);
-      if (request.url.path == '/api/v2/suppliers/$idA/access') return access(idA, 'INVENTORY');
+      expect(request.headers['Authorization'], '***');
+      if (request.url.path == '/api/v2/me') {
+        return me([member(idA, 'INVENTORY')]);
+      }
+      if (request.url.path == '/api/v2/suppliers/$idA/access') {
+        return access(idA, 'INVENTORY');
+      }
       return http.Response('{}', 404);
     }));
     await controller.start();
@@ -132,7 +150,8 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('multi-supplier switch clears old scope before async access response', () async {
+  test('multi-supplier switch clears old scope before async access response',
+      () async {
     final clerk = FakeClerk();
     final delayedB = Completer<http.Response>();
     final controller = makeController(clerk, MockClient((request) async {
@@ -174,14 +193,16 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('late response from previous Clerk identity cannot restore access', () async {
+  test('late response from previous Clerk identity cannot restore access',
+      () async {
     final clerk = FakeClerk();
     final delayed = Completer<http.Response>();
     var reads = 0;
     final controller = makeController(clerk, MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
         reads++;
-        return reads == 1 ? delayed.future : me([]);
+        if (reads == 1) return await delayed.future;
+        return me([]);
       }
       return access(idA, 'OWNER');
     }));
@@ -201,13 +222,15 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('resume/recheck immediately hides revoked supplier membership', () async {
+  test('resume/recheck immediately hides revoked supplier membership',
+      () async {
     final clerk = FakeClerk();
     var revoked = false;
     final pending = Completer<http.Response>();
     final controller = makeController(clerk, MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
-        return revoked ? pending.future : me([member(idA, 'OWNER')]);
+        if (revoked) return await pending.future;
+        return me([member(idA, 'OWNER')]);
       }
       return access(idA, 'OWNER');
     }));
@@ -227,8 +250,10 @@ void main() {
 
   test('invalid Clerk session does not unlock supplier', () async {
     final clerk = FakeClerk();
-    final controller = makeController(clerk, MockClient((_) async =>
-        http.Response('{"error":{"code":"INVALID_SESSION"}}', 401)));
+    final controller = makeController(
+        clerk,
+        MockClient((_) async =>
+            http.Response('{"error":{"code":"INVALID_SESSION"}}', 401)));
     await controller.start();
     clerk.login('user_SupplierOne', 'sess_SupplierOne');
     await until(controller, SupplierAccessStage.sessionExpired);
@@ -237,7 +262,8 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('local logout clears access even if remote revocation is uncertain', () async {
+  test('local logout clears access even if remote revocation is uncertain',
+      () async {
     final clerk = FakeClerk()..remoteRevoked = false;
     final controller = makeController(clerk, MockClient((request) async {
       if (request.url.path == '/api/v2/me') return me([member(idA, 'OWNER')]);
