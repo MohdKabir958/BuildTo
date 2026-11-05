@@ -1,0 +1,34 @@
+name: One-time S07 official Flutter formatting
+on:
+  push:
+    branches:
+      - supplier/v21-s07-delivery-coverage
+    paths:
+      - '.github/workflows/buildto-v21-format-s07.yml'
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+      - name: Resolve locked dependencies
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Format supplier feature sources
+        working-directory: apps/vendor_app
+        run: dart format lib/v21 test/v21
+      - name: Commit official Dart output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/vendor_app/lib/v21 apps/vendor_app/test/v21
+          if ! git diff --cached --quiet; then
+            git commit -m "style(s07): official Dart formatting"
+            git push origin HEAD:supplier/v21-s07-delivery-coverage
+          fi
