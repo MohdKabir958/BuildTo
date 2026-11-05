@@ -59,9 +59,9 @@ class SupplierServerFailure extends SupplierApiFailure {
   const SupplierServerFailure({
     required this.status,
     required this.code,
-    required super.message,
+    required String message,
     required this.requestId,
-  });
+  }) : super(message);
   final int status;
   final String code;
   final String? requestId;
