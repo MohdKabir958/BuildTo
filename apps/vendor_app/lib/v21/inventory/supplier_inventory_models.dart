@@ -1,14 +1,14 @@
 import '../catalog/supplier_catalog_models.dart';
 
-final _quantityPattern =
-    RegExp(r'^(?:0|[1-9][0-9]{0,14})(?:\.[0-9]{1,3})?$');
+final _quantityPattern = RegExp(r'^(?:0|[1-9][0-9]{0,14})(?:\.[0-9]{1,3})?$');
 
 String exactStockQuantity(Object? value, {bool allowZero = true}) {
   if (value is! String || !_quantityPattern.hasMatch(value)) {
     throw const FormatException('Invalid exact stock quantity');
   }
-  if (!allowZero && catalogScaled(value, whole: 15, scale: 3,
-          positive: false) == BigInt.zero) {
+  if (!allowZero &&
+      catalogScaled(value, whole: 15, scale: 3, positive: false) ==
+          BigInt.zero) {
     throw const FormatException('Quantity must be greater than zero');
   }
   return value;
@@ -34,8 +34,11 @@ int stockVersion(Object? value) {
 }
 
 List<T> inventoryRecords<T>(
-    Object? value, T Function(Object?) parse, String Function(T) identity,
-    {int limit = 200}) {
+  Object? value,
+  T Function(Object?) parse,
+  String Function(T) identity, {
+  int limit = 200,
+}) {
   if (value is! List<dynamic> || value.length > limit) {
     throw const FormatException('Invalid bounded inventory response');
   }
@@ -92,11 +95,10 @@ class SupplierStockBalance {
     final onHand = exactStockQuantity(data['onHandQty']);
     final reserved = exactStockQuantity(data['reservedQty']);
     final available = exactStockQuantity(data['availableQty']);
-    final sum = catalogScaled(reserved, whole: 15, scale: 3,
-            positive: false) +
+    final sum =
+        catalogScaled(reserved, whole: 15, scale: 3, positive: false) +
         catalogScaled(available, whole: 15, scale: 3, positive: false);
-    if (sum != catalogScaled(onHand, whole: 15, scale: 3,
-            positive: false)) {
+    if (sum != catalogScaled(onHand, whole: 15, scale: 3, positive: false)) {
       throw const FormatException('Stock availability does not reconcile');
     }
     return SupplierStockBalance(
@@ -128,8 +130,16 @@ class SupplierStockMovement {
     final data = catalogObject(raw);
     final kind = catalogString(data['kind'], max: 40);
     final delta = catalogString(data['delta'], max: 22);
-    if (!{'RECEIPT', 'DAMAGE', 'ADJUSTMENT', 'TRANSFER_IN',
-      'TRANSFER_OUT', 'RESERVATION', 'COMMIT', 'RELEASE'}.contains(kind)) {
+    if (!{
+      'RECEIPT',
+      'DAMAGE',
+      'ADJUSTMENT',
+      'TRANSFER_IN',
+      'TRANSFER_OUT',
+      'RESERVATION',
+      'COMMIT',
+      'RELEASE',
+    }.contains(kind)) {
       throw const FormatException('Unknown stock movement');
     }
     final absolute = delta.startsWith('-') ? delta.substring(1) : delta;
@@ -144,8 +154,9 @@ class SupplierStockMovement {
       warehouseId: catalogId(data['warehouseId']),
       kind: kind,
       delta: delta,
-      reason: data['reason'] == null ? 'System movement' :
-          catalogString(data['reason'], max: 300),
+      reason: data['reason'] == null
+          ? 'System movement'
+          : catalogString(data['reason'], max: 300),
       createdAt: date,
     );
   }

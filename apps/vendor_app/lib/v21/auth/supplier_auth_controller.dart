@@ -29,8 +29,8 @@ class SupplierAuthController extends ChangeNotifier {
   SupplierAuthController({
     required SupplierClerkPort clerk,
     required SupplierV21Api api,
-  })  : _clerk = clerk,
-        _api = api {
+  }) : _clerk = clerk,
+       _api = api {
     _clerk.identity.addListener(_onNativeIdentity);
   }
 
@@ -164,11 +164,13 @@ class SupplierAuthController extends ChangeNotifier {
         _publish();
         return;
       }
-      final matching = account.suppliers
-          .where((member) => member.supplierId == previouslySelected);
+      final matching = account.suppliers.where(
+        (member) => member.supplierId == previouslySelected,
+      );
       final desired = matching.isEmpty ? null : matching.first;
-      final single =
-          account.suppliers.length == 1 ? account.suppliers.first : null;
+      final single = account.suppliers.length == 1
+          ? account.suppliers.first
+          : null;
       final target = desired ?? single;
       if (target == null) {
         _selectedId = null;
@@ -202,8 +204,9 @@ class SupplierAuthController extends ChangeNotifier {
         _account == null) {
       return;
     }
-    final choices =
-        _account!.suppliers.where((item) => item.supplierId == supplierId);
+    final choices = _account!.suppliers.where(
+      (item) => item.supplierId == supplierId,
+    );
     if (choices.length != 1) {
       _selectedId = null;
       _activeSupplier = null;
@@ -238,8 +241,11 @@ class SupplierAuthController extends ChangeNotifier {
     }
   }
 
-  Future<void> _verifySupplier(SupplierV21Membership candidate, int generation,
-      String? fingerprint) async {
+  Future<void> _verifySupplier(
+    SupplierV21Membership candidate,
+    int generation,
+    String? fingerprint,
+  ) async {
     final route = '/api/v2/suppliers/${candidate.supplierId}/access';
     final result = await _api.get(route);
     final verified = SupplierV21Membership.fromJson(result.requireObject());
@@ -247,7 +253,8 @@ class SupplierAuthController extends ChangeNotifier {
     if (verified.supplierId != candidate.supplierId ||
         verified.role != candidate.role) {
       throw const FormatException(
-          'Supplier membership changed during verification');
+        'Supplier membership changed during verification',
+      );
     }
     _selectedId = verified.supplierId;
     _activeSupplier = verified;
@@ -275,8 +282,7 @@ class SupplierAuthController extends ChangeNotifier {
     _stage = switch (error.problem) {
       SupplierV21Problem.authentication => SupplierAccessStage.sessionExpired,
       SupplierV21Problem.forbidden ||
-      SupplierV21Problem.notFound =>
-        SupplierAccessStage.accessDenied,
+      SupplierV21Problem.notFound => SupplierAccessStage.accessDenied,
       SupplierV21Problem.configuration => SupplierAccessStage.misconfigured,
       _ => SupplierAccessStage.unavailable,
     };

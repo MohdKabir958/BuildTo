@@ -14,60 +14,87 @@ class SupplierInventoryRepository {
 
   Future<List<SupplierWarehouse>> warehouses(String supplierId) async {
     final data = (await client.get('${_scope(supplierId)}/warehouses')).data;
-    return inventoryRecords(data,
-        (row) => SupplierWarehouse.parse(row, supplierId),
-        (SupplierWarehouse row) => row.id, limit: 100);
+    return inventoryRecords(
+      data,
+      (row) => SupplierWarehouse.parse(row, supplierId),
+      (SupplierWarehouse row) => row.id,
+      limit: 100,
+    );
   }
 
-  Future<List<SupplierStockBalance>> balances(String supplierId,
-      {String? listingId}) async {
-    final data = (await client.get('${_scope(supplierId)}/balances',
-        query: listingId == null ? null :
-            {'listingId': catalogId(listingId)})).data;
-    return inventoryRecords(data, SupplierStockBalance.parse,
-        (SupplierStockBalance row) => row.id);
+  Future<List<SupplierStockBalance>> balances(
+    String supplierId, {
+    String? listingId,
+  }) async {
+    final data = (await client.get(
+      '${_scope(supplierId)}/balances',
+      query: listingId == null ? null : {'listingId': catalogId(listingId)},
+    )).data;
+    return inventoryRecords(
+      data,
+      SupplierStockBalance.parse,
+      (SupplierStockBalance row) => row.id,
+    );
   }
 
   Future<List<SupplierStockMovement>> movements(
-      String supplierId, String warehouseId, {String? listingId}) async {
+    String supplierId,
+    String warehouseId, {
+    String? listingId,
+  }) async {
     final data = (await client.get(
       '${_scope(supplierId)}/warehouses/${catalogId(warehouseId)}/movements',
-      query: listingId == null ? null :
-          {'listingId': catalogId(listingId)},
+      query: listingId == null ? null : {'listingId': catalogId(listingId)},
     )).data;
-    return inventoryRecords(data, SupplierStockMovement.parse,
-        (SupplierStockMovement row) => row.id, limit: 100);
+    return inventoryRecords(
+      data,
+      SupplierStockMovement.parse,
+      (SupplierStockMovement row) => row.id,
+      limit: 100,
+    );
   }
 
-  Future<SupplierWarehouse> createWarehouse(String supplierId,
-      {required String code, required String name}) async {
+  Future<SupplierWarehouse> createWarehouse(
+    String supplierId, {
+    required String code,
+    required String name,
+  }) async {
     final normalized = code.trim().toUpperCase();
     if (!RegExp(r'^[A-Z0-9][A-Z0-9._-]{0,79}$').hasMatch(normalized) ||
-        name.trim().isEmpty || name.trim().length > 150) {
+        name.trim().isEmpty ||
+        name.trim().length > 150) {
       throw const FormatException('Enter a valid warehouse code and name');
     }
-    final data = (await client.request('POST',
-        '${_scope(supplierId)}/warehouses',
-        body: {'code': normalized, 'name': name.trim()})).data;
+    final data = (await client.request(
+      'POST',
+      '${_scope(supplierId)}/warehouses',
+      body: {'code': normalized, 'name': name.trim()},
+    )).data;
     return SupplierWarehouse.parse(data, supplierId);
   }
 
   Future<SupplierWarehouse> updateWarehouse(
-      String supplierId, SupplierWarehouse warehouse,
-      {String? name, bool? active}) async {
+    String supplierId,
+    SupplierWarehouse warehouse, {
+    String? name,
+    bool? active,
+  }) async {
     if (warehouse.supplierId != supplierId ||
         (name == null && active == null)) {
       throw StateError('Invalid warehouse update');
     }
     final normalized = name?.trim();
-    if (normalized != null &&
-        (normalized.isEmpty || normalized.length > 150)) {
+    if (normalized != null && (normalized.isEmpty || normalized.length > 150)) {
       throw const FormatException('Invalid warehouse name');
     }
-    final data = (await client.request('PATCH',
-        '${_scope(supplierId)}/warehouses/${catalogId(warehouse.id)}',
-        body: {if (normalized != null) 'name': normalized,
-          if (active != null) 'active': active})).data;
+    final data = (await client.request(
+      'PATCH',
+      '${_scope(supplierId)}/warehouses/${catalogId(warehouse.id)}',
+      body: {
+        if (normalized != null) 'name': normalized,
+        if (active != null) 'active': active,
+      },
+    )).data;
     return SupplierWarehouse.parse(data, supplierId);
   }
 
@@ -86,17 +113,19 @@ class SupplierInventoryRepository {
     if (reason.trim().isEmpty || reason.trim().length > 300) {
       throw const FormatException('A stock reason is required');
     }
-    final response = await client.request('POST',
-        '${_scope(supplierId)}/adjustments',
-        idempotencyKey: intent,
-        body: {
-          'listingId': catalogId(listingId),
-          'warehouseId': catalogId(warehouseId),
-          'kind': kind,
-          'delta': delta,
-          'reason': reason.trim(),
-          'expectedVersion': expectedVersion,
-        });
+    final response = await client.request(
+      'POST',
+      '${_scope(supplierId)}/adjustments',
+      idempotencyKey: intent,
+      body: {
+        'listingId': catalogId(listingId),
+        'warehouseId': catalogId(warehouseId),
+        'kind': kind,
+        'delta': delta,
+        'reason': reason.trim(),
+        'expectedVersion': expectedVersion,
+      },
+    );
     final payload = catalogObject(response.data);
     return SupplierStockBalance.parse(payload['currentBalance']);
   }
@@ -116,20 +145,24 @@ class SupplierInventoryRepository {
     stockVersion(expectedFromVersion);
     stockVersion(expectedToVersion);
     if (fromWarehouseId == toWarehouseId ||
-        reason.trim().isEmpty || reason.trim().length > 300) {
+        reason.trim().isEmpty ||
+        reason.trim().length > 300) {
       throw const FormatException('Select two warehouses and a reason');
     }
-    final response = await client.request('POST',
-        '${_scope(supplierId)}/transfers', idempotencyKey: intent,
-        body: {
-          'listingId': catalogId(listingId),
-          'fromWarehouseId': catalogId(fromWarehouseId),
-          'toWarehouseId': catalogId(toWarehouseId),
-          'quantity': quantity,
-          'expectedFromVersion': expectedFromVersion,
-          'expectedToVersion': expectedToVersion,
-          'reason': reason.trim(),
-        });
+    final response = await client.request(
+      'POST',
+      '${_scope(supplierId)}/transfers',
+      idempotencyKey: intent,
+      body: {
+        'listingId': catalogId(listingId),
+        'fromWarehouseId': catalogId(fromWarehouseId),
+        'toWarehouseId': catalogId(toWarehouseId),
+        'quantity': quantity,
+        'expectedFromVersion': expectedFromVersion,
+        'expectedToVersion': expectedToVersion,
+        'reason': reason.trim(),
+      },
+    );
     final result = catalogObject(response.data);
     if (catalogId(result['listingId']) != listingId ||
         catalogId(result['fromWarehouseId']) != fromWarehouseId ||
