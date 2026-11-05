@@ -60,12 +60,28 @@ abstract final class BuildToTheme {
         centerTitle: false,
       ),
       textTheme: base.textTheme.copyWith(
-        headlineMedium: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.7, color: BuildToPalette.navyDeep),
-        headlineSmall: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: BuildToPalette.navyDeep),
-        titleLarge: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: BuildToPalette.navyDeep),
-        titleMedium: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: BuildToPalette.navyDeep),
-        bodyMedium: const TextStyle(fontSize: 14, height: 1.4, color: BuildToPalette.ink),
-        bodySmall: const TextStyle(fontSize: 12, height: 1.4, color: BuildToPalette.muted),
+        headlineMedium: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.7,
+            color: BuildToPalette.navyDeep),
+        headlineSmall: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+            color: BuildToPalette.navyDeep),
+        titleLarge: const TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            color: BuildToPalette.navyDeep),
+        titleMedium: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: BuildToPalette.navyDeep),
+        bodyMedium: const TextStyle(
+            fontSize: 14, height: 1.4, color: BuildToPalette.ink),
+        bodySmall: const TextStyle(
+            fontSize: 12, height: 1.4, color: BuildToPalette.muted),
       ),
       cardTheme: CardThemeData(
         color: BuildToPalette.white,
@@ -78,26 +94,31 @@ abstract final class BuildToTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(BuildToSpace.minTapTarget, BuildToSpace.minTapTarget),
+          minimumSize:
+              const Size(BuildToSpace.minTapTarget, BuildToSpace.minTapTarget),
           backgroundColor: BuildToPalette.navy,
           foregroundColor: BuildToPalette.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(BuildToSpace.minTapTarget, BuildToSpace.minTapTarget),
+          minimumSize:
+              const Size(BuildToSpace.minTapTarget, BuildToSpace.minTapTarget),
           foregroundColor: BuildToPalette.navy,
           side: const BorderSide(color: BuildToPalette.navy),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: BuildToPalette.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius),
           borderSide: const BorderSide(color: BuildToPalette.outline),
@@ -111,16 +132,23 @@ abstract final class BuildToTheme {
         backgroundColor: BuildToPalette.white,
         indicatorColor: BuildToPalette.sky,
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
-          color: states.contains(WidgetState.selected) ? BuildToPalette.navy : BuildToPalette.muted,
-          fontSize: 11,
-          fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
-        )),
+              color: states.contains(WidgetState.selected)
+                  ? BuildToPalette.navy
+                  : BuildToPalette.muted,
+              fontSize: 11,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w800
+                  : FontWeight.w600,
+            )),
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
-          color: states.contains(WidgetState.selected) ? BuildToPalette.orange : BuildToPalette.navy,
-          size: 22,
-        )),
+              color: states.contains(WidgetState.selected)
+                  ? BuildToPalette.orange
+                  : BuildToPalette.navy,
+              size: 22,
+            )),
       ),
-      dividerTheme: const DividerThemeData(color: BuildToPalette.outline, space: 1),
+      dividerTheme:
+          const DividerThemeData(color: BuildToPalette.outline, space: 1),
     );
   }
 }
