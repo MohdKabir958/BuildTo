@@ -7,6 +7,7 @@ import 'supplier_clerk_port.dart';
 import '../onboarding/supplier_applications_api.dart';
 import '../dashboard/supplier_dashboard_repository.dart';
 import '../catalog/supplier_catalog_repository.dart';
+import '../inventory/supplier_inventory_repository.dart';
 
 enum SupplierAccessStage {
   starting,
@@ -68,6 +69,9 @@ class SupplierAuthController extends ChangeNotifier {
   /// Native Clerk-backed V2.1 catalog boundary, never legacy vendor API.
   late final SupplierCatalogRepository catalogRepository =
       SupplierCatalogRepository(_api);
+
+  late final SupplierInventoryRepository inventoryRepository =
+      SupplierInventoryRepository(_api);
 
   bool _current(int generation, String? fingerprint) =>
       !_disposed &&
@@ -160,8 +164,9 @@ class SupplierAuthController extends ChangeNotifier {
         _publish();
         return;
       }
-      final matching = account.suppliers
-          .where((member) => member.supplierId == previouslySelected);
+      final matching = account.suppliers.where(
+        (member) => member.supplierId == previouslySelected,
+      );
       final desired = matching.isEmpty ? null : matching.first;
       final single =
           account.suppliers.length == 1 ? account.suppliers.first : null;
@@ -198,8 +203,9 @@ class SupplierAuthController extends ChangeNotifier {
         _account == null) {
       return;
     }
-    final choices =
-        _account!.suppliers.where((item) => item.supplierId == supplierId);
+    final choices = _account!.suppliers.where(
+      (item) => item.supplierId == supplierId,
+    );
     if (choices.length != 1) {
       _selectedId = null;
       _activeSupplier = null;
@@ -234,8 +240,11 @@ class SupplierAuthController extends ChangeNotifier {
     }
   }
 
-  Future<void> _verifySupplier(SupplierV21Membership candidate, int generation,
-      String? fingerprint) async {
+  Future<void> _verifySupplier(
+    SupplierV21Membership candidate,
+    int generation,
+    String? fingerprint,
+  ) async {
     final route = '/api/v2/suppliers/${candidate.supplierId}/access';
     final result = await _api.get(route);
     final verified = SupplierV21Membership.fromJson(result.requireObject());
@@ -243,7 +252,8 @@ class SupplierAuthController extends ChangeNotifier {
     if (verified.supplierId != candidate.supplierId ||
         verified.role != candidate.role) {
       throw const FormatException(
-          'Supplier membership changed during verification');
+        'Supplier membership changed during verification',
+      );
     }
     _selectedId = verified.supplierId;
     _activeSupplier = verified;

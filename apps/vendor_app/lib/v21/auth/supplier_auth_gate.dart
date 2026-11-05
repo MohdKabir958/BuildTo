@@ -110,8 +110,10 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
 }
 
 class _SupplierAccessView extends StatelessWidget {
-  const _SupplierAccessView(
-      {required this.controller, required this.openApplications});
+  const _SupplierAccessView({
+    required this.controller,
+    required this.openApplications,
+  });
   final SupplierAuthController controller;
   final VoidCallback openApplications;
 
@@ -122,10 +124,12 @@ class _SupplierAccessView extends StatelessWidget {
     if (stage == SupplierAccessStage.authorized && membership != null) {
       return BuildToSupplierShell(
         key: ValueKey(
-            '${controller.sessionKey}|${membership.supplierId}|${membership.role.name}'),
+          '${controller.sessionKey}|${membership.supplierId}|${membership.role.name}',
+        ),
         verifiedSupplier: membership,
         dashboardRepository: controller.dashboardRepository,
         catalogRepository: controller.catalogRepository,
+        inventoryRepository: controller.inventoryRepository,
         displayName: controller.account?.displayName,
         onSwitchSupplier: controller.showSupplierChooser,
         onSignOut: controller.signOut,
@@ -211,19 +215,35 @@ class _SupplierAccessView extends StatelessWidget {
             ),
           ],
         SupplierAccessStage.noSupplier => [
-            _AccessAction('Open supplier applications',
-                Icons.add_business_rounded, openApplications),
             _AccessAction(
-                'Recheck approval', Icons.refresh_rounded, controller.refresh),
-            _AccessAction('Sign out / change account', Icons.logout_rounded,
-                controller.signOut,
-                outlined: true),
+              'Open supplier applications',
+              Icons.add_business_rounded,
+              openApplications,
+            ),
+            _AccessAction(
+              'Recheck approval',
+              Icons.refresh_rounded,
+              controller.refresh,
+            ),
+            _AccessAction(
+              'Sign out / change account',
+              Icons.logout_rounded,
+              controller.signOut,
+              outlined: true,
+            ),
           ],
         SupplierAccessStage.accessDenied || SupplierAccessStage.unavailable => [
-            _AccessAction('Retry secure verification', Icons.refresh_rounded,
-                controller.refresh),
-            _AccessAction('Sign out', Icons.logout_rounded, controller.signOut,
-                outlined: true),
+            _AccessAction(
+              'Retry secure verification',
+              Icons.refresh_rounded,
+              controller.refresh,
+            ),
+            _AccessAction(
+              'Sign out',
+              Icons.logout_rounded,
+              controller.signOut,
+              outlined: true,
+            ),
           ],
         _ => [],
       },
@@ -233,8 +253,12 @@ class _SupplierAccessView extends StatelessWidget {
 }
 
 class _AccessAction {
-  const _AccessAction(this.label, this.icon, this.callback,
-      {this.outlined = false});
+  const _AccessAction(
+    this.label,
+    this.icon,
+    this.callback, {
+    this.outlined = false,
+  });
   final String label;
   final IconData icon;
   final VoidCallback callback;
@@ -289,20 +313,25 @@ class _AccessScaffold extends StatelessWidget {
                   Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
                   if (email != null && email!.isNotEmpty) ...[
                     const SizedBox(height: 14),
-                    Text('Clerk account: ${email!}',
-                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      'Clerk account: ${email!}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                   if (message != null && message!.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     BuildToCard(
-                        child: Row(
-                      children: [
-                        const Icon(Icons.info_outline_rounded,
-                            color: BuildToPalette.warning),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(message!)),
-                      ],
-                    )),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            color: BuildToPalette.warning,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(message!)),
+                        ],
+                      ),
+                    ),
                   ],
                   if (loading) ...[
                     const SizedBox(height: 24),
@@ -332,8 +361,10 @@ class _AccessScaffold extends StatelessWidget {
                     ],
                   ],
                   const SizedBox(height: 20),
-                  Text('BuildTo • Secure supplier workspace',
-                      style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    'BuildTo • Secure supplier workspace',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),
@@ -374,7 +405,8 @@ class _SupplierPicker extends StatelessWidget {
                       child: Icon(Icons.factory_outlined),
                     ),
                     title: Text(
-                        'Supplier • ${member.supplierId.substring(member.supplierId.length - 8)}'),
+                      'Supplier • ${member.supplierId.substring(member.supplierId.length - 8)}',
+                    ),
                     subtitle: Text('Role: ${member.role.name.toUpperCase()}'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: controller.busy
@@ -385,9 +417,10 @@ class _SupplierPicker extends StatelessWidget {
                 const SizedBox(height: 12),
               ],
               Text(
-                  'Supplier business names are not included in the /me response. '
-                  'IDs are shown instead of invented names.',
-                  style: Theme.of(context).textTheme.bodySmall),
+                'Supplier business names are not included in the /me response. '
+                'IDs are shown instead of invented names.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(height: 26),
               OutlinedButton.icon(
                 onPressed: controller.signOut,
