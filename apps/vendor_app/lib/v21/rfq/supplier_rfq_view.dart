@@ -339,6 +339,11 @@ class _RfqDetailsState extends State<_RfqDetails> {
                   SupplierQuoteStatus.withdrawn
                 }.contains(latest.status);
             return ListView(children: [
+              Text('Delivery site: ${request.siteCity} • PIN ${request.sitePostalCode}',
+                style: Theme.of(context).textTheme.titleMedium),
+              if (request.siteNotes != null)
+                Text('Site notes: ${request.siteNotes}'),
+              const SizedBox(height: 12),
               const BuildToSectionHeading(title: 'Requested materials'),
               const SizedBox(height: 9),
               ...request.items.map((item) => BuildToCard(
@@ -349,6 +354,10 @@ class _RfqDetailsState extends State<_RfqDetails> {
                             style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 4),
                         Text('${item.quantity} ${item.unitCode}'),
+                        ...item.specification.entries.map((entry) => Text(
+                          '${entry.key}: ${entry.value}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )),
                       ],
                     ),
                   )),

@@ -20,6 +20,11 @@ Map<String, Object?> request() => {
       'createdAt': now,
       'responseDueAt': null,
       'notes': 'Bulk cement bags',
+      'siteSnapshot': {
+        'city': 'Hyderabad',
+        'postalCode': '500001',
+        'siteNotes': 'Unload at north entrance',
+      },
       'items': [
         {
           'id': item,
@@ -27,6 +32,7 @@ Map<String, Object?> request() => {
           'quantity': '125.000',
           'unitCode': 'BAG',
           'productId': null,
+          'specification': {'grade': '43', 'urgent': true},
         }
       ],
     };
@@ -79,6 +85,17 @@ void main() {
     expect(
         (await service.invitations(supplier)).single.publicNumber, 'RFQ-123');
     expect((await service.quotes(supplier, rfq)).single.totalPaise, '12300');
+  });
+
+  test('supplier can see validated construction specifications and site', () {
+    final invited = SupplierRfq.parse(request());
+    expect(invited.siteCity, 'Hyderabad');
+    expect(invited.sitePostalCode, '500001');
+    expect(invited.items.single.specification['grade'], '43');
+    expect(invited.items.single.specification['urgent'], true);
+    final invalid = Map<String, Object?>.from(request());
+    invalid['siteSnapshot'] = {'city': 'Hyderabad', 'postalCode': '000000'};
+    expect(() => SupplierRfq.parse(invalid), throwsFormatException);
   });
 
   test('reject foreign quote, impossible totals and duplicate RFQ item', () {
