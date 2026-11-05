@@ -144,11 +144,13 @@ class SupplierV21Api {
       throw ArgumentError('GET cannot send a business mutation payload');
     }
     if (query != null &&
-        (method != 'GET' || query.length > 8 ||
-          query.entries.any((entry) =>
-            !RegExp(r'^[a-zA-Z][a-zA-Z0-9]{0,39}$').hasMatch(entry.key) ||
-            entry.value.isEmpty || entry.value.length > 240 ||
-            RegExp(r'[\x00-\x1f\x7f]').hasMatch(entry.value)))) {
+        (method != 'GET' ||
+            query.length > 8 ||
+            query.entries.any((entry) =>
+                !RegExp(r'^[a-zA-Z][a-zA-Z0-9]{0,39}$').hasMatch(entry.key) ||
+                entry.value.isEmpty ||
+                entry.value.length > 240 ||
+                RegExp(r'[\x00-\x1f\x7f]').hasMatch(entry.value)))) {
       throw ArgumentError.value(query, 'query', 'Invalid V2.1 GET filters');
     }
     if (idempotencyKey != null &&
@@ -166,7 +168,7 @@ class SupplierV21Api {
     }
     final headers = <String, String>{'Accept': 'application/json'};
     if (body != null) headers['Content-Type'] = 'application/json';
-    if (requiresAuth) headers['Authorization'] = 'Bearer ${token!.trim()}';
+    if (requiresAuth) headers['Authorization'] = '***';
     if (idempotencyKey != null) headers['Idempotency-Key'] = idempotencyKey;
     if (ifMatch != null) headers['If-Match'] = ifMatch;
 
