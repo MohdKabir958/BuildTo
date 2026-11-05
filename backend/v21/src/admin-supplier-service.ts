@@ -128,6 +128,27 @@ export async function attachSupplierDocument(db:PrismaClient,actor:string,id:str
   return {id:doc.id,documentType:doc.documentType,status:doc.status,createdAt:doc.createdAt.toISOString()};
  });
 }
+
+/** Private review progress for this applicant's own supplier application. */
+export async function ownSupplierApplicationDetail(db:PrismaClient,actor:string,id:string){
+ uuid(id);
+ const found=await db.supplier.findFirst({where:{
+  id,members:{some:{userId:actor,role:'OWNER',revokedAt:null}}
+ },select:{
+  id:true,slug:true,legalName:true,displayName:true,approval:true,gstRegistration:true,
+  gstin:true,verifiedAt:true,suspendedAt:true,createdAt:true,
+  documents:{orderBy:{createdAt:'desc'},select:{
+   id:true,documentType:true,status:true,reviewNote:true,createdAt:true
+  }}
+ }});
+ if(found===null)throw new ApiError(404,'NOT_FOUND','Supplier application not found.');
+ const {documents,...supplier}=found;
+ return {...summary(supplier),documents:documents.map(d=>({
+  id:d.id,documentType:d.documentType,status:d.status,
+  reviewNote:d.reviewNote,createdAt:d.createdAt.toISOString()
+ }))};
+}
+
 export async function adminSupplierQueue(db:PrismaClient,actor:string,query:{status?:string;cursor?:string;limit?:number}){
  await requireAdminPermission(db,actor,'SUPPLIER_APPROVE');
  const limit=query.limit??25;
