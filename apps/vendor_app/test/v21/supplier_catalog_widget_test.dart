@@ -13,8 +13,8 @@ const supplier = '123e4567-e89b-12d3-a456-426614174000';
 const listingId = '123e4567-e89b-12d3-a456-426614174010';
 const product = '123e4567-e89b-12d3-a456-426614174020';
 
-http.Response data(Object object) => http.Response(
-  jsonEncode({'data': object}), 200);
+http.Response data(Object object) =>
+    http.Response(jsonEncode({'data': object}), 200);
 
 class CatalogServer {
   bool forbidden = false;
@@ -28,24 +28,40 @@ class CatalogServer {
         return http.Response('{"error":{"code":"MEMBERSHIP_REVOKED"}}', 403);
       }
       if (req.url.path.endsWith('/listings')) {
-        return data([{
-          'id': listingId, 'productId': product, 'supplierId': supplier,
-          'sku': 'CEMENT-43', 'unitCode': 'BAG',
-          'packSize': '1', 'minOrderQty': '10', 'stepQty': '5',
-          'maxOrderQty': null, 'unitPrice': '315.2500',
-          'mrpPaise': null, 'taxRateBps': 1800, 'taxInclusive': true,
-          'status': 'DRAFT', 'active': false, 'version': 0,
-          'priceTiers': [],
-        }]);
+        return data([
+          {
+            'id': listingId,
+            'productId': product,
+            'supplierId': supplier,
+            'sku': 'CEMENT-43',
+            'unitCode': 'BAG',
+            'packSize': '1',
+            'minOrderQty': '10',
+            'stepQty': '5',
+            'maxOrderQty': null,
+            'unitPrice': '315.2500',
+            'mrpPaise': null,
+            'taxRateBps': 1800,
+            'taxInclusive': true,
+            'status': 'DRAFT',
+            'active': false,
+            'version': 0,
+            'priceTiers': [],
+          }
+        ]);
       }
       if (req.url.path.endsWith('/categories')) {
-        return data([{
-          'id': '123e4567-e89b-12d3-a456-426614174030',
-          'name': 'Cement',
-        }]);
+        return data([
+          {
+            'id': '123e4567-e89b-12d3-a456-426614174030',
+            'name': 'Cement',
+          }
+        ]);
       }
       if (req.url.path.endsWith('/units')) {
-        return data([{'code': 'BAG', 'name': 'Bag'}]);
+        return data([
+          {'code': 'BAG', 'name': 'Bag'}
+        ]);
       }
       return http.Response('{"error":{"code":"NOT_FOUND"}}', 404);
     }),
@@ -53,8 +69,8 @@ class CatalogServer {
   SupplierCatalogRepository get repo => SupplierCatalogRepository(api);
 }
 
-Future<void> buildShell(WidgetTester tester,
-    CatalogServer server, SupplierV21Role role,
+Future<void> buildShell(
+    WidgetTester tester, CatalogServer server, SupplierV21Role role,
     {Size size = const Size(393, 852), double scale = 1}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -65,13 +81,12 @@ Future<void> buildShell(WidgetTester tester,
   await tester.pumpWidget(MaterialApp(
     theme: BuildToTheme.light(),
     builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(scale)),
+      data:
+          MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
       child: child!,
     ),
     home: BuildToSupplierShell(
-      verifiedSupplier: SupplierV21Membership(
-        supplierId: supplier, role: role),
+      verifiedSupplier: SupplierV21Membership(supplierId: supplier, role: role),
       catalogRepository: server.repo,
       displayName: 'BuildTo Material Supplier',
     ),
@@ -131,7 +146,7 @@ void main() {
       (tester) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.viewer,
-      size: const Size(320, 800), scale: 1.5);
+        size: const Size(320, 800), scale: 1.5);
     expect(find.text('Material catalog'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
