@@ -6,6 +6,8 @@ import '../dashboard/supplier_dashboard_repository.dart';
 import '../dashboard/supplier_dashboard_view.dart';
 import '../catalog/supplier_catalog_repository.dart';
 import '../catalog/supplier_catalog_view.dart';
+import '../inventory/supplier_inventory_repository.dart';
+import '../inventory/supplier_inventory_view.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -30,6 +32,7 @@ class BuildToSupplierShell extends StatefulWidget {
     this.verifiedSupplier,
     this.dashboardRepository,
     this.catalogRepository,
+    this.inventoryRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -41,6 +44,7 @@ class BuildToSupplierShell extends StatefulWidget {
   final SupplierV21Membership? verifiedSupplier;
   final SupplierDashboardRepository? dashboardRepository;
   final SupplierCatalogRepository? catalogRepository;
+  final SupplierInventoryRepository? inventoryRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -184,13 +188,33 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                       'Manage construction material listings, price tiers and approvals.',
                   icon: Icons.category_outlined,
                 ),
-              _RestrictedTab(
-                verifiedSupplier: widget.verifiedSupplier,
-                title: 'Warehouse stock',
-                subtitle:
-                    'See warehouse balances, movements and controlled stock changes.',
-                icon: Icons.warehouse_outlined,
-              ),
+              if (widget.verifiedSupplier != null &&
+                  widget.inventoryRepository != null &&
+                  widget.catalogRepository != null &&
+                  selected == BuildToSupplierTab.stock)
+                SupplierInventoryView(
+                  key: ValueKey(widget.verifiedSupplier!.supplierId),
+                  supplierId: widget.verifiedSupplier!.supplierId,
+                  repository: widget.inventoryRepository!,
+                  catalog: widget.catalogRepository!,
+                  canWrite: const {
+                    SupplierV21Role.owner,
+                    SupplierV21Role.manager,
+                    SupplierV21Role.inventory,
+                  }.contains(widget.verifiedSupplier!.role),
+                  onRecheckAccess: widget.onRefresh,
+                )
+              else if (widget.verifiedSupplier != null &&
+                  widget.inventoryRepository != null)
+                const SizedBox.shrink()
+              else
+                _RestrictedTab(
+                  verifiedSupplier: widget.verifiedSupplier,
+                  title: 'Warehouse stock',
+                  subtitle:
+                      'See warehouse balances, movements and controlled stock changes.',
+                  icon: Icons.warehouse_outlined,
+                ),
               _RestrictedTab(
                 verifiedSupplier: widget.verifiedSupplier,
                 onOpenApplications: widget.onOpenApplications,

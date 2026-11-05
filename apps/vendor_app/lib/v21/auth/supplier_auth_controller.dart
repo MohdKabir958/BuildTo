@@ -7,6 +7,7 @@ import 'supplier_clerk_port.dart';
 import '../onboarding/supplier_applications_api.dart';
 import '../dashboard/supplier_dashboard_repository.dart';
 import '../catalog/supplier_catalog_repository.dart';
+import '../inventory/supplier_inventory_repository.dart';
 
 enum SupplierAccessStage {
   starting,
@@ -68,6 +69,9 @@ class SupplierAuthController extends ChangeNotifier {
   /// Native Clerk-backed V2.1 catalog boundary, never legacy vendor API.
   late final SupplierCatalogRepository catalogRepository =
       SupplierCatalogRepository(_api);
+
+  late final SupplierInventoryRepository inventoryRepository =
+      SupplierInventoryRepository(_api);
 
   bool _current(int generation, String? fingerprint) =>
       !_disposed &&
