@@ -59,7 +59,7 @@ class SupplierRfqItem {
         }
         if (value is String &&
             (value.length > 240 ||
-             value.runes.any((code) => code < 32 || code == 127))) {
+                value.runes.any((code) => code < 32 || code == 127))) {
           throw const FormatException('Invalid material specification text');
         }
         specification[entry.key] = value;
