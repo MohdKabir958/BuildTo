@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// BuildTo supplier design tokens, grounded in the 16-screen approved PDF.
-/// The raster reference has no definitive design-token measurements; values
-/// are intentionally centralized for visual sign-off rather than spread around
-/// individual feature screens.
+/// Primary and accent exactly match branding/brand.json; supporting tokens
+/// are centralized pending stakeholder visual sign-off on raster mock fidelity.
 abstract final class BuildToPalette {
-  static const navy = Color(0xFF062553);
+  static const navy = Color(0xFF002B5B);
   static const navyDeep = Color(0xFF031A40);
   static const blue = Color(0xFF1076C5);
   static const sky = Color(0xFFEAF6FF);
-  static const orange = Color(0xFFFF920F);
+  static const orange = Color(0xFFF59E0B);
   static const canvas = Color(0xFFF7FAFE);
   static const white = Color(0xFFFFFFFF);
   static const ink = Color(0xFF082448);
