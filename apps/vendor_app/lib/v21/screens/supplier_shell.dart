@@ -28,12 +28,13 @@ class BuildToSupplierShell extends StatefulWidget {
     this.onSwitchSupplier,
     this.onSignOut,
     this.onRefresh,
+    this.onOpenApplications,
     this.canSwitchSupplier = false,
   });
 
   final SupplierV21Membership? verifiedSupplier;
   final String? displayName;
-  final VoidCallback? onSwitchSupplier, onSignOut, onRefresh;
+  final VoidCallback? onSwitchSupplier, onSignOut, onRefresh, onOpenApplications;
   final bool canSwitchSupplier;
 
   @override
@@ -94,6 +95,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                       if (value == 'refresh') widget.onRefresh?.call();
                       if (value == 'switch') widget.onSwitchSupplier?.call();
                       if (value == 'signout') widget.onSignOut?.call();
+                      if (value == 'applications') widget.onOpenApplications?.call();
                     },
                     itemBuilder: (context) => [
                       if (widget.onRefresh != null)
@@ -104,6 +106,9 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                           widget.onSwitchSupplier != null)
                         const PopupMenuItem(
                             value: 'switch', child: Text('Switch supplier')),
+                      if (widget.onOpenApplications != null)
+                        const PopupMenuItem(value: 'applications',
+                            child: Text('Supplier applications')),
                       if (widget.onSignOut != null)
                         const PopupMenuItem(
                             value: 'signout', child: Text('Sign out')),
@@ -138,6 +143,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
               ),
               _RestrictedTab(
                 verifiedSupplier: widget.verifiedSupplier,
+                onOpenApplications: widget.onOpenApplications,
                 title: 'Business workspace',
                 subtitle:
                     'RFQs, delivery areas, returns, finance and account settings.',
@@ -362,11 +368,13 @@ class _RestrictedTab extends StatelessWidget {
       {required this.title,
       required this.subtitle,
       required this.icon,
-      this.verifiedSupplier});
+      this.verifiedSupplier,
+      this.onOpenApplications});
   final String title;
   final String subtitle;
   final IconData icon;
   final SupplierV21Membership? verifiedSupplier;
+  final VoidCallback? onOpenApplications;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -374,6 +382,11 @@ class _RestrictedTab extends StatelessWidget {
         children: [
           BuildToSectionHeading(title: title, subtitle: subtitle),
           const SizedBox(height: 22),
+          if (onOpenApplications != null && verifiedSupplier != null) ...[
+            BuildToPrimaryButton(label: 'Supplier applications',
+              icon: Icons.fact_check_outlined, onPressed: onOpenApplications),
+            const SizedBox(height: 16),
+          ],
           BuildToStatePanel(
             title: verifiedSupplier == null
                 ? 'Secure workspace'
