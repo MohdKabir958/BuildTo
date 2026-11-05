@@ -1,0 +1,100 @@
+name: BuildTo Supplier S03 registration and approval
+on:
+  pull_request:
+    paths:
+      - 'apps/vendor_app/lib/v21/**'
+      - 'apps/vendor_app/test/v21/**'
+      - 'backend/v21/src/admin-supplier-*.ts'
+      - 'backend/v21/test/admin-supplier.test.cjs'
+      - 'backend/v21/openapi.json'
+      - 'apps/vendor_app/docs/v21/S03-REGISTRATION.md'
+      - '.github/workflows/buildto-v21-supplier-s03.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supplier-flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve locked Flutter dependencies
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Format S03 sources for initial review
+        working-directory: apps/vendor_app
+        run: dart format lib/v21 test/v21
+      - name: Capture formatter output for source fixes
+        working-directory: apps/vendor_app
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          for root in ('lib/v21','test/v21'):
+              for f in sorted(pathlib.Path(root).rglob('*.dart')):
+                  print('S03_FORMATTED_FILE '+str(f)+' '+json.dumps(f.read_text(),ensure_ascii=True))
+          PY
+      - name: Analyze BuildTo supplier V2.1 source and tests
+        working-directory: apps/vendor_app
+        run: flutter analyze --no-pub lib/v21 test/v21
+      - name: Run complete S01–S03 Flutter feature tests
+        working-directory: apps/vendor_app
+        run: flutter test --no-pub --concurrency=2 test/v21
+      - name: Build staging V2.1 supplier bundle
+        working-directory: apps/vendor_app
+        run: |
+          flutter build bundle --debug --no-pub \
+            --dart-define=BUILDTO_SUPPLIER_V21=true \
+            --dart-define=AUTH_MODE=clerk-test \
+            --dart-define=BUILDTO_V21_API_BASE_URL=https://buildto-v21-staging.onrender.com
+
+  applicant-rbac:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: buildto_v21_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d buildto_v21_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/buildto_v21_test
+      PGPASSWORD: postgres
+      NODE_ENV: test
+      BUILDTO_V21_BASELINE_CONFIRM: ci-test
+      BUILDTO_V21_ENV: local
+      BUILDTO_V21_DELIVERY_OTP_HMAC_SECRET: ci-only-hmac-secret-0123456789abcdefghijklmnop
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Validate unchanged V2.1 Prisma schema
+        run: |
+          npm run db:v21:parity
+          npm run db:v21:validate
+      - name: Deploy a clean disposable PostGIS database
+        run: npm run db:v21:deploy-empty
+      - name: Seed required reference records
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ../architecture/buildto-schema-v2.1/sql/reference-seed.sql
+      - name: Compile strict V2.1 TypeScript
+        run: npm run build:v21
+      - name: Test supplier ownership and review restrictions
+        run: node --test --test-concurrency=1 v21/test/admin-supplier.test.cjs
