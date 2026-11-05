@@ -134,13 +134,15 @@ describe('settlement calls', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/admin/settlements/s1/export.csv');
     expect(((fetchMock.mock.calls[0][1] as RequestInit).headers as Record<string, string>).Authorization).toBe('Bearer tokentokentoken');
     expect(one.filename).toBe('grozo-settlement-s1111111.csv');
-    // jsdom's Blob has no text(); use the browser FileReader API and still assert the exact bytes.
-    const csv = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsText(one.blob);
-    });
+    // Read the response's actual Blob: wrapping a jsdom Blob in Node's Response
+    // may stringify it to '[object Blob]' instead of decoding CSV bytes.
+    const csv = typeof one.blob.text === 'function' ? await one.blob.text() :
+      await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(one.blob);
+      });
     expect(csv).toBe('a,b\r\n1,2\r\n');
     await apiService.downloadSettlementsCsv(range);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/api/admin/settlements/export.csv?from=2026-10-01&to=2026-10-07');

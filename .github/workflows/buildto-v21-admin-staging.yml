@@ -1,0 +1,66 @@
+name: BuildTo V2.1 admin staging release gate
+on:
+  pull_request:
+    paths:
+      - 'web/super_admin/**'
+      - '.github/workflows/buildto-v21-admin-staging.yml'
+      - 'backend/v21/openapi.json'
+  push:
+    branches: ['admin/v21-a15-staging-release-validation']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web/super_admin
+    env:
+      VITE_ADMIN_VERSION: v21
+      VITE_AUTH_MODE: clerk-test
+      # Public non-secret CI fixture encoding the staging development Clerk Frontend API host.
+      # Verify the actual public key in Clerk before any real hosted deployment.
+      VITE_CLERK_PUBLISHABLE_KEY: pk_test_aW5mb3JtZWQtZ3JpZmZvbi03Njc1LmNsZXJrLmFjY291bnRzLmRldiQ=
+      VITE_API_BASE_URL: https://buildto-v21-staging.onrender.com
+      VITE_SOCKET_URL: https://buildto-v21-staging.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/super_admin/package-lock.json
+      - run: npm ci
+      - name: Exact V2.1 server route contract
+        run: node scripts/check-v21-contract.mjs
+      - name: TypeScript and Vite staging build
+        run: npm run build
+      - name: Verify compiled V2.1 staging and exact CSP origins
+        run: npm run check:v21:staging
+      - name: V2.1 feature regressions with staging Clerk auth mode
+        run: npx vitest run src/v21
+      - name: Old portal compatibility tests with legacy-only test config
+        # The deployed bundle above is built with clerk-test. Legacy test helpers
+        # call the old passcode token setter and must not run in staging mode.
+        env:
+          VITE_ADMIN_VERSION: legacy
+          VITE_AUTH_MODE: legacy
+          VITE_API_BASE_URL: ''
+          VITE_SOCKET_URL: ''
+          VITE_CLERK_PUBLISHABLE_KEY: ''
+        run: npm test -- --run
+  public-staging-smoke:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Only public read-only staging checks
+        run: node web/super_admin/scripts/smoke-v21-staging.mjs

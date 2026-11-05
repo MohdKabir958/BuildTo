@@ -6,6 +6,7 @@ import {registerBeneficiary,approveBeneficiary,supplierBeneficiaries} from './pa
 import {reservePayout,supplierPayouts,adminPayoutQueue} from './payout-service';
 import {reconcilePayout} from './payout-reconciliation';
 import {attestBankDebit,financePayoutReport} from './payout-bank-statement';
+import {financeBeneficiaries} from './admin-money-reads';
 
 const actor=(res:Response):string=>{
  const id=(res.locals.principal as {id?:unknown}|undefined)?.id;
@@ -28,6 +29,8 @@ export function registerPayouts(app:Express,db:PrismaClient,auth:RequestHandler,
   supplierBeneficiaries(db,actor(res),req.params.supplierId)));
  app.get('/api/v2/suppliers/:supplierId/finance/payouts',auth,go((req,res)=>
   supplierPayouts(db,actor(res),req.params.supplierId)));
+ app.get('/api/v2/admin/finance/suppliers/:supplierId/beneficiaries',auth,go((req,res)=>
+  financeBeneficiaries(db,actor(res),req.params.supplierId)));
  app.post('/api/v2/admin/finance/suppliers/:supplierId/beneficiaries',auth,
   async(req,res,next)=>{
    try{

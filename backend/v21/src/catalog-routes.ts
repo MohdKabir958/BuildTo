@@ -3,6 +3,7 @@ import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {publicCategories,publicBrands,publicProducts,publicUnits,publicListings} from './catalog-read';
 import {createCategory,updateCategory,createBrand,createProduct,updateProduct,addProductConversion} from './catalog-admin';
+import {adminCategories,adminBrands,adminProducts} from './catalog-admin-read';
 import {createListing,ownListings,updateListing,submitListing,replacePriceTiers,pendingListings,reviewListing} from './catalog-listings';
 
 const queryString=(x:unknown,name:string):string|undefined=>{
@@ -41,6 +42,15 @@ export function registerPublicCatalog(app:Express,db:PrismaClient) {
 }
 export function registerProtectedCatalog(app:Express,db:PrismaClient,auth:RequestHandler) {
  const a='/api/v2/admin/catalog';
+ const listQuery=(req:Request)=>{
+  const cursor=queryString(req.query.cursor,'cursor');
+  const raw=queryString(req.query.limit,'limit');
+  if(raw!==undefined&&!/^[1-9][0-9]?$/.test(raw))throw new ApiError(400,'INVALID_LIMIT','Limit must be 1–50.');
+  return {cursor,limit:raw===undefined?undefined:Number(raw)};
+ };
+ app.get(a+'/categories',auth,handlers((req,res)=>adminCategories(db,owned(res),listQuery(req))));
+ app.get(a+'/brands',auth,handlers((req,res)=>adminBrands(db,owned(res),listQuery(req))));
+ app.get(a+'/products',auth,handlers((req,res)=>adminProducts(db,owned(res),listQuery(req))));
  app.post(a+'/categories',auth,created((req,res)=>createCategory(db,owned(res),req.body)));
  app.patch(a+'/categories/:categoryId',auth,handlers((req,res)=>
    updateCategory(db,owned(res),req.params.categoryId,req.body)));
