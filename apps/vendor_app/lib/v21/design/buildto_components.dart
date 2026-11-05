@@ -10,7 +10,7 @@ class BuildToBrandMark extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
         label: 'BuildTo, Building Made Easy',
         child: ExcludeSemantics(
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
+          child: Row(mainAxisSize: MainAxisSize.max, children: [
             Container(
               width: compact ? 38 : 48,
               height: compact ? 38 : 48,
@@ -35,11 +35,14 @@ class BuildToBrandMark extends StatelessWidget {
               ]),
             ),
             const SizedBox(width: 10),
-            Column(
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('BuildTo',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: compact ? 23 : 28,
                         fontWeight: FontWeight.w900,
@@ -48,12 +51,15 @@ class BuildToBrandMark extends StatelessWidget {
                         height: 1.0,
                       )),
                   const Text('Building Made Easy.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: BuildToPalette.navy,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       )),
                 ]),
+            ),
           ]),
         ),
       );
