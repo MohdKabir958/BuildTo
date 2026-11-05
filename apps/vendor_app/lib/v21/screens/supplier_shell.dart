@@ -8,6 +8,8 @@ import '../catalog/supplier_catalog_repository.dart';
 import '../catalog/supplier_catalog_view.dart';
 import '../inventory/supplier_inventory_repository.dart';
 import '../inventory/supplier_inventory_view.dart';
+import '../delivery/supplier_delivery_repository.dart';
+import '../delivery/supplier_delivery_view.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -33,6 +35,7 @@ class BuildToSupplierShell extends StatefulWidget {
     this.dashboardRepository,
     this.catalogRepository,
     this.inventoryRepository,
+    this.deliveryRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -45,6 +48,7 @@ class BuildToSupplierShell extends StatefulWidget {
   final SupplierDashboardRepository? dashboardRepository;
   final SupplierCatalogRepository? catalogRepository;
   final SupplierInventoryRepository? inventoryRepository;
+  final SupplierDeliveryRepository? deliveryRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -245,14 +249,32 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                             'See warehouse balances, movements and controlled stock changes.',
                         icon: Icons.warehouse_outlined,
                       ),
-                    _RestrictedTab(
-                      verifiedSupplier: widget.verifiedSupplier,
-                      onOpenApplications: widget.onOpenApplications,
-                      title: 'Business workspace',
-                      subtitle:
-                          'RFQs, delivery areas, returns, finance and account settings.',
-                      icon: Icons.business_center_outlined,
-                    ),
+                    if (widget.verifiedSupplier != null &&
+                        widget.deliveryRepository != null &&
+                        selected == BuildToSupplierTab.more)
+                      SupplierDeliveryView(
+                        key: ValueKey(widget.verifiedSupplier!.supplierId),
+                        supplierId: widget.verifiedSupplier!.supplierId,
+                        repository: widget.deliveryRepository!,
+                        canWrite: const {
+                          SupplierV21Role.owner,
+                          SupplierV21Role.manager,
+                          SupplierV21Role.fulfillment,
+                        }.contains(widget.verifiedSupplier!.role),
+                        onRecheckAccess: widget.onRefresh,
+                      )
+                    else if (widget.verifiedSupplier != null &&
+                        widget.deliveryRepository != null)
+                      const SizedBox.shrink()
+                    else
+                      _RestrictedTab(
+                        verifiedSupplier: widget.verifiedSupplier,
+                        onOpenApplications: widget.onOpenApplications,
+                        title: 'Business workspace',
+                        subtitle:
+                            'RFQs, delivery areas, returns, finance and account settings.',
+                        icon: Icons.business_center_outlined,
+                      ),
                   ],
                 ),
               ),

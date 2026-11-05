@@ -130,6 +130,7 @@ class _SupplierAccessView extends StatelessWidget {
         dashboardRepository: controller.dashboardRepository,
         catalogRepository: controller.catalogRepository,
         inventoryRepository: controller.inventoryRepository,
+        deliveryRepository: controller.deliveryRepository,
         displayName: controller.account?.displayName,
         onSwitchSupplier: controller.showSupplierChooser,
         onSignOut: controller.signOut,
