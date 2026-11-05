@@ -25,18 +25,9 @@ jobs:
       - name: Resolve locked Flutter packages
         working-directory: apps/vendor_app
         run: flutter pub get --enforce-lockfile
-      - name: Format S05 Dart during initial review
+      - name: Enforce checked-in Dart formatting
         working-directory: apps/vendor_app
-        run: dart format lib/v21 test/v21
-      - name: Capture formatted sources for review
-        working-directory: apps/vendor_app
-        run: |
-          python3 - <<'PY'
-          import pathlib,json
-          for root in ('lib/v21','test/v21'):
-              for path in sorted(pathlib.Path(root).rglob('*.dart')):
-                  print('S05_FORMATTED_FILE '+str(path)+' '+json.dumps(path.read_text(),ensure_ascii=True))
-          PY
+        run: dart format --output=none --set-exit-if-changed lib/v21 test/v21
       - name: Strict supplier V2.1 analyzer
         working-directory: apps/vendor_app
         run: flutter analyze --no-pub lib/v21 test/v21
