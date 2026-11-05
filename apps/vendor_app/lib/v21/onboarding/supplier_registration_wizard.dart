@@ -348,6 +348,7 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: TextFormField(
+            key: ValueKey('supplier-registration-$label'),
             controller: controller,
             validator: validator,
             keyboardType: keyboard,
