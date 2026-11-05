@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
+import '../api/supplier_v21_models.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -20,7 +21,20 @@ class BuildToSupplierPreviewApp extends StatelessWidget {
 enum BuildToSupplierTab { home, orders, catalog, stock, more }
 
 class BuildToSupplierShell extends StatefulWidget {
-  const BuildToSupplierShell({super.key});
+  const BuildToSupplierShell({
+    super.key,
+    this.verifiedSupplier,
+    this.displayName,
+    this.onSwitchSupplier,
+    this.onSignOut,
+    this.onRefresh,
+    this.canSwitchSupplier = false,
+  });
+
+  final SupplierV21Membership? verifiedSupplier;
+  final String? displayName;
+  final VoidCallback? onSwitchSupplier, onSignOut, onRefresh;
+  final bool canSwitchSupplier;
 
   @override
   State<BuildToSupplierShell> createState() => _BuildToSupplierShellState();
@@ -39,36 +53,91 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
             Padding(
               padding: EdgeInsets.fromLTRB(
                   narrow ? 12 : 20, 16, narrow ? 12 : 20, 10),
-              child: const Row(children: [
-                Expanded(child: BuildToBrandMark(compact: true)),
-                SizedBox(width: 8),
+              child: Row(children: [
+                const Expanded(child: BuildToBrandMark(compact: true)),
+                const SizedBox(width: 8),
                 BuildToStatusChip(
-                    label: 'Staging', status: BuildToStatus.pending),
+                    label: widget.verifiedSupplier == null
+                        ? 'Staging'
+                        : 'Verified',
+                    status: widget.verifiedSupplier == null
+                        ? BuildToStatus.pending
+                        : BuildToStatus.success),
               ]),
             ),
             const Divider(),
+            if (widget.verifiedSupplier != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
+                child: Row(children: [
+                  const Icon(Icons.business_outlined,
+                      size: 18, color: BuildToPalette.navy),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.displayName ?? 'Supplier workspace',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                          'Supplier • ${widget.verifiedSupplier!.supplierId.substring(widget.verifiedSupplier!.supplierId.length - 8)} · ${widget.verifiedSupplier!.role.name.toUpperCase()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  )),
+                  PopupMenuButton<String>(
+                    tooltip: 'Supplier account actions',
+                    onSelected: (value) {
+                      if (value == 'refresh') widget.onRefresh?.call();
+                      if (value == 'switch') widget.onSwitchSupplier?.call();
+                      if (value == 'signout') widget.onSignOut?.call();
+                    },
+                    itemBuilder: (context) => [
+                      if (widget.onRefresh != null)
+                        const PopupMenuItem(
+                            value: 'refresh',
+                            child: Text('Refresh permissions')),
+                      if (widget.canSwitchSupplier &&
+                          widget.onSwitchSupplier != null)
+                        const PopupMenuItem(
+                            value: 'switch', child: Text('Switch supplier')),
+                      if (widget.onSignOut != null)
+                        const PopupMenuItem(
+                            value: 'signout', child: Text('Sign out')),
+                    ],
+                    icon: const Icon(Icons.more_vert_rounded),
+                  ),
+                ]),
+              ),
             Expanded(
-                child: IndexedStack(index: selected.index, children: const [
-              _HomeTab(),
+                child: IndexedStack(index: selected.index, children: [
+              _HomeTab(verifiedSupplier: widget.verifiedSupplier),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Supplier orders',
                 subtitle:
                     'Review committed orders, prepare shipments and track handover.',
                 icon: Icons.receipt_long_outlined,
               ),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Material catalog',
                 subtitle:
                     'Manage construction material listings, price tiers and approvals.',
                 icon: Icons.category_outlined,
               ),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Warehouse stock',
                 subtitle:
                     'See warehouse balances, movements and controlled stock changes.',
                 icon: Icons.warehouse_outlined,
               ),
               _RestrictedTab(
+                verifiedSupplier: widget.verifiedSupplier,
                 title: 'Business workspace',
                 subtitle:
                     'RFQs, delivery areas, returns, finance and account settings.',
@@ -112,7 +181,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
 }
 
 class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+  const _HomeTab({this.verifiedSupplier});
+  final SupplierV21Membership? verifiedSupplier;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -173,13 +243,16 @@ class _HomeTab extends StatelessWidget {
                   border: Border.all(
                       color: BuildToPalette.white.withValues(alpha: .28)),
                 ),
-                child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.lock_outline_rounded,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.lock_outline_rounded,
                       size: 16, color: BuildToPalette.white),
-                  SizedBox(width: 7),
+                  const SizedBox(width: 7),
                   Flexible(
-                      child: Text('Secure account access coming in S02',
-                          style: TextStyle(
+                      child: Text(
+                          verifiedSupplier == null
+                              ? 'Secure account access coming in S02'
+                              : 'Supplier identity verified by BuildTo',
+                          style: const TextStyle(
                               color: BuildToPalette.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600))),
@@ -228,11 +301,18 @@ class _HomeTab extends StatelessWidget {
             );
           }),
           const SizedBox(height: 22),
-          const BuildToStatePanel(
-            icon: Icons.shield_outlined,
-            title: 'Account connection required',
-            message:
-                'This is the S01 design foundation. Clerk sign-in and your live supplier dashboard will be enabled in the next PR. No sample business figures are displayed.',
+          BuildToStatePanel(
+            icon: verifiedSupplier == null
+                ? Icons.shield_outlined
+                : Icons.verified_user_outlined,
+            title: verifiedSupplier == null
+                ? 'Account connection required'
+                : 'Supplier access verified',
+            message: verifiedSupplier == null
+                ? 'This is the S01 design foundation. Clerk sign-in and your live supplier dashboard will be enabled in the next PR. No sample business figures are displayed.'
+                : 'Your active supplier membership was checked with the BuildTo backend. '
+                    'Catalog, order, inventory and finance screens activate in their dedicated PRs; '
+                    'no sample business figures are shown.',
           ),
         ],
       );
@@ -279,10 +359,14 @@ class _ActionTile extends StatelessWidget {
 
 class _RestrictedTab extends StatelessWidget {
   const _RestrictedTab(
-      {required this.title, required this.subtitle, required this.icon});
+      {required this.title,
+      required this.subtitle,
+      required this.icon,
+      this.verifiedSupplier});
   final String title;
   final String subtitle;
   final IconData icon;
+  final SupplierV21Membership? verifiedSupplier;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -291,9 +375,12 @@ class _RestrictedTab extends StatelessWidget {
           BuildToSectionHeading(title: title, subtitle: subtitle),
           const SizedBox(height: 22),
           BuildToStatePanel(
-            title: 'Secure workspace',
-            message:
-                'Sign in with an approved supplier account to view real data. Clerk authentication and supplier permissions are scheduled for S02.',
+            title: verifiedSupplier == null
+                ? 'Secure workspace'
+                : 'Supplier access verified',
+            message: verifiedSupplier == null
+                ? 'Sign in with an approved supplier account to view real data. Clerk authentication and supplier permissions are scheduled for S02.'
+                : 'You have an active, backend-verified ${verifiedSupplier!.role.name.toUpperCase()} membership. This feature will connect to real data in its dedicated PR.',
             icon: icon,
           ),
         ],
