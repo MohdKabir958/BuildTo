@@ -251,7 +251,15 @@ class SupplierAuthController extends ChangeNotifier {
       if (!signedIn) {
         _notice = 'Sign-in was cancelled.';
       } else {
+        final prior = _fingerprint;
         _onNativeIdentity();
+        if (prior != null && prior == _fingerprint &&
+            _stage != SupplierAccessStage.checking &&
+            _stage != SupplierAccessStage.authorized) {
+          // Native SDK may reuse the same session after reauthentication.
+          // Recheck the backend even if no identity-change event was emitted.
+          await refresh();
+        }
       }
     } catch (_) {
       if (!_disposed) _notice = 'Secure sign-in is unavailable. Please try again.';
