@@ -156,7 +156,7 @@ void main() {
     expect(ExactPaise.parse('-125').formatInr(), '-₹1.25');
     expect(ExactPaise.parse('100').formatInr(showZeroPaise: true), '₹1.00');
     expect(ExactPaise.parse('9999999999999999999999').formatInr(),
-        '₹99,99,99,99,99,99,99,99,999.99');
+        '₹9,99,99,99,99,99,99,99,99,999.99');
     expect(() => ExactPaise.parse('1.2'), throwsFormatException);
     expect(() => ExactPaise.parse('NaN'), throwsFormatException);
   });
