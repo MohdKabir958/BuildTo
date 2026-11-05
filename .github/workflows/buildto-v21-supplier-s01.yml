@@ -1,0 +1,59 @@
+name: BuildTo V2.1 supplier S01 design and API foundation
+on:
+  pull_request:
+    paths:
+      - 'apps/vendor_app/lib/v21/**'
+      - 'apps/vendor_app/test/v21/**'
+      - 'apps/vendor_app/tool/s01_visual_capture_test.dart'
+      - 'apps/vendor_app/docs/v21/S01-FOUNDATION.md'
+      - 'apps/vendor_app/lib/main.dart'
+      - '.github/workflows/buildto-v21-supplier-s01.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supplier-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Install locked Flutter dependencies
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Static analysis of new V2.1 files
+        working-directory: apps/vendor_app
+        run: flutter analyze --no-pub lib/v21 test/v21
+      - name: V2.1 UI, accessibility and network contract tests
+        working-directory: apps/vendor_app
+        run: flutter test --no-pub test/v21 --concurrency=2 --reporter expanded
+      - name: Build preview Android APK without activating legacy workflows
+        working-directory: apps/vendor_app
+        run: flutter build apk --debug --no-pub --dart-define=BUILDTO_SUPPLIER_V21_PREVIEW=true
+      - name: Capture unapproved UI screenshots for PDF comparison
+        working-directory: apps/vendor_app
+        run: flutter test --no-pub tool/s01_visual_capture_test.dart --update-goldens
+      - name: Upload manual UI review screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: supplier-s01-ui-review
+          path: apps/vendor_app/tool/goldens/*.png
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload test-only preview Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: supplier-s01-preview-debug-apk
+          path: apps/vendor_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
