@@ -560,8 +560,8 @@ class _ModulePage extends StatelessWidget {
         BuildtoStatePanel(
           icon: icon,
           title: 'Ready for the next phase',
-          message: 'Live ' + tab.label.toLowerCase() +
-            ' are not loaded in S01. '
+          message: 'Your live ' + tab.label.toLowerCase() +
+            ' workspace is not connected in S01. '
             'Sign-in and supplier-scoped data begin after S02.',
           tone: BuildtoTone.information,
         ),
