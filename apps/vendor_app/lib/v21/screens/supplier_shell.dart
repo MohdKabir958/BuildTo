@@ -34,7 +34,10 @@ class BuildToSupplierShell extends StatefulWidget {
 
   final SupplierV21Membership? verifiedSupplier;
   final String? displayName;
-  final VoidCallback? onSwitchSupplier, onSignOut, onRefresh, onOpenApplications;
+  final VoidCallback? onSwitchSupplier,
+      onSignOut,
+      onRefresh,
+      onOpenApplications;
   final bool canSwitchSupplier;
 
   @override
@@ -95,7 +98,9 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                       if (value == 'refresh') widget.onRefresh?.call();
                       if (value == 'switch') widget.onSwitchSupplier?.call();
                       if (value == 'signout') widget.onSignOut?.call();
-                      if (value == 'applications') widget.onOpenApplications?.call();
+                      if (value == 'applications') {
+                        widget.onOpenApplications?.call();
+                      }
                     },
                     itemBuilder: (context) => [
                       if (widget.onRefresh != null)
@@ -107,7 +112,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         const PopupMenuItem(
                             value: 'switch', child: Text('Switch supplier')),
                       if (widget.onOpenApplications != null)
-                        const PopupMenuItem(value: 'applications',
+                        const PopupMenuItem(
+                            value: 'applications',
                             child: Text('Supplier applications')),
                       if (widget.onSignOut != null)
                         const PopupMenuItem(
@@ -383,8 +389,10 @@ class _RestrictedTab extends StatelessWidget {
           BuildToSectionHeading(title: title, subtitle: subtitle),
           const SizedBox(height: 22),
           if (onOpenApplications != null && verifiedSupplier != null) ...[
-            BuildToPrimaryButton(label: 'Supplier applications',
-              icon: Icons.fact_check_outlined, onPressed: onOpenApplications),
+            BuildToPrimaryButton(
+                label: 'Supplier applications',
+                icon: Icons.fact_check_outlined,
+                onPressed: onOpenApplications),
             const SizedBox(height: 16),
           ],
           BuildToStatePanel(

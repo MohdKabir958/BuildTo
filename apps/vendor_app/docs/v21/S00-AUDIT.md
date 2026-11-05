@@ -28,7 +28,7 @@ This is a code-source audit. S00 **does not claim Flutter tests pass** and does 
 
 | PR | Deliverable | Mandatory check |
 | --- | --- | --- |
-| S00 | Audit, screen mapping, design guardrails, 49-operation contract checker | API contract unit tests + OpenAPI validation |
+| S00 | Audit, screen mapping, design guardrails, 50-operation contract checker | API contract unit tests + OpenAPI validation |
 | S01 | BuildTo theme/tokens, navigation, V2.1 typed transport, loading/error components, responsive golden infrastructure | Approved PDF visual language; existing app preserved |
 | S02 | Real native Clerk sessions, selected supplier, secure token lifecycle, role and approval checks | Real staging JWT audience/azp and membership tests |
 | S03 | Business/GST supplier application, review statuses, document evidence | Private media upload/read gap resolved or honestly blocked |
@@ -69,7 +69,7 @@ This is a code-source audit. S00 **does not claim Flutter tests pass** and does 
 
 ## S00 verification and acceptance
 
-`apps/vendor_app/tool/v21_supplier_contract.json` records **49 HTTP method/path pairs across 10 groups**, all verified against `backend/v21/openapi.json` 0.24.0 during planning. Run:
+`apps/vendor_app/tool/v21_supplier_contract.json` records **50 HTTP method/path pairs across 10 groups**, all verified against `backend/v21/openapi.json` 0.24.0 during planning. Run:
 
 `node --test apps/vendor_app/tool/check_v21_contract.test.mjs`
 `node apps/vendor_app/tool/check_v21_contract.mjs`

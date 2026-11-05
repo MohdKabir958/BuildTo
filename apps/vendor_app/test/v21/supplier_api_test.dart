@@ -38,7 +38,7 @@ void main() {
         token: () async => 'test-session',
         httpClient: MockClient((request) async {
           expect(request.url.path, '/api/v2/me');
-          expect(request.headers['Authorization'], '***');
+          expect(request.headers['Authorization'], 'Bearer test-session');
           return http.Response(
               '{"data":{"adminRole":null,"suppliers":[]},"requestId":"req-1"}',
               200);

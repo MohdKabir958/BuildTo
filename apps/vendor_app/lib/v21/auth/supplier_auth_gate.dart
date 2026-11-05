@@ -84,8 +84,8 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                 builder: (context, _) {
                   final controller = _controller!;
                   final canView = controller.sessionKey != null &&
-                    (controller.stage == SupplierAccessStage.authorized ||
-                     controller.stage == SupplierAccessStage.noSupplier);
+                      (controller.stage == SupplierAccessStage.authorized ||
+                          controller.stage == SupplierAccessStage.noSupplier);
                   if (_applicationsOpen && canView) {
                     return SupplierOnboardingFlow(
                       key: ValueKey(controller.sessionKey),
@@ -96,7 +96,8 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                   }
                   return _SupplierAccessView(
                     controller: controller,
-                    openApplications: () => setState(() => _applicationsOpen = true),
+                    openApplications: () =>
+                        setState(() => _applicationsOpen = true),
                   );
                 },
               )
@@ -109,7 +110,8 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
 }
 
 class _SupplierAccessView extends StatelessWidget {
-  const _SupplierAccessView({required this.controller, required this.openApplications});
+  const _SupplierAccessView(
+      {required this.controller, required this.openApplications});
   final SupplierAuthController controller;
   final VoidCallback openApplications;
 
@@ -206,7 +208,8 @@ class _SupplierAccessView extends StatelessWidget {
             ),
           ],
         SupplierAccessStage.noSupplier => [
-            _AccessAction('Open supplier applications', Icons.add_business_rounded, openApplications),
+            _AccessAction('Open supplier applications',
+                Icons.add_business_rounded, openApplications),
             _AccessAction(
                 'Recheck approval', Icons.refresh_rounded, controller.refresh),
             _AccessAction('Sign out / change account', Icons.logout_rounded,

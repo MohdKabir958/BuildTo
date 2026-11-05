@@ -112,3 +112,35 @@ test('A05: registered GST suppliers require separately verified current GST evid
   {decision:'APPROVED',reason:'Check both verification requirements'});
  assert.equal(noGst.status,409);
 });
+
+test('S03: only applicant sees document review feedback without private media secrets', async()=>{
+ const applicant=await user('s03-applicant'),stranger=await user('s03-stranger'),reviewer=await user('s03-operator');
+ await db.adminMembership.create({data:{userId:reviewer.id,role:'OPERATIONS',active:true}});
+ const api=request(app({applicant:applicant.clerkUserId,stranger:stranger.clerkUserId,reviewer:reviewer.clerkUserId}));
+ const submitted=await auth(api,'post','/api/v2/supplier-applications','applicant',apply(applicant));
+ assert.equal(submitted.status,201,JSON.stringify(submitted.body));
+ const id=submitted.body.data.id;
+ const ownBefore=await auth(api,'get','/api/v2/me/supplier-applications/'+id,'applicant');
+ assert.equal(ownBefore.status,200,JSON.stringify(ownBefore.body));
+ assert.equal(ownBefore.body.data.approval,'PENDING');
+ assert.deepEqual(ownBefore.body.data.documents,[]);
+ assert.equal((await auth(api,'get','/api/v2/me/supplier-applications/'+id,'stranger')).status,404);
+ assert.equal((await api.get('/api/v2/me/supplier-applications/'+id)).status,401);
+ assert.equal((await auth(api,'get','/api/v2/me/supplier-applications/'+randomUUID(),'applicant')).status,404);
+ const media=await evidence(applicant);
+ const attached=await auth(api,'post','/api/v2/supplier-applications/'+id+'/documents','applicant',
+  {mediaId:media.id,documentType:'BUSINESS_REGISTRATION'});
+ assert.equal(attached.status,201,JSON.stringify(attached.body));
+ const reviewed=await auth(api,'post','/api/v2/admin/suppliers/'+id+'/documents/'+attached.body.data.id+'/review',
+  'reviewer',{decision:'REJECTED',reason:'Document is not readable; request updated PDF'});
+ assert.equal(reviewed.status,200,JSON.stringify(reviewed.body));
+ const detail=await auth(api,'get','/api/v2/me/supplier-applications/'+id,'applicant');
+ assert.equal(detail.status,200,JSON.stringify(detail.body));
+ assert.equal(detail.body.data.documents.length,1);
+ assert.equal(detail.body.data.documents[0].status,'REJECTED');
+ assert.match(detail.body.data.documents[0].reviewNote,/not readable/);
+ assert(!JSON.stringify(detail.body).includes(media.objectKey));
+ assert(!JSON.stringify(detail.body).includes(media.sha256));
+ assert(!JSON.stringify(detail.body).includes(media.id),'Media asset ID must stay private');
+ assert.equal((await auth(api,'get','/api/v2/me/supplier-applications/'+id,'stranger')).status,404);
+});
