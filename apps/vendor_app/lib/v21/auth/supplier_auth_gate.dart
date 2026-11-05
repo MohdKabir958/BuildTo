@@ -7,6 +7,7 @@ import '../design/buildto_theme.dart';
 import '../screens/supplier_shell.dart';
 import 'supplier_auth_controller.dart';
 import 'supplier_clerk_port.dart';
+import '../onboarding/supplier_onboarding_flow.dart';
 
 /// Opt-in staging experience. Android's official native Clerk UI authenticates,
 /// but only /me and /suppliers/:id/access can unlock a supplier workspace.
@@ -23,6 +24,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   SupplierAuthController? _controller;
   String? _setupFailure;
   bool _ownsController = false;
+  bool _applicationsOpen = false;
 
   @override
   void initState() {
@@ -79,8 +81,24 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
         home: _setupFailure == null
             ? AnimatedBuilder(
                 animation: _controller!,
-                builder: (context, _) =>
-                    _SupplierAccessView(controller: _controller!),
+                builder: (context, _) {
+                  final controller = _controller!;
+                  final canView = controller.sessionKey != null &&
+                    (controller.stage == SupplierAccessStage.authorized ||
+                     controller.stage == SupplierAccessStage.noSupplier);
+                  if (_applicationsOpen && canView) {
+                    return SupplierOnboardingFlow(
+                      key: ValueKey(controller.sessionKey),
+                      controller: controller,
+                      api: controller.applications,
+                      onClose: () => setState(() => _applicationsOpen = false),
+                    );
+                  }
+                  return _SupplierAccessView(
+                    controller: controller,
+                    openApplications: () => setState(() => _applicationsOpen = true),
+                  );
+                },
               )
             : _AccessScaffold(
                 title: 'Secure setup required',
@@ -91,8 +109,9 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
 }
 
 class _SupplierAccessView extends StatelessWidget {
-  const _SupplierAccessView({required this.controller});
+  const _SupplierAccessView({required this.controller, required this.openApplications});
   final SupplierAuthController controller;
+  final VoidCallback openApplications;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +125,7 @@ class _SupplierAccessView extends StatelessWidget {
         onSwitchSupplier: controller.showSupplierChooser,
         onSignOut: controller.signOut,
         onRefresh: controller.refresh,
+        onOpenApplications: openApplications,
         canSwitchSupplier: (controller.account?.suppliers.length ?? 0) > 1,
       );
     }
@@ -133,7 +153,7 @@ class _SupplierAccessView extends StatelessWidget {
       SupplierAccessStage.noSupplier => (
           'Supplier approval required',
           'Your Clerk account is signed in, but no approved supplier business is linked. '
-              'Supplier registration and review will be available in S03.',
+              'You can register a construction-material business or track your application below.',
           Icons.domain_verification_outlined,
         ),
       SupplierAccessStage.accessDenied => (
@@ -186,6 +206,7 @@ class _SupplierAccessView extends StatelessWidget {
             ),
           ],
         SupplierAccessStage.noSupplier => [
+            _AccessAction('Open supplier applications', Icons.add_business_rounded, openApplications),
             _AccessAction(
                 'Recheck approval', Icons.refresh_rounded, controller.refresh),
             _AccessAction('Sign out / change account', Icons.logout_rounded,
