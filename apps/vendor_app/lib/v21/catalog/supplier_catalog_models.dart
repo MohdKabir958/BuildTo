@@ -108,8 +108,7 @@ String catalogRupeesFromPaise(String paise) {
     throw const FormatException('Invalid backend paise');
   }
   final pennies = BigInt.parse(paise);
-  return (pennies ~/ BigInt.from(100)).toString() + '.' +
-      (pennies % BigInt.from(100)).toString().padLeft(2, '0');
+  return '${pennies ~/ BigInt.from(100)}.${(pennies % BigInt.from(100)).toString().padLeft(2, '0')}';
 }
 
 /// Human-friendly GST percent, exact conversion to backend basis points.
@@ -133,8 +132,7 @@ String catalogPercentFromBps(int rate) {
   final fraction = (rate % 100).toString().padLeft(2, '0');
   return rate % 100 == 0
       ? (rate ~/ 100).toString()
-      : (rate ~/ 100).toString() + '.' +
-        fraction.replaceFirst(RegExp(r'0+$'), '');
+      : '${rate ~/ 100}.${fraction.replaceFirst(RegExp(r'0+$'), '')}';
 }
 
 enum CatalogListingStatus {
