@@ -84,7 +84,9 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       if (!mounted ||
           version != generation ||
           !sessionOk ||
-          session != widget.controller.sessionKey) { return; }
+          session != widget.controller.sessionKey) {
+        return;
+      }
       setState(() {
         applications = records;
         details = detail;
@@ -95,7 +97,9 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       if (!mounted ||
           version != generation ||
           !sessionOk ||
-          session != widget.controller.sessionKey) { return; }
+          session != widget.controller.sessionKey) {
+        return;
+      }
       setState(() {
         error = errorMessage(e);
         loading = false;
@@ -112,11 +116,16 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       showDragHandle: true,
       builder: (_) => const PrivateEvidenceLinkSheet(),
     );
-    if (!mounted || !sessionOk ||
-        session != widget.controller.sessionKey || selection == null) {
+    if (!mounted ||
+        !sessionOk ||
+        session != widget.controller.sessionKey ||
+        selection == null) {
       return;
     }
-    setState(() { linking = true; error = null; });
+    setState(() {
+      linking = true;
+      error = null;
+    });
     try {
       await widget.api.attachExistingEvidence(
         supplierId: current.summary.id,
