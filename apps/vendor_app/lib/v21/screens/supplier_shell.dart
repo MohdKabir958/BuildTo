@@ -129,7 +129,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
               ),
             Expanded(
                 child: IndexedStack(index: selected.index, children: [
-              if (widget.verifiedSupplier != null && widget.dashboardRepository != null)
+              if (widget.verifiedSupplier != null &&
+                  widget.dashboardRepository != null)
                 SupplierDashboardView(
                   supplierId: widget.verifiedSupplier!.supplierId,
                   role: widget.verifiedSupplier!.role,
@@ -138,7 +139,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                   onNavigate: (destination) => setState(() {
                     selected = switch (destination) {
                       DashboardDestination.orders => BuildToSupplierTab.orders,
-                      DashboardDestination.catalog => BuildToSupplierTab.catalog,
+                      DashboardDestination.catalog =>
+                        BuildToSupplierTab.catalog,
                       DashboardDestination.stock => BuildToSupplierTab.stock,
                       DashboardDestination.more => BuildToSupplierTab.more,
                     };
