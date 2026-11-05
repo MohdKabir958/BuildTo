@@ -121,8 +121,10 @@ class _SupplierAccessView extends StatelessWidget {
     final membership = controller.activeSupplier;
     if (stage == SupplierAccessStage.authorized && membership != null) {
       return BuildToSupplierShell(
-        key: ValueKey(membership.supplierId),
+        key: ValueKey(
+            '${controller.sessionKey}|${membership.supplierId}|${membership.role.name}'),
         verifiedSupplier: membership,
+        dashboardRepository: controller.dashboardRepository,
         displayName: controller.account?.displayName,
         onSwitchSupplier: controller.showSupplierChooser,
         onSignOut: controller.signOut,

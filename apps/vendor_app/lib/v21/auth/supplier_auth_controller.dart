@@ -5,6 +5,7 @@ import '../api/supplier_v21_api.dart';
 import '../api/supplier_v21_models.dart';
 import 'supplier_clerk_port.dart';
 import '../onboarding/supplier_applications_api.dart';
+import '../dashboard/supplier_dashboard_repository.dart';
 
 enum SupplierAccessStage {
   starting,
@@ -58,6 +59,10 @@ class SupplierAuthController extends ChangeNotifier {
   /// Reuses the token-injecting V2.1 client; applicants do not need active
   /// supplier membership to manage their own pending application.
   SupplierApplicationsApi get applications => SupplierApplicationsApi(_api);
+
+  /// One shared request boundary for the approved supplier's S04 overview.
+  late final SupplierDashboardRepository dashboardRepository =
+      SupplierDashboardRepository(_api);
 
   bool _current(int generation, String? fingerprint) =>
       !_disposed &&
