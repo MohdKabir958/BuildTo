@@ -232,7 +232,8 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       TextEditingController(text: widget.original?.unitPrice ?? '');
   late final mrp = TextEditingController(
       text: widget.original?.mrpPaise == null
-          ? '' : catalogRupeesFromPaise(widget.original!.mrpPaise!));
+          ? ''
+          : catalogRupeesFromPaise(widget.original!.mrpPaise!));
   late final taxBps = TextEditingController(
       text: catalogPercentFromBps(widget.original?.taxRateBps ?? 1800));
   CatalogProduct? product;
@@ -346,7 +347,8 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
         stepQty: step.text.trim(),
         maxOrderQty: maximum.text.trim().isEmpty ? null : maximum.text.trim(),
         unitPrice: price.text.trim(),
-        mrpPaise: mrp.text.trim().isEmpty ? null : catalogPaiseFromRupees(mrp.text),
+        mrpPaise:
+            mrp.text.trim().isEmpty ? null : catalogPaiseFromRupees(mrp.text),
         taxRateBps: catalogTaxBasisPoints(taxBps.text.trim()),
         taxInclusive: inclusive,
       );
