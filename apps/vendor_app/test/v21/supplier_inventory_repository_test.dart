@@ -144,8 +144,7 @@ void main() {
     },
   );
 
-  test('canonicalized decimal transfer quantity is still exact',
-      () async {
+  test('canonicalized decimal transfer quantity is still exact', () async {
     final service = repo(MockClient((request) async => ok({
           'listingId': listing,
           'fromWarehouseId': warehouse,
