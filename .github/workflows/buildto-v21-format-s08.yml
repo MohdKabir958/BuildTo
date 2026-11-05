@@ -32,3 +32,5 @@ jobs:
             git commit -m "style(s08): format RFQ specification presentation"
             git push origin HEAD:supplier/v21-s08-invited-rfqs-quotes
           fi
+
+# Re-run after correcting RFQ specification syntax.
