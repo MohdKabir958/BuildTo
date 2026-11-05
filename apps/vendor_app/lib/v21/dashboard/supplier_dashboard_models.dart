@@ -21,34 +21,39 @@ enum DashboardOrderStatus {
   rejected;
 
   static DashboardOrderStatus parse(Object? input) => switch (input) {
-    'PENDING_ACCEPTANCE' => pendingAcceptance,
-    'CONFIRMED' => confirmed,
-    'PACKING' => packing,
-    'READY' => ready,
-    'DISPATCHED' => dispatched,
-    'PARTIALLY_DELIVERED' => partiallyDelivered,
-    'DELIVERED' => delivered,
-    'CANCELLED' => cancelled,
-    'REJECTED' => rejected,
-    _ => throw const FormatException('Unknown supplier order status'),
-  };
+        'PENDING_ACCEPTANCE' => pendingAcceptance,
+        'CONFIRMED' => confirmed,
+        'PACKING' => packing,
+        'READY' => ready,
+        'DISPATCHED' => dispatched,
+        'PARTIALLY_DELIVERED' => partiallyDelivered,
+        'DELIVERED' => delivered,
+        'CANCELLED' => cancelled,
+        'REJECTED' => rejected,
+        _ => throw const FormatException('Unknown supplier order status'),
+      };
 
   String get label => switch (this) {
-    pendingAcceptance => 'Awaiting acceptance',
-    confirmed => 'Confirmed',
-    packing => 'Packing',
-    ready => 'Ready to dispatch',
-    dispatched => 'Dispatched',
-    partiallyDelivered => 'Partially delivered',
-    delivered => 'Delivered',
-    cancelled => 'Cancelled',
-    rejected => 'Rejected',
-  };
+        pendingAcceptance => 'Awaiting acceptance',
+        confirmed => 'Confirmed',
+        packing => 'Packing',
+        ready => 'Ready to dispatch',
+        dispatched => 'Dispatched',
+        partiallyDelivered => 'Partially delivered',
+        delivered => 'Delivered',
+        cancelled => 'Cancelled',
+        rejected => 'Rejected',
+      };
 
   bool get fulfillmentInProgress => switch (this) {
-    confirmed || packing || ready || dispatched || partiallyDelivered => true,
-    _ => false,
-  };
+        confirmed ||
+        packing ||
+        ready ||
+        dispatched ||
+        partiallyDelivered =>
+          true,
+        _ => false,
+      };
 }
 
 class DashboardOrder {
@@ -95,7 +100,12 @@ class DashboardListing {
       throw const FormatException('Foreign supplier listing in dashboard');
     }
     const statuses = {
-      'DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED', 'ARCHIVED',
+      'DRAFT',
+      'PENDING',
+      'APPROVED',
+      'REJECTED',
+      'SUSPENDED',
+      'ARCHIVED',
     };
     final status = record['status'];
     final active = record['active'];
@@ -159,12 +169,15 @@ class SupplierDashboardSnapshot {
   final DashboardCount inFulfillment;
   final DashboardCount publishedListings;
   final DashboardCount activeWarehouses;
+
   /// Null means the current backend role cannot query RFQs; never show zero.
   final DashboardCount? openInvitations;
   final List<DashboardOrder> recentOrders;
 
-  bool get sampleLimited => awaitingAcceptance.bounded ||
-      publishedListings.bounded || activeWarehouses.bounded ||
+  bool get sampleLimited =>
+      awaitingAcceptance.bounded ||
+      publishedListings.bounded ||
+      activeWarehouses.bounded ||
       (openInvitations?.bounded ?? false);
 }
 
