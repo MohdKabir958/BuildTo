@@ -54,7 +54,8 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       final controller = _controller;
-      if (controller != null && controller.stage != SupplierAccessStage.signedOut &&
+      if (controller != null &&
+          controller.stage != SupplierAccessStage.signedOut &&
           controller.stage != SupplierAccessStage.starting &&
           controller.stage != SupplierAccessStage.misconfigured) {
         // Re-evaluate membership and suspension whenever the user returns.
@@ -78,7 +79,8 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
         home: _setupFailure == null
             ? AnimatedBuilder(
                 animation: _controller!,
-                builder: (context, _) => _SupplierAccessView(controller: _controller!),
+                builder: (context, _) =>
+                    _SupplierAccessView(controller: _controller!),
               )
             : _AccessScaffold(
                 title: 'Secure setup required',
@@ -115,7 +117,8 @@ class _SupplierAccessView extends StatelessWidget {
         stage == SupplierAccessStage.checking) {
       return const _AccessScaffold(
         title: 'Verifying your supplier account',
-        subtitle: 'Checking your Clerk session and current BuildTo permissions.',
+        subtitle:
+            'Checking your Clerk session and current BuildTo permissions.',
         icon: Icons.shield_outlined,
         loading: true,
       );
@@ -183,13 +186,17 @@ class _SupplierAccessView extends StatelessWidget {
             ),
           ],
         SupplierAccessStage.noSupplier => [
-            _AccessAction('Recheck approval', Icons.refresh_rounded, controller.refresh),
-            _AccessAction('Sign out / change account', Icons.logout_rounded, controller.signOut,
+            _AccessAction(
+                'Recheck approval', Icons.refresh_rounded, controller.refresh),
+            _AccessAction('Sign out / change account', Icons.logout_rounded,
+                controller.signOut,
                 outlined: true),
           ],
         SupplierAccessStage.accessDenied || SupplierAccessStage.unavailable => [
-            _AccessAction('Retry secure verification', Icons.refresh_rounded, controller.refresh),
-            _AccessAction('Sign out', Icons.logout_rounded, controller.signOut, outlined: true),
+            _AccessAction('Retry secure verification', Icons.refresh_rounded,
+                controller.refresh),
+            _AccessAction('Sign out', Icons.logout_rounded, controller.signOut,
+                outlined: true),
           ],
         _ => [],
       },
@@ -199,7 +206,8 @@ class _SupplierAccessView extends StatelessWidget {
 }
 
 class _AccessAction {
-  const _AccessAction(this.label, this.icon, this.callback, {this.outlined = false});
+  const _AccessAction(this.label, this.icon, this.callback,
+      {this.outlined = false});
   final String label;
   final IconData icon;
   final VoidCallback callback;
@@ -238,7 +246,8 @@ class _AccessScaffold extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   Container(
-                    width: 80, height: 80,
+                    width: 80,
+                    height: 80,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: BuildToPalette.sky,
@@ -247,17 +256,19 @@ class _AccessScaffold extends StatelessWidget {
                     child: Icon(icon, color: BuildToPalette.navy, size: 42),
                   ),
                   const SizedBox(height: 24),
-                  Text(title, style: Theme.of(context).textTheme.headlineMedium),
+                  Text(title,
+                      style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 12),
                   Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
                   if (email != null && email!.isNotEmpty) ...[
                     const SizedBox(height: 14),
-                    Text('Clerk account: ' + email!,
+                    Text('Clerk account: ${email!}',
                         style: Theme.of(context).textTheme.bodySmall),
                   ],
                   if (message != null && message!.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    BuildToCard(child: Row(
+                    BuildToCard(
+                        child: Row(
                       children: [
                         const Icon(Icons.info_outline_rounded,
                             color: BuildToPalette.warning),
@@ -335,9 +346,8 @@ class _SupplierPicker extends StatelessWidget {
                       foregroundColor: BuildToPalette.navy,
                       child: Icon(Icons.factory_outlined),
                     ),
-                    title: Text('Supplier • ' +
-                        member.supplierId.substring(member.supplierId.length - 8)),
-                    subtitle: Text('Role: ' + member.role.name.toUpperCase()),
+                    title: Text('Supplier • ${member.supplierId.substring(member.supplierId.length - 8)}'),
+                    subtitle: Text('Role: ${member.role.name.toUpperCase()}'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: controller.busy
                         ? null
@@ -346,9 +356,10 @@ class _SupplierPicker extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
               ],
-              Text('Supplier business names are not included in the /me response. '
-                   'IDs are shown instead of invented names.',
-                style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                  'Supplier business names are not included in the /me response. '
+                  'IDs are shown instead of invented names.',
+                  style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 26),
               OutlinedButton.icon(
                 onPressed: controller.signOut,
