@@ -17,11 +17,11 @@ class BuildToSupplierPreviewApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'BuildTo Supplier',
-    debugShowCheckedModeBanner: false,
-    theme: BuildToTheme.light(),
-    home: const BuildToSupplierShell(),
-  );
+        title: 'BuildTo Supplier',
+        debugShowCheckedModeBanner: false,
+        theme: BuildToTheme.light(),
+        home: const BuildToSupplierShell(),
+      );
 }
 
 enum BuildToSupplierTab { home, orders, catalog, stock, more }
@@ -303,174 +303,175 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-    children: [
-      Text(
-        'Your supplier workspace',
-        style: Theme.of(context).textTheme.headlineMedium,
-      ),
-      const SizedBox(height: 6),
-      Text(
-        'Construction materials, managed with confidence.',
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-      const SizedBox(height: 20),
-      Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              BuildToPalette.navyDeep,
-              BuildToPalette.navy,
-              Color(0xFF07528B),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+        children: [
+          Text(
+            'Your supplier workspace',
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
+          const SizedBox(height: 6),
+          Text(
+            'Construction materials, managed with confidence.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 20),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  BuildToPalette.navyDeep,
+                  BuildToPalette.navy,
+                  Color(0xFF07528B),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.verified_outlined,
-                  color: BuildToPalette.orange,
-                  size: 21,
-                ),
-                SizedBox(width: 9),
-                Flexible(
-                  child: Text(
-                    'BUILDTO SUPPLIER',
-                    style: TextStyle(
-                      color: BuildToPalette.white,
-                      letterSpacing: 1.4,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.verified_outlined,
+                      color: BuildToPalette.orange,
+                      size: 21,
                     ),
+                    SizedBox(width: 9),
+                    Flexible(
+                      child: Text(
+                        'BUILDTO SUPPLIER',
+                        style: TextStyle(
+                          color: BuildToPalette.white,
+                          letterSpacing: 1.4,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                const Text(
+                  'A better way to\nrun your material business.',
+                  style: TextStyle(
+                    color: BuildToPalette.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                    height: 1.16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Listings • Inventory • Orders • Fulfillment',
+                  style: TextStyle(
+                    color: Color(0xFFE2F1FF),
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: BuildToPalette.white.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(
+                      color: BuildToPalette.white.withValues(alpha: .28),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.lock_outline_rounded,
+                        size: 16,
+                        color: BuildToPalette.white,
+                      ),
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          verifiedSupplier == null
+                              ? 'Secure account access coming in S02'
+                              : 'Supplier identity verified by BuildTo',
+                          style: const TextStyle(
+                            color: BuildToPalette.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 22),
-            const Text(
-              'A better way to\nrun your material business.',
-              style: TextStyle(
-                color: BuildToPalette.white,
-                fontSize: 25,
-                fontWeight: FontWeight.w800,
-                height: 1.16,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Listings • Inventory • Orders • Fulfillment',
-              style: TextStyle(
-                color: Color(0xFFE2F1FF),
-                fontSize: 12,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              decoration: BoxDecoration(
-                color: BuildToPalette.white.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(50),
-                border: Border.all(
-                  color: BuildToPalette.white.withValues(alpha: .28),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.lock_outline_rounded,
-                    size: 16,
-                    color: BuildToPalette.white,
+          ),
+          const SizedBox(height: 24),
+          const BuildToSectionHeading(
+            title: 'Manage your business',
+            subtitle:
+                'Each workspace connects to your own authorized supplier account.',
+          ),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth < 360 ? 1 : 2;
+              return GridView.count(
+                crossAxisCount: columns,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: columns == 1 ? 2.35 : 1.33,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: const [
+                  _ActionTile(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Orders',
+                    subtitle: 'Fulfillment queue',
+                    accent: BuildToPalette.orange,
                   ),
-                  const SizedBox(width: 7),
-                  Flexible(
-                    child: Text(
-                      verifiedSupplier == null
-                          ? 'Secure account access coming in S02'
-                          : 'Supplier identity verified by BuildTo',
-                      style: const TextStyle(
-                        color: BuildToPalette.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  _ActionTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Listings',
+                    subtitle: 'Products & pricing',
+                    accent: BuildToPalette.blue,
+                  ),
+                  _ActionTile(
+                    icon: Icons.warehouse_outlined,
+                    title: 'Inventory',
+                    subtitle: 'Warehouses & stock',
+                    accent: BuildToPalette.success,
+                  ),
+                  _ActionTile(
+                    icon: Icons.request_quote_outlined,
+                    title: 'RFQs',
+                    subtitle: 'Quotes & requests',
+                    accent: BuildToPalette.navy,
                   ),
                 ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 24),
-      const BuildToSectionHeading(
-        title: 'Manage your business',
-        subtitle:
-            'Each workspace connects to your own authorized supplier account.',
-      ),
-      const SizedBox(height: 14),
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final columns = constraints.maxWidth < 360 ? 1 : 2;
-          return GridView.count(
-            crossAxisCount: columns,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: columns == 1 ? 2.35 : 1.33,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: const [
-              _ActionTile(
-                icon: Icons.receipt_long_rounded,
-                title: 'Orders',
-                subtitle: 'Fulfillment queue',
-                accent: BuildToPalette.orange,
-              ),
-              _ActionTile(
-                icon: Icons.inventory_2_outlined,
-                title: 'Listings',
-                subtitle: 'Products & pricing',
-                accent: BuildToPalette.blue,
-              ),
-              _ActionTile(
-                icon: Icons.warehouse_outlined,
-                title: 'Inventory',
-                subtitle: 'Warehouses & stock',
-                accent: BuildToPalette.success,
-              ),
-              _ActionTile(
-                icon: Icons.request_quote_outlined,
-                title: 'RFQs',
-                subtitle: 'Quotes & requests',
-                accent: BuildToPalette.navy,
-              ),
-            ],
-          );
-        },
-      ),
-      const SizedBox(height: 22),
-      BuildToStatePanel(
-        icon: verifiedSupplier == null
-            ? Icons.shield_outlined
-            : Icons.verified_user_outlined,
-        title: verifiedSupplier == null
-            ? 'Account connection required'
-            : 'Supplier access verified',
-        message: verifiedSupplier == null
-            ? 'This is the S01 design foundation. Clerk sign-in and your live supplier dashboard will be enabled in the next PR. No sample business figures are displayed.'
-            : 'Your active supplier membership was checked with the BuildTo backend. '
-                  'Catalog, order, inventory and finance screens activate in their dedicated PRs; '
-                  'no sample business figures are shown.',
-      ),
-    ],
-  );
+              );
+            },
+          ),
+          const SizedBox(height: 22),
+          BuildToStatePanel(
+            icon: verifiedSupplier == null
+                ? Icons.shield_outlined
+                : Icons.verified_user_outlined,
+            title: verifiedSupplier == null
+                ? 'Account connection required'
+                : 'Supplier access verified',
+            message: verifiedSupplier == null
+                ? 'This is the S01 design foundation. Clerk sign-in and your live supplier dashboard will be enabled in the next PR. No sample business figures are displayed.'
+                : 'Your active supplier membership was checked with the BuildTo backend. '
+                    'Catalog, order, inventory and finance screens activate in their dedicated PRs; '
+                    'no sample business figures are shown.',
+          ),
+        ],
+      );
 }
 
 class _ActionTile extends StatelessWidget {
@@ -487,36 +488,36 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BuildToCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: .10),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(icon, color: accent, size: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: accent, size: 24),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _RestrictedTab extends StatelessWidget {
@@ -535,27 +536,27 @@ class _RestrictedTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 30, 20, 30),
-    children: [
-      BuildToSectionHeading(title: title, subtitle: subtitle),
-      const SizedBox(height: 22),
-      if (onOpenApplications != null && verifiedSupplier != null) ...[
-        BuildToPrimaryButton(
-          label: 'Supplier applications',
-          icon: Icons.fact_check_outlined,
-          onPressed: onOpenApplications,
-        ),
-        const SizedBox(height: 16),
-      ],
-      BuildToStatePanel(
-        title: verifiedSupplier == null
-            ? 'Secure workspace'
-            : 'Supplier access verified',
-        message: verifiedSupplier == null
-            ? 'Sign in with an approved supplier account to view real data. Clerk authentication and supplier permissions are scheduled for S02.'
-            : 'You have an active, backend-verified ${verifiedSupplier!.role.name.toUpperCase()} membership. This feature will connect to real data in its dedicated PR.',
-        icon: icon,
-      ),
-    ],
-  );
+        padding: const EdgeInsets.fromLTRB(20, 30, 20, 30),
+        children: [
+          BuildToSectionHeading(title: title, subtitle: subtitle),
+          const SizedBox(height: 22),
+          if (onOpenApplications != null && verifiedSupplier != null) ...[
+            BuildToPrimaryButton(
+              label: 'Supplier applications',
+              icon: Icons.fact_check_outlined,
+              onPressed: onOpenApplications,
+            ),
+            const SizedBox(height: 16),
+          ],
+          BuildToStatePanel(
+            title: verifiedSupplier == null
+                ? 'Secure workspace'
+                : 'Supplier access verified',
+            message: verifiedSupplier == null
+                ? 'Sign in with an approved supplier account to view real data. Clerk authentication and supplier permissions are scheduled for S02.'
+                : 'You have an active, backend-verified ${verifiedSupplier!.role.name.toUpperCase()} membership. This feature will connect to real data in its dedicated PR.',
+            icon: icon,
+          ),
+        ],
+      );
 }

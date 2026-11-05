@@ -102,7 +102,8 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
           SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
           SupplierV21Exception(
             problem: SupplierV21Problem.notFound,
-          ) => 'Supplier permissions changed. Recheck your membership.',
+          ) =>
+            'Supplier permissions changed. Recheck your membership.',
           _ =>
             'Inventory cannot be verified. Previously loaded stock is hidden.',
         };
@@ -188,8 +189,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                         } catch (e) {
                           if (dialog.mounted)
                             change(() {
-                              notice =
-                                  e is SupplierV21Exception &&
+                              notice = e is SupplierV21Exception &&
                                       e.problem == SupplierV21Problem.network
                                   ? 'Outcome uncertain. Refresh warehouses before trying again.'
                                   : 'Warehouse not saved. Check the code and permissions.';
@@ -456,9 +456,8 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                     ),
                   const SizedBox(height: 12),
                   BuildToPrimaryButton(
-                    label: transfer
-                        ? 'Confirm stock transfer'
-                        : 'Record movement',
+                    label:
+                        transfer ? 'Confirm stock transfer' : 'Record movement',
                     busy: busy,
                     onPressed: () async {
                       change(() {
@@ -484,8 +483,8 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                           final value = quantity.text.trim();
                           final signed =
                               kind == 'DAMAGE' && !value.startsWith('-')
-                              ? '-$value'
-                              : value;
+                                  ? '-$value'
+                                  : value;
                           await widget.repository.adjust(
                             supplierId: widget.supplierId,
                             listingId: listingId!,
@@ -634,14 +633,13 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                 OutlinedButton.icon(
                   onPressed:
                       warehouses.any((w) => w.active) && listings.isNotEmpty
-                      ? () => unawaited(stockAction(transfer: false))
-                      : null,
+                          ? () => unawaited(stockAction(transfer: false))
+                          : null,
                   icon: const Icon(Icons.playlist_add_rounded),
                   label: const Text('Adjust stock'),
                 ),
                 OutlinedButton.icon(
-                  onPressed:
-                      warehouses.where((w) => w.active).length > 1 &&
+                  onPressed: warehouses.where((w) => w.active).length > 1 &&
                           listings.isNotEmpty
                       ? () => unawaited(stockAction(transfer: true))
                       : null,

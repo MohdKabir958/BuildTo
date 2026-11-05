@@ -95,8 +95,7 @@ class SupplierStockBalance {
     final onHand = exactStockQuantity(data['onHandQty']);
     final reserved = exactStockQuantity(data['reservedQty']);
     final available = exactStockQuantity(data['availableQty']);
-    final sum =
-        catalogScaled(reserved, whole: 15, scale: 3, positive: false) +
+    final sum = catalogScaled(reserved, whole: 15, scale: 3, positive: false) +
         catalogScaled(available, whole: 15, scale: 3, positive: false);
     if (sum != catalogScaled(onHand, whole: 15, scale: 3, positive: false)) {
       throw const FormatException('Stock availability does not reconcile');

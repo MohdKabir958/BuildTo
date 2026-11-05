@@ -29,7 +29,8 @@ class SupplierInventoryRepository {
     final data = (await client.get(
       '${_scope(supplierId)}/balances',
       query: listingId == null ? null : {'listingId': catalogId(listingId)},
-    )).data;
+    ))
+        .data;
     return inventoryRecords(
       data,
       SupplierStockBalance.parse,
@@ -45,7 +46,8 @@ class SupplierInventoryRepository {
     final data = (await client.get(
       '${_scope(supplierId)}/warehouses/${catalogId(warehouseId)}/movements',
       query: listingId == null ? null : {'listingId': catalogId(listingId)},
-    )).data;
+    ))
+        .data;
     return inventoryRecords(
       data,
       SupplierStockMovement.parse,
@@ -69,7 +71,8 @@ class SupplierInventoryRepository {
       'POST',
       '${_scope(supplierId)}/warehouses',
       body: {'code': normalized, 'name': name.trim()},
-    )).data;
+    ))
+        .data;
     return SupplierWarehouse.parse(data, supplierId);
   }
 
@@ -94,7 +97,8 @@ class SupplierInventoryRepository {
         if (normalized != null) 'name': normalized,
         if (active != null) 'active': active,
       },
-    )).data;
+    ))
+        .data;
     return SupplierWarehouse.parse(data, supplierId);
   }
 

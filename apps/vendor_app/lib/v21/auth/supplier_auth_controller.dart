@@ -29,8 +29,8 @@ class SupplierAuthController extends ChangeNotifier {
   SupplierAuthController({
     required SupplierClerkPort clerk,
     required SupplierV21Api api,
-  }) : _clerk = clerk,
-       _api = api {
+  })  : _clerk = clerk,
+        _api = api {
     _clerk.identity.addListener(_onNativeIdentity);
   }
 
@@ -168,9 +168,8 @@ class SupplierAuthController extends ChangeNotifier {
         (member) => member.supplierId == previouslySelected,
       );
       final desired = matching.isEmpty ? null : matching.first;
-      final single = account.suppliers.length == 1
-          ? account.suppliers.first
-          : null;
+      final single =
+          account.suppliers.length == 1 ? account.suppliers.first : null;
       final target = desired ?? single;
       if (target == null) {
         _selectedId = null;
@@ -282,7 +281,8 @@ class SupplierAuthController extends ChangeNotifier {
     _stage = switch (error.problem) {
       SupplierV21Problem.authentication => SupplierAccessStage.sessionExpired,
       SupplierV21Problem.forbidden ||
-      SupplierV21Problem.notFound => SupplierAccessStage.accessDenied,
+      SupplierV21Problem.notFound =>
+        SupplierAccessStage.accessDenied,
       SupplierV21Problem.configuration => SupplierAccessStage.misconfigured,
       _ => SupplierAccessStage.unavailable,
     };

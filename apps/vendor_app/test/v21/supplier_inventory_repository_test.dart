@@ -25,14 +25,14 @@ SupplierInventoryRepository repo(http.Client client) =>
     );
 
 Map<String, Object?> stock({String available = '6.500'}) => {
-  'id': balance,
-  'listingId': listing,
-  'warehouseId': warehouse,
-  'onHandQty': '10.000',
-  'reservedQty': '3.500',
-  'availableQty': available,
-  'version': 7,
-};
+      'id': balance,
+      'listingId': listing,
+      'warehouseId': warehouse,
+      'onHandQty': '10.000',
+      'reservedQty': '3.500',
+      'availableQty': available,
+      'version': 7,
+    };
 
 void main() {
   test('warehouse and balance projections are exact and scoped', () async {
