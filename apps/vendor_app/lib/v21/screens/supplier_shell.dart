@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import '../api/supplier_v21_models.dart';
+import '../dashboard/supplier_dashboard_repository.dart';
+import '../dashboard/supplier_dashboard_view.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -24,6 +26,7 @@ class BuildToSupplierShell extends StatefulWidget {
   const BuildToSupplierShell({
     super.key,
     this.verifiedSupplier,
+    this.dashboardRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -33,6 +36,7 @@ class BuildToSupplierShell extends StatefulWidget {
   });
 
   final SupplierV21Membership? verifiedSupplier;
+  final SupplierDashboardRepository? dashboardRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -125,7 +129,23 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
               ),
             Expanded(
                 child: IndexedStack(index: selected.index, children: [
-              _HomeTab(verifiedSupplier: widget.verifiedSupplier),
+              if (widget.verifiedSupplier != null && widget.dashboardRepository != null)
+                SupplierDashboardView(
+                  supplierId: widget.verifiedSupplier!.supplierId,
+                  role: widget.verifiedSupplier!.role,
+                  repository: widget.dashboardRepository!,
+                  onRecheckAccess: widget.onRefresh,
+                  onNavigate: (destination) => setState(() {
+                    selected = switch (destination) {
+                      DashboardDestination.orders => BuildToSupplierTab.orders,
+                      DashboardDestination.catalog => BuildToSupplierTab.catalog,
+                      DashboardDestination.stock => BuildToSupplierTab.stock,
+                      DashboardDestination.more => BuildToSupplierTab.more,
+                    };
+                  }),
+                )
+              else
+                _HomeTab(verifiedSupplier: widget.verifiedSupplier),
               _RestrictedTab(
                 verifiedSupplier: widget.verifiedSupplier,
                 title: 'Supplier orders',
