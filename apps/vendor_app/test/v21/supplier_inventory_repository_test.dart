@@ -144,6 +144,27 @@ void main() {
     },
   );
 
+  test('canonicalized decimal transfer quantity is still exact',
+      () async {
+    final service = repo(MockClient((request) async => ok({
+          'listingId': listing,
+          'fromWarehouseId': warehouse,
+          'toWarehouseId': destination,
+          'quantity': '2.5',
+        }, status: 201)));
+    await service.transfer(
+      supplierId: supplier,
+      listingId: listing,
+      fromWarehouseId: warehouse,
+      toWarehouseId: destination,
+      quantity: '2.500',
+      expectedFromVersion: 7,
+      expectedToVersion: 0,
+      reason: 'Move bags between yards',
+      intent: supplierInventoryIntent(),
+    );
+  });
+
   test(
     'warehouse create is inactive and unknown responses fail closed',
     () async {
