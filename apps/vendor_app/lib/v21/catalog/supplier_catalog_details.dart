@@ -186,6 +186,8 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
           item('Minimum order', listing.minOrderQty),
           item('Quantity step', listing.stepQty),
           item('Maximum order', listing.maxOrderQty ?? 'Not set'),
+          if (listing.mrpPaise != null)
+            item('MRP (₹)', '₹${catalogRupeesFromPaise(listing.mrpPaise!)}'),
           item('GST rate', '${listing.taxRateBps} bps'),
           item('Tax includes', listing.taxInclusive ? 'Yes' : 'No'),
           item(
