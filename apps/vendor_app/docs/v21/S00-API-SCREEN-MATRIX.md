@@ -1,12 +1,12 @@
 # BuildTo Supplier Flutter — S00 screen × V2.1 API contract map
 
-**Canonical API:** `backend/v21/openapi.json` 0.24.0; **49 existing operations / 10 groups** enumerated in machine-readable `apps/vendor_app/tool/v21_supplier_contract.json`.
+**Canonical API:** `backend/v21/openapi.json` 0.24.0; **50 existing operations / 10 groups** enumerated in machine-readable `apps/vendor_app/tool/v21_supplier_contract.json`.
 **Interpretation:** these are verified backend API **shapes**, not claims the current Flutter app already calls them. Client implementation is S01–S12. Descriptions are constrained to what current backend docs/routes support.
 
 | Supplier UI / PR | Required API groups and representative exact routes | Client state, restriction and validation |
 | --- | --- | --- |
 | Sign-in, supplier selector (S02) | `GET /api/v2/me`, `GET /api/v2/suppliers/{supplierId}/access` | Server-confirmed supplier memberships only; no JWT role, guessed supplier ID or unknown approval default. Cleared when identity/member changes. |
-| Application + progress (S03) | `POST /api/v2/supplier-applications`, `GET /api/v2/me/supplier-applications` | Customer identity may apply; pending membership grants **no** supplier write access. Distinguish pending, under review, approved, rejected, suspended. |
+| Application + progress (S03) | `POST /api/v2/supplier-applications`, `GET /api/v2/me/supplier-applications`, `GET /api/v2/me/supplier-applications/{supplierId}` | Customer identity may apply; pending membership grants **no** supplier write access. Distinguish pending, under review, approved, rejected, suspended. |
 | Evidence checklist (S03) | `POST /api/v2/supplier-applications/{supplierId}/documents` | Links **existing private media**, not an upload. Keep upload disabled until secure backend storage and reader is designed/tested. |
 | Dashboard (S04) | Composite of supplier-scoped orders, inventory, RFQs, finance reads | No authoritative aggregate endpoint assumed; derive only labeled snapshots without currency arithmetic using float. |
 | Material catalog + listing (S05) | `GET /api/v2/catalog/categories`, `GET /api/v2/catalog/products`, `GET /api/v2/suppliers/{supplierId}/listings`, `POST .../listings`, `PATCH .../listings/{listingId}`, `POST .../submit`, `PUT .../price-tiers` | Public product masters are **not** supplier listings. Supplier edits require version preconditions; submit requires backend moderation; use exact tier/quantity strings. |
