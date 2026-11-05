@@ -136,14 +136,14 @@ void main() {
         field('Registered legal name'), 'Materials Hub Pvt Ltd');
     await tester.enterText(field('Supplier display name'), 'Materials Hub');
     await tester.enterText(field('Unique business slug'), 'materials-hub');
-    await tester.testTextInput.hide();
+    tester.testTextInput.hide();
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('GST & contact'), findsOneWidget);
     await tester.enterText(field('15-character GSTIN'), '36ABCDE1234F1Z5');
-    await tester.testTextInput.hide();
+    tester.testTextInput.hide();
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
@@ -154,13 +154,13 @@ void main() {
     await tester.enterText(field('City'), 'Hyderabad');
     await tester.enterText(field('State'), 'Telangana');
     await tester.enterText(field('6-digit PIN'), '500001');
-    await tester.testTextInput.hide();
+    tester.testTextInput.hide();
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Review & submit'), findsOneWidget);
-    await tester.testTextInput.hide();
+    tester.testTextInput.hide();
     await tester.ensureVisible(find.text('Submit application'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Submit application'));
@@ -177,8 +177,10 @@ void main() {
     final clerk = ClerkFixture();
     final backend = MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
-         return http.Response('{"data":{"id":"applicant","displayName":"Applicant","suppliers":[]}}', 200);
-       }
+        return http.Response(
+            '{"data":{"id":"applicant","displayName":"Applicant","suppliers":[]}}',
+            200);
+      }
       return http.Response('{"data":[]}', 200);
     });
     final controller = SupplierAuthController(
