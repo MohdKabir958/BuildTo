@@ -11,9 +11,7 @@ void main() {
         () =>
             SupplierV21Config.parseOrigin('http://example.com', release: true),
         throwsStateError);
-    expect(
-        () => SupplierV21Config.parseOrigin('***example.com',
-            release: true),
+    expect(() => SupplierV21Config.parseOrigin('***example.com', release: true),
         throwsStateError);
     expect(
         () => SupplierV21Config.parseOrigin('https://example.com/api',
