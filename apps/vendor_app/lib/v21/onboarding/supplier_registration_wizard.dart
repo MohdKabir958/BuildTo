@@ -310,13 +310,13 @@ class _SupplierRegistrationWizardState
                   ? null
                   : () {
                       if (step == 0) {
-                         widget.cancel();
-                       } else {
-                         setState(() {
-                           step--;
-                           error = null;
-                         });
-                       }
+                        widget.cancel();
+                      } else {
+                        setState(() {
+                          step--;
+                          error = null;
+                        });
+                      }
                     },
               child: Text(step == 0 ? 'Cancel' : 'Back'),
             )),
