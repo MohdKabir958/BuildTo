@@ -6,8 +6,16 @@ import '../api/supplier_v21_models.dart';
 import 'supplier_clerk_port.dart';
 
 enum SupplierAccessStage {
-  starting, signedOut, checking, chooseSupplier, authorized, noSupplier,
-  accessDenied, sessionExpired, unavailable, misconfigured,
+  starting,
+  signedOut,
+  checking,
+  chooseSupplier,
+  authorized,
+  noSupplier,
+  accessDenied,
+  sessionExpired,
+  unavailable,
+  misconfigured,
 }
 
 /// Server memberships are the sole source of business access. Every identity
@@ -17,7 +25,8 @@ class SupplierAuthController extends ChangeNotifier {
   SupplierAuthController({
     required SupplierClerkPort clerk,
     required SupplierV21Api api,
-  }) : _clerk = clerk, _api = api {
+  })  : _clerk = clerk,
+        _api = api {
     _clerk.identity.addListener(_onNativeIdentity);
   }
 
@@ -43,8 +52,11 @@ class SupplierAuthController extends ChangeNotifier {
   String? get signedInEmail => _clerk.identity.value.email;
 
   bool _current(int generation, String? fingerprint) =>
-      !_disposed && !_locallyBlocked && generation == _generation &&
-      fingerprint != null && _fingerprint == fingerprint;
+      !_disposed &&
+      !_locallyBlocked &&
+      generation == _generation &&
+      fingerprint != null &&
+      _fingerprint == fingerprint;
 
   void _publish() {
     if (!_disposed) notifyListeners();
@@ -70,7 +82,8 @@ class SupplierAuthController extends ChangeNotifier {
     } catch (_) {
       if (_disposed) return;
       _stage = SupplierAccessStage.misconfigured;
-      _notice = 'Native Clerk sign-in is unavailable. Check Android staging setup.';
+      _notice =
+          'Native Clerk sign-in is unavailable. Check Android staging setup.';
       _publish();
     }
   }
@@ -101,7 +114,8 @@ class SupplierAuthController extends ChangeNotifier {
   }
 
   static bool _validNativeIdentity(ClerkIdentity identity) =>
-      identity.ready && identity.signedIn &&
+      identity.ready &&
+      identity.signedIn &&
       RegExp(r'^user_[A-Za-z0-9]{6,150}$').hasMatch(identity.userId ?? '') &&
       RegExp(r'^sess_[A-Za-z0-9]{6,150}$').hasMatch(identity.sessionId ?? '');
 
@@ -131,7 +145,8 @@ class SupplierAuthController extends ChangeNotifier {
       final matching = account.suppliers
           .where((member) => member.supplierId == previouslySelected);
       final desired = matching.isEmpty ? null : matching.first;
-      final single = account.suppliers.length == 1 ? account.suppliers.first : null;
+      final single =
+          account.suppliers.length == 1 ? account.suppliers.first : null;
       final target = desired ?? single;
       if (target == null) {
         _selectedId = null;
@@ -159,8 +174,12 @@ class SupplierAuthController extends ChangeNotifier {
 
   /// Explicit switch: clear old access before checking selected membership.
   Future<void> selectSupplier(String supplierId) async {
-    if (_disposed || _locallyBlocked || _fingerprint == null || _account == null) return;
-    final choices = _account!.suppliers.where((item) => item.supplierId == supplierId);
+    if (_disposed ||
+        _locallyBlocked ||
+        _fingerprint == null ||
+        _account == null) return;
+    final choices =
+        _account!.suppliers.where((item) => item.supplierId == supplierId);
     if (choices.length != 1) {
       _selectedId = null;
       _activeSupplier = null;
@@ -195,14 +214,16 @@ class SupplierAuthController extends ChangeNotifier {
     }
   }
 
-  Future<void> _verifySupplier(
-      SupplierV21Membership candidate, int generation, String? fingerprint) async {
-    final route = '/api/v2/suppliers/' + candidate.supplierId + '/access';
+  Future<void> _verifySupplier(SupplierV21Membership candidate, int generation,
+      String? fingerprint) async {
+    final route = '/api/v2/suppliers/${candidate.supplierId}/access';
     final result = await _api.get(route);
     final verified = SupplierV21Membership.fromJson(result.requireObject());
     if (!_current(generation, fingerprint)) return;
-    if (verified.supplierId != candidate.supplierId || verified.role != candidate.role) {
-      throw const FormatException('Supplier membership changed during verification');
+    if (verified.supplierId != candidate.supplierId ||
+        verified.role != candidate.role) {
+      throw const FormatException(
+          'Supplier membership changed during verification');
     }
     _selectedId = verified.supplierId;
     _activeSupplier = verified;
@@ -212,8 +233,10 @@ class SupplierAuthController extends ChangeNotifier {
   }
 
   void showSupplierChooser() {
-    if (_disposed || _stage != SupplierAccessStage.authorized ||
-        _account == null || _account!.suppliers.length < 2) return;
+    if (_disposed ||
+        _stage != SupplierAccessStage.authorized ||
+        _account == null ||
+        _account!.suppliers.length < 2) { return; }
     _generation++;
     _activeSupplier = null;
     _selectedId = null;
@@ -225,14 +248,17 @@ class SupplierAuthController extends ChangeNotifier {
     _activeSupplier = null;
     _stage = switch (error.problem) {
       SupplierV21Problem.authentication => SupplierAccessStage.sessionExpired,
-      SupplierV21Problem.forbidden || SupplierV21Problem.notFound =>
+      SupplierV21Problem.forbidden ||
+      SupplierV21Problem.notFound =>
         SupplierAccessStage.accessDenied,
       SupplierV21Problem.configuration => SupplierAccessStage.misconfigured,
       _ => SupplierAccessStage.unavailable,
     };
     _notice = switch (_stage) {
-      SupplierAccessStage.sessionExpired => 'Your Clerk session expired. Sign in again.',
-      SupplierAccessStage.accessDenied => 'This account does not currently have access to that supplier.',
+      SupplierAccessStage.sessionExpired =>
+        'Your Clerk session expired. Sign in again.',
+      SupplierAccessStage.accessDenied =>
+        'This account does not currently have access to that supplier.',
       SupplierAccessStage.misconfigured => 'BuildTo staging is not configured.',
       _ => 'Secure account verification is unavailable. Please retry.',
     };
@@ -253,7 +279,8 @@ class SupplierAuthController extends ChangeNotifier {
       } else {
         final prior = _fingerprint;
         _onNativeIdentity();
-        if (prior != null && prior == _fingerprint &&
+        if (prior != null &&
+            prior == _fingerprint &&
             _stage != SupplierAccessStage.checking &&
             _stage != SupplierAccessStage.authorized) {
           // Native SDK may reuse the same session after reauthentication.
@@ -262,7 +289,9 @@ class SupplierAuthController extends ChangeNotifier {
         }
       }
     } catch (_) {
-      if (!_disposed) _notice = 'Secure sign-in is unavailable. Please try again.';
+      if (!_disposed) {
+        _notice = 'Secure sign-in is unavailable. Please try again.';
+      }
     } finally {
       _busy = false;
       _publish();
@@ -286,7 +315,8 @@ class SupplierAuthController extends ChangeNotifier {
       }
     } catch (_) {
       if (!_disposed) {
-        _notice = 'Access is hidden here. Native sign-out could not be confirmed; retry or close the app.';
+        _notice =
+            'Access is hidden here. Native sign-out could not be confirmed; retry or close the app.';
       }
     } finally {
       _busy = false;
