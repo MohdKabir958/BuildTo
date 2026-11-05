@@ -33,13 +33,15 @@ class SupplierApplicationsApi {
     return result;
   }
 
-  Future<SupplierApplicationSummary> submit(SupplierRegistrationDraft draft) async {
+  Future<SupplierApplicationSummary> submit(
+      SupplierRegistrationDraft draft) async {
     final response = await client.request(
       'POST',
       '/api/v2/supplier-applications',
       body: draft.toJson(),
     );
-    final result = SupplierApplicationSummary.fromJson(response.requireObject());
+    final result =
+        SupplierApplicationSummary.fromJson(response.requireObject());
     // Never trust a client side success message if the backend did not create
     // the expected pending application.
     if (result.approval != SupplierApplicationStatus.pending) {
