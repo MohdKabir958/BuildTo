@@ -64,7 +64,7 @@ void main() {
       ))),
     ));
     expect(find.text('Approval pending'), findsOneWidget);
-    expect(BuildToPalette.navy, const Color(0xFF062553));
+    expect(BuildToPalette.navy, const Color(0xFF002B5B));
     expect(tester.takeException(), isNull);
   });
 
