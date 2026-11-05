@@ -130,24 +130,26 @@ void main() {
     await tester.tap(find.text('Start supplier application'));
     await tester.pumpAndSettle();
     expect(find.text('Your business'), findsOneWidget);
+    Finder field(String label) =>
+        find.byKey(ValueKey('supplier-registration-$label'));
     await tester.enterText(
-        find.byType(TextFormField).at(0), 'Materials Hub Pvt Ltd');
-    await tester.enterText(find.byType(TextFormField).at(1), 'Materials Hub');
-    await tester.enterText(find.byType(TextFormField).at(2), 'materials-hub');
+        field('Registered legal name'), 'Materials Hub Pvt Ltd');
+    await tester.enterText(field('Supplier display name'), 'Materials Hub');
+    await tester.enterText(field('Unique business slug'), 'materials-hub');
     await tester.ensureVisible(find.text('Continue'));
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('GST & contact'), findsOneWidget);
-    await tester.enterText(find.byType(TextFormField).first, '36ABCDE1234F1Z5');
+    await tester.enterText(field('15-character GSTIN'), '36ABCDE1234F1Z5');
     await tester.ensureVisible(find.text('Continue'));
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Billing address'), findsOneWidget);
     await tester.enterText(
-        find.byType(TextFormField).at(0), 'Industrial Estate Road 12');
-    await tester.enterText(find.byType(TextFormField).at(2), 'Hyderabad');
-    await tester.enterText(find.byType(TextFormField).at(3), 'Telangana');
-    await tester.enterText(find.byType(TextFormField).at(4), '500001');
+        field('Billing address line 1'), 'Industrial Estate Road 12');
+    await tester.enterText(field('City'), 'Hyderabad');
+    await tester.enterText(field('State'), 'Telangana');
+    await tester.enterText(field('6-digit PIN'), '500001');
     await tester.ensureVisible(find.text('Continue'));
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
