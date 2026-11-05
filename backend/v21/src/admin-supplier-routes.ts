@@ -2,7 +2,7 @@ import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {
- submitSupplierApplication,ownSupplierApplications,attachSupplierDocument,
+ submitSupplierApplication,ownSupplierApplications,ownSupplierApplicationDetail,attachSupplierDocument,
  adminSupplierQueue,adminSupplierDetail,reviewSupplierDocument,reviewSupplierApplication
 } from './admin-supplier-service';
 
@@ -26,6 +26,8 @@ const query=(req:Request)=>{
 export function registerAdminSupplierApplications(app:Express,db:PrismaClient,auth:RequestHandler){
  app.post('/api/v2/supplier-applications',auth,safe((req,res)=>submitSupplierApplication(db,actor(res),req.body),true));
  app.get('/api/v2/me/supplier-applications',auth,safe((_req,res)=>ownSupplierApplications(db,actor(res))));
+ app.get('/api/v2/me/supplier-applications/:supplierId',auth,safe((req,res)=>
+  ownSupplierApplicationDetail(db,actor(res),req.params.supplierId)));
  app.post('/api/v2/supplier-applications/:supplierId/documents',auth,safe((req,res)=>
   attachSupplierDocument(db,actor(res),req.params.supplierId,req.body),true));
  const admin='/api/v2/admin/suppliers';
