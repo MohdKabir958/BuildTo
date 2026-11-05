@@ -170,8 +170,8 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
           Icons.local_shipping_outlined,
           BuildToPalette.blue),
       _OverviewMetric(
-          'Published listings',
-          'Visible materials',
+          'Approved listings',
+          'Active materials',
           data.publishedListings,
           Icons.inventory_2_outlined,
           BuildToPalette.success),
