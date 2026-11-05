@@ -201,7 +201,9 @@ void main() {
     final controller = makeController(clerk, MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
         reads++;
-        if (reads == 1) { return await delayed.future; }
+        if (reads == 1) {
+          return await delayed.future;
+        }
         return me([]);
       }
       return access(idA, 'OWNER');
@@ -229,7 +231,9 @@ void main() {
     final pending = Completer<http.Response>();
     final controller = makeController(clerk, MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
-        if (revoked) { return await pending.future; }
+        if (revoked) {
+          return await pending.future;
+        }
         return me([member(idA, 'OWNER')]);
       }
       return access(idA, 'OWNER');
