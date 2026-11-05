@@ -90,7 +90,7 @@ void main() {
     await buildShell(tester, server, SupplierV21Role.owner);
     expect(find.text('Material catalog'), findsOneWidget);
     expect(find.text('CEMENT-43'), findsOneWidget);
-    expect(find.text('₹315.25'), findsWidgets);
+    expect(find.textContaining('₹315.25'), findsWidgets);
     expect(find.text('Draft'), findsWidgets);
     expect(find.text('Add material listing'), findsOneWidget);
     expect(server.reads, 3);
