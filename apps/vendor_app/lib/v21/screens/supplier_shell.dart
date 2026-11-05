@@ -41,8 +41,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                   narrow ? 12 : 20, 16, narrow ? 12 : 20, 10),
               child: const Row(children: [
                 Expanded(child: BuildToBrandMark(compact: true)),
-                const SizedBox(width: 8),
-                const BuildToStatusChip(
+                SizedBox(width: 8),
+                BuildToStatusChip(
                     label: 'Staging', status: BuildToStatus.pending),
               ]),
             ),
