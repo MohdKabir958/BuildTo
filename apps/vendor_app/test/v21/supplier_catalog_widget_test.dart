@@ -103,10 +103,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('CEMENT-43'),
       180,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('supplier-catalog-loaded')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('supplier-catalog-loaded')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
   }
@@ -151,10 +153,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.byTooltip('Refresh supplier listings'),
       -180,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('supplier-catalog-loaded')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('supplier-catalog-loaded')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Refresh supplier listings'));
