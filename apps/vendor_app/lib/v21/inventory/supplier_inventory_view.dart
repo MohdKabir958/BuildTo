@@ -180,7 +180,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                           );
                           if (dialog.mounted) Navigator.pop(dialog, true);
                         } catch (e) {
-                          if (dialog.mounted)
+                          if (dialog.mounted) {
                             change(() {
                               notice = e is SupplierV21Exception &&
                                       e.problem == SupplierV21Problem.network
@@ -188,6 +188,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                                   : 'Warehouse not saved. Check the code and permissions.';
                               busy = false;
                             });
+                          }
                         }
                       },
                 child: const Text('Create inactive'),
@@ -203,7 +204,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
     }
   }
 
-  Future<void> activate(SupplierWarehouse warehouse) async {
+  Future<void> _activateWarehouse(SupplierWarehouse warehouse) async {
     if (!widget.canWrite || warehouse.active) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -491,7 +492,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                         }
                         if (sheet.mounted) Navigator.pop(sheet, true);
                       } catch (e) {
-                        if (sheet.mounted)
+                        if (sheet.mounted) {
                           change(() {
                             notice = switch (e) {
                               SupplierV21Exception(
@@ -509,6 +510,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                             };
                             busy = false;
                           });
+                        }
                       }
                     },
                   ),
@@ -527,7 +529,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
+    if (loading) {
       return ListView(
         padding: const EdgeInsets.all(20),
         children: const [
@@ -538,7 +540,8 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
           BuildToSkeleton(),
         ],
       );
-    if (error != null)
+    }
+    if (error != null) {
       return ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -555,6 +558,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
             ),
         ],
       );
+    }
     return RefreshIndicator(
       onRefresh: refresh,
       child: ListView(
@@ -696,7 +700,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                       ),
                       if (widget.canWrite && !w.active)
                         TextButton(
-                          onPressed: () => unawaited(activate(w)),
+                          onPressed: () => unawaited(_activateWarehouse(w)),
                           child: const Text('Activate'),
                         ),
                     ],
