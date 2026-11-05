@@ -346,7 +346,8 @@ class _SupplierPicker extends StatelessWidget {
                       foregroundColor: BuildToPalette.navy,
                       child: Icon(Icons.factory_outlined),
                     ),
-                    title: Text('Supplier • ${member.supplierId.substring(member.supplierId.length - 8)}'),
+                    title: Text(
+                        'Supplier • ${member.supplierId.substring(member.supplierId.length - 8)}'),
                     subtitle: Text('Role: ${member.role.name.toUpperCase()}'),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: controller.busy
