@@ -177,7 +177,7 @@ class SupplierAuthController extends ChangeNotifier {
     if (_disposed ||
         _locallyBlocked ||
         _fingerprint == null ||
-        _account == null) return;
+        _account == null) { return; }
     final choices =
         _account!.suppliers.where((item) => item.supplierId == supplierId);
     if (choices.length != 1) {
