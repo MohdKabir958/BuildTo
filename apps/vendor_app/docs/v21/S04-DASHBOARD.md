@@ -6,7 +6,7 @@ BuildTo's approved supplier adaptation of the 16-screen customer PDF: dark navy 
 ## Source of truth — three or four real API reads
 Only after S02 has verified the current Clerk session and active approved supplier membership:
 - GET /api/v2/suppliers/{supplierId}/orders — up to 100 latest supplier-order rows. Compute **awaiting acceptance**, **in fulfillment** statuses and show up to five recent order statuses, no invented public number, fake financial amounts or client-approved orders.
-- GET /api/v2/suppliers/{supplierId}/listings — up to 100 latest non-deleted listings. Count only status APPROVED AND active as 'Published listings', not every draft.
+- GET /api/v2/suppliers/{supplierId}/listings — up to 100 latest non-deleted listings. Count only status APPROVED AND active as 'Approved listings', not every draft.
 - GET /api/v2/suppliers/{supplierId}/inventory/warehouses — up to 100 owned warehouses; count only active.
 - GET /api/v2/suppliers/{supplierId}/rfqs — only for OWNER, MANAGER, CATALOG roles that have RFQ_QUOTE, and only open current invitations. INVENTORY, FULFILLMENT, FINANCE and VIEWER never send this permission-restricted request. An unavailable RFQ section is hidden, **not** shown as zero.
 
