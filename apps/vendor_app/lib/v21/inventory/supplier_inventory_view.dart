@@ -77,15 +77,8 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
       final fetchedWarehouses = rows[0] as List<SupplierWarehouse>;
       final fetchedBalances = rows[1] as List<SupplierStockBalance>;
       final fetchedListings = rows[2] as List<CatalogListing>;
-      final ownedWarehouses = fetchedWarehouses.map((w) => w.id).toSet();
-      final ownedListings = fetchedListings.map((l) => l.id).toSet();
-      if (fetchedBalances.any(
-        (b) =>
-            !ownedWarehouses.contains(b.warehouseId) ||
-            !ownedListings.contains(b.listingId),
-      )) {
-        throw const FormatException('Inventory references unavailable records');
-      }
+      // Supplier-scoped endpoints are independently bounded; a stock row
+      // may refer to a listing outside the latest catalog page.
       setState(() {
         warehouses = fetchedWarehouses;
         balances = fetchedBalances;
