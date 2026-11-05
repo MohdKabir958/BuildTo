@@ -75,6 +75,16 @@ void main() {
     expect(input.toJson()['taxRateBps'], 1800);
   });
 
+  test('rupee MRP entry preserves exact integer paise in both directions', () {
+    expect(catalogPaiseFromRupees('399'), '39900');
+    expect(catalogPaiseFromRupees('399.12'), '39912');
+    expect(catalogRupeesFromPaise('39912'), '399.12');
+    expect(catalogRupeesFromPaise('39900'), '399.00');
+    for (final bad in ['-1', '1e5', '19.999', '01.2', '₹399']) {
+      expect(() => catalogPaiseFromRupees(bad), throwsFormatException);
+    }
+  });
+
   test('tier quantities and discounts are ordered without floating-point math',
       () {
     validateCatalogTiers([
