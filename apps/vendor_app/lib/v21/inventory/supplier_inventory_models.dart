@@ -135,9 +135,9 @@ class SupplierStockMovement {
       'ADJUSTMENT',
       'TRANSFER_IN',
       'TRANSFER_OUT',
-      'RESERVATION',
-      'COMMIT',
-      'RELEASE',
+      'SALE',
+      'RESERVATION_RELEASE',
+      'RETURN',
     }.contains(kind)) {
       throw const FormatException('Unknown stock movement');
     }
