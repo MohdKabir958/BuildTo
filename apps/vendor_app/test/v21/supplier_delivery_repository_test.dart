@@ -26,26 +26,43 @@ void main() {
     final service = repository(MockClient((request) async {
       expect(request.headers['Authorization'], 'Bearer clerk-delivery-token');
       if (request.url.path.endsWith('/cities')) {
-        return ok([{
-          'id': city, 'name': 'Hyderabad',
-          'stateCode': 'TS', 'countryCode': 'IN',
-        }]);
+        return ok([
+          {
+            'id': city,
+            'name': 'Hyderabad',
+            'stateCode': 'TS',
+            'countryCode': 'IN',
+          }
+        ]);
       }
       if (request.url.path.endsWith('/areas')) {
         expect(request.url.queryParameters, {'cityId': city});
-        return ok([{
-          'id': area, 'cityId': city,
-          'name': 'West Hyderabad', 'postalCodes': ['500001', '500002'],
-        }]);
+        return ok([
+          {
+            'id': area,
+            'cityId': city,
+            'name': 'West Hyderabad',
+            'postalCodes': ['500001', '500002'],
+          }
+        ]);
       }
-      return ok([{
-        'areaId': area, 'areaName': 'West Hyderabad', 'cityId': city,
-        'active': true, 'minimumPaise': '50000',
-        'rates': [{
-          'id': rate, 'baseFeePaise': '10000',
-          'handlingFeePaise': '2500', 'freeAbovePaise': null,
-        }],
-      }]);
+      return ok([
+        {
+          'areaId': area,
+          'areaName': 'West Hyderabad',
+          'cityId': city,
+          'active': true,
+          'minimumPaise': '50000',
+          'rates': [
+            {
+              'id': rate,
+              'baseFeePaise': '10000',
+              'handlingFeePaise': '2500',
+              'freeAbovePaise': null,
+            }
+          ],
+        }
+      ]);
     }));
     expect((await service.cities()).single.name, 'Hyderabad');
     expect((await service.areas(city)).single.pins.length, 2);
@@ -58,25 +75,35 @@ void main() {
     expect(deliveryRupeesToPaise('399.12'), '39912');
     expect(() => deliveryRupeesToPaise('20.001'), throwsFormatException);
     expect(() => deliveryPaise('999999999999'), throwsFormatException);
-    expect(() => SupplierArea.parse({
-      'id': area, 'cityId': supplier, 'name': 'Foreign',
-      'postalCodes': ['500001'],
-    }, city), throwsFormatException);
+    expect(
+        () => SupplierArea.parse({
+              'id': area,
+              'cityId': supplier,
+              'name': 'Foreign',
+              'postalCodes': ['500001'],
+            }, city),
+        throwsFormatException);
   });
 
   test('coverage toggles send server-owned area and exact minimum', () async {
     final service = repository(MockClient((request) async {
       expect(request.method, 'PUT');
-      expect(request.url.path,
-          '/api/v2/suppliers/$supplier/delivery/areas/$area');
+      expect(
+          request.url.path, '/api/v2/suppliers/$supplier/delivery/areas/$area');
       final body = jsonDecode(request.body);
       expect(body, {'active': true, 'minimumPaise': '10000'});
-      return ok({'supplierId': supplier, 'areaId': area,
-          'active': true, 'minimumPaise': '10000'});
+      return ok({
+        'supplierId': supplier,
+        'areaId': area,
+        'active': true,
+        'minimumPaise': '10000'
+      });
     }));
     await service.setCoverage(
-        supplierId: supplier, areaId: area,
-        active: true, minimumPaise: '10000');
+        supplierId: supplier,
+        areaId: area,
+        active: true,
+        minimumPaise: '10000');
   });
 
   test('flat freight uses exact paise and checks confirmation', () async {
@@ -87,28 +114,47 @@ void main() {
       expect(body['baseFeePaise'], '12500');
       expect(body['handlingFeePaise'], '300');
       return ok({
-        'id': rate, 'supplierId': supplier, 'areaId': area,
-        'active': true, 'baseFeePaise': '12500',
-        'handlingFeePaise': '300', 'freeAbovePaise': null,
+        'id': rate,
+        'supplierId': supplier,
+        'areaId': area,
+        'active': true,
+        'baseFeePaise': '12500',
+        'handlingFeePaise': '300',
+        'freeAbovePaise': null,
       });
     }));
     final result = await service.configureFlatRate(
-      supplierId: supplier, areaId: area,
-      baseFeePaise: '12500', handlingFeePaise: '300',
+      supplierId: supplier,
+      areaId: area,
+      baseFeePaise: '12500',
+      handlingFeePaise: '300',
     );
     expect(result.basePaise, '12500');
   });
 
   test('rejects malformed overlaid rates and unexpected supplier data', () {
-    expect(() => SupplierCoverage.parse({
-      'areaId': area, 'cityId': city, 'areaName': 'A',
-      'active': true, 'minimumPaise': '0',
-      'rates': [
-        {'id': rate, 'baseFeePaise': '0',
-         'handlingFeePaise': '0', 'freeAbovePaise': null},
-        {'id': city, 'baseFeePaise': '0',
-         'handlingFeePaise': '0', 'freeAbovePaise': null},
-      ],
-    }), throwsFormatException);
+    expect(
+        () => SupplierCoverage.parse({
+              'areaId': area,
+              'cityId': city,
+              'areaName': 'A',
+              'active': true,
+              'minimumPaise': '0',
+              'rates': [
+                {
+                  'id': rate,
+                  'baseFeePaise': '0',
+                  'handlingFeePaise': '0',
+                  'freeAbovePaise': null
+                },
+                {
+                  'id': city,
+                  'baseFeePaise': '0',
+                  'handlingFeePaise': '0',
+                  'freeAbovePaise': null
+                },
+              ],
+            }),
+        throwsFormatException);
   });
 }

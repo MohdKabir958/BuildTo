@@ -13,15 +13,17 @@ class SupplierDeliveryRepository {
 
   Future<List<SupplierCity>> cities() async {
     final result = await client.get('/api/v2/delivery/cities');
-    return deliveryRows(result.data, SupplierCity.parse,
-        (SupplierCity city) => city.id, max: 300);
+    return deliveryRows(
+        result.data, SupplierCity.parse, (SupplierCity city) => city.id,
+        max: 300);
   }
 
   Future<List<SupplierArea>> areas(String cityId) async {
     final validCity = catalogId(cityId);
-    final result = await client.get('/api/v2/delivery/areas',
-        query: {'cityId': validCity});
-    return deliveryRows(result.data,
+    final result = await client
+        .get('/api/v2/delivery/areas', query: {'cityId': validCity});
+    return deliveryRows(
+        result.data,
         (raw) => SupplierArea.parse(raw, validCity),
         (SupplierArea area) => area.id);
   }
@@ -65,8 +67,8 @@ class SupplierDeliveryRepository {
       throw const FormatException('Delivery fee exceeds supported limit');
     }
     if (freeAbovePaise != null) deliveryPaise(freeAbovePaise);
-    final response = await client.request('PUT',
-        '${_scope(supplierId)}/areas/${catalogId(areaId)}/flat-rate',
+    final response = await client.request(
+        'PUT', '${_scope(supplierId)}/areas/${catalogId(areaId)}/flat-rate',
         body: {
           'baseFeePaise': baseFeePaise,
           'handlingFeePaise': handlingFeePaise,

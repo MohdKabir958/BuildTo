@@ -4,7 +4,8 @@ final _pin = RegExp(r'^[1-9][0-9]{5}$');
 final _paise = RegExp(r'^(?:0|[1-9][0-9]{0,11})$');
 
 String deliveryPaise(Object? value) {
-  if (value is! String || !_paise.hasMatch(value) ||
+  if (value is! String ||
+      !_paise.hasMatch(value) ||
       BigInt.parse(value) > BigInt.from(100000000000)) {
     throw const FormatException('Invalid delivery amount in paise');
   }
@@ -19,8 +20,9 @@ String deliveryRupeesToPaise(String rupees) {
 String deliveryMoney(String paise) =>
     '₹${catalogRupeesFromPaise(deliveryPaise(paise))}';
 
-List<T> deliveryRows<T>(Object? raw, T Function(Object?) parse,
-    String Function(T) identity, {int max = 100}) {
+List<T> deliveryRows<T>(
+    Object? raw, T Function(Object?) parse, String Function(T) identity,
+    {int max = 100}) {
   if (raw is! List<dynamic> || raw.length > max) {
     throw const FormatException('Invalid bounded delivery data');
   }
@@ -38,12 +40,11 @@ class SupplierCity {
   factory SupplierCity.parse(Object? raw) {
     final data = catalogObject(raw);
     final state = catalogString(data['stateCode'], max: 2);
-    if (!RegExp(r'^[A-Z]{2}$').hasMatch(state) ||
-        data['countryCode'] != 'IN') {
+    if (!RegExp(r'^[A-Z]{2}$').hasMatch(state) || data['countryCode'] != 'IN') {
       throw const FormatException('Invalid Indian delivery city');
     }
-    return SupplierCity(catalogId(data['id']),
-        catalogString(data['name'], max: 120), state);
+    return SupplierCity(
+        catalogId(data['id']), catalogString(data['name'], max: 120), state);
   }
 }
 
@@ -58,7 +59,9 @@ class SupplierArea {
       throw const FormatException('Foreign delivery city area');
     }
     final pins = data['postalCodes'];
-    if (pins is! List<dynamic> || pins.isEmpty || pins.length > 100 ||
+    if (pins is! List<dynamic> ||
+        pins.isEmpty ||
+        pins.length > 100 ||
         pins.any((pin) => pin is! String || !_pin.hasMatch(pin))) {
       throw const FormatException('Invalid delivery PIN coverage');
     }
@@ -67,8 +70,7 @@ class SupplierArea {
       throw const FormatException('Duplicate area PIN codes');
     }
     return SupplierArea(catalogId(data['id']), cityId,
-        catalogString(data['name'], max: 150),
-        List.unmodifiable(normalized));
+        catalogString(data['name'], max: 150), List.unmodifiable(normalized));
   }
 }
 
@@ -88,8 +90,9 @@ class SupplierFlatRate {
       id: catalogId(data['id']),
       basePaise: deliveryPaise(data['baseFeePaise']),
       handlingPaise: deliveryPaise(data['handlingFeePaise']),
-      freeAbovePaise: data['freeAbovePaise'] == null ? null :
-          deliveryPaise(data['freeAbovePaise']),
+      freeAbovePaise: data['freeAbovePaise'] == null
+          ? null
+          : deliveryPaise(data['freeAbovePaise']),
     );
   }
 }
@@ -113,7 +116,8 @@ class SupplierCoverage {
       throw const FormatException('Invalid supplier delivery state');
     }
     final rates = deliveryRows(data['rates'], SupplierFlatRate.parse,
-        (SupplierFlatRate rate) => rate.id, max: 1);
+        (SupplierFlatRate rate) => rate.id,
+        max: 1);
     return SupplierCoverage(
       areaId: catalogId(data['areaId']),
       areaName: catalogString(data['areaName'], max: 150),
