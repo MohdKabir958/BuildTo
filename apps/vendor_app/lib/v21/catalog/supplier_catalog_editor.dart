@@ -230,7 +230,9 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       TextEditingController(text: widget.original?.maxOrderQty ?? '');
   late final price =
       TextEditingController(text: widget.original?.unitPrice ?? '');
-  late final mrp = TextEditingController(text: widget.original?.mrpPaise ?? '');
+  late final mrp = TextEditingController(
+      text: widget.original?.mrpPaise == null
+          ? '' : catalogRupeesFromPaise(widget.original!.mrpPaise!));
   late final taxBps = TextEditingController(
       text: (widget.original?.taxRateBps ?? 1800).toString());
   CatalogProduct? product;
@@ -344,7 +346,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
         stepQty: step.text.trim(),
         maxOrderQty: maximum.text.trim().isEmpty ? null : maximum.text.trim(),
         unitPrice: price.text.trim(),
-        mrpPaise: mrp.text.trim().isEmpty ? null : mrp.text.trim(),
+        mrpPaise: mrp.text.trim().isEmpty ? null : catalogPaiseFromRupees(mrp.text),
         taxRateBps: int.parse(taxBps.text.trim()),
         taxInclusive: inclusive,
       );
@@ -521,12 +523,14 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                   subtitle: 'Precise INR values — not rounded or estimated.'),
               const SizedBox(height: 14),
               _field('Unit price (₹)', price, validator: _price),
-              _field('MRP (paise)', mrp, optional: true, validator: (v) {
+              _field('MRP (₹)', mrp, optional: true, validator: (v) {
                 if ((v ?? '').trim().isEmpty) return null;
-                if (!RegExp(r'^(?:0|[1-9][0-9]{0,18})$').hasMatch(v!.trim())) {
-                  return 'Enter integer paise, without a currency symbol.';
+                try {
+                  catalogPaiseFromRupees(v!.trim());
+                  return null;
+                } on FormatException {
+                  return 'Enter rupees up to 2 decimal places.';
                 }
-                return null;
               }),
               _field('Tax rate (basis points)', taxBps, validator: (v) {
                 final n = int.tryParse((v ?? '').trim());
