@@ -181,7 +181,7 @@ void main() {
   testWidgets('verified shell switches to Orders tab via dashboard hero CTA',
       (tester) async {
     final backend = TestDashboard();
-    final membership = const SupplierV21Membership(
+    const membership = SupplierV21Membership(
       supplierId: supplier,
       role: SupplierV21Role.viewer,
     );
