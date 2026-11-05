@@ -114,9 +114,9 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.canQuote) {
-      return const ListView(
-        padding: EdgeInsets.all(20),
-        children: [
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: const [
           BuildToStatePanel(
             title: 'RFQ access restricted',
             message:
