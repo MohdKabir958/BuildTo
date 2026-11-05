@@ -1,0 +1,85 @@
+name: BuildTo Supplier S02 Clerk and permissions
+on:
+  pull_request:
+    paths:
+      - 'apps/vendor_app/lib/v21/**'
+      - 'apps/vendor_app/lib/main.dart'
+      - 'apps/vendor_app/test/v21/**'
+      - 'apps/vendor_app/docs/v21/S02-CLERK-ACCESS.md'
+      - 'apps/vendor_app/android/app/src/main/AndroidManifest.xml'
+      - 'packages/grozo_clerk/android/src/main/kotlin/com/grozo/clerk/GrozoClerkAuthActivity.kt'
+      - '.github/workflows/buildto-v21-supplier-s02.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-clerk-permissions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve locked Flutter packages
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Format S02 source for review (temporary)
+        working-directory: apps/vendor_app
+        run: dart format lib/v21 test/v21
+      - name: Capture S02 formatted source
+        working-directory: apps/vendor_app
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          for root in ('lib/v21','test/v21'):
+              for f in sorted(pathlib.Path(root).rglob('*.dart')):
+                  print('S02_FORMATTED_FILE '+str(f)+' '+json.dumps(f.read_text(),ensure_ascii=True))
+          PY
+      - name: Analyze supplier V2.1 source and tests
+        working-directory: apps/vendor_app
+        run: flutter analyze --no-pub lib/v21 test/v21
+      - name: Run Flutter session, permission, transport and UI tests
+        working-directory: apps/vendor_app
+        run: flutter test --no-pub --concurrency=2 test/v21
+      - name: Build staged supplier V2.1 bundle without legacy startup
+        working-directory: apps/vendor_app
+        run: |
+          flutter build bundle --debug --no-pub \
+            --dart-define=BUILDTO_SUPPLIER_V21=true \
+            --dart-define=AUTH_MODE=clerk-test \
+            --dart-define=BUILDTO_V21_API_BASE_URL=https://buildto-v21-staging.onrender.com
+
+  android-clerk-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve locked Flutter packages
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Compile branded native Clerk Android staging app
+        working-directory: apps/vendor_app
+        env:
+          GROZO_AUTH_MODE: clerk-test
+          GRADLE_OPTS: '-Dorg.gradle.project.disableFirebase=true'
+        run: |
+          export CLERK_PUBLISHABLE_KEY="pk_test_$(printf 'buildto-native-ci-fixture.clerk.accounts.dev$' | base64 -w0)"
+          flutter build apk --debug --no-pub \
+            --dart-define=BUILDTO_SUPPLIER_V21=true \
+            --dart-define=AUTH_MODE=clerk-test \
+            --dart-define=BUILDTO_V21_API_BASE_URL=https://buildto-v21-staging.onrender.com
