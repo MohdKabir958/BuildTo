@@ -67,9 +67,12 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
     });
     try {
       final data = await widget.repository.load(
-        supplierId: widget.supplierId, role: widget.role,
+        supplierId: widget.supplierId,
+        role: widget.role,
       );
-      if (!mounted || version != _version || data.supplierId != widget.supplierId) {
+      if (!mounted ||
+          version != _version ||
+          data.supplierId != widget.supplierId) {
         return;
       }
       setState(() {
@@ -91,9 +94,11 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
       return switch (error.problem) {
         SupplierV21Problem.authentication =>
           'Your Clerk session needs verification before loading business data.',
-        SupplierV21Problem.forbidden || SupplierV21Problem.notFound =>
+        SupplierV21Problem.forbidden ||
+        SupplierV21Problem.notFound =>
           'Your supplier access has changed. Recheck your active membership.',
-        SupplierV21Problem.network || SupplierV21Problem.rateLimited =>
+        SupplierV21Problem.network ||
+        SupplierV21Problem.rateLimited =>
           'Could not refresh business data. Check your connection and retry.',
         SupplierV21Problem.server =>
           'The BuildTo dashboard service is temporarily unavailable.',
@@ -110,9 +115,12 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
         key: const Key('supplier-dashboard-loading'),
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 36),
         children: const [
-          BuildToSkeleton(height: 160), SizedBox(height: 18),
-          BuildToSkeleton(height: 130), SizedBox(height: 12),
-          BuildToSkeleton(height: 130), SizedBox(height: 16),
+          BuildToSkeleton(height: 160),
+          SizedBox(height: 18),
+          BuildToSkeleton(height: 130),
+          SizedBox(height: 12),
+          BuildToSkeleton(height: 130),
+          SizedBox(height: 16),
           BuildToSkeleton(height: 140),
         ],
       );
@@ -124,7 +132,8 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
         children: [
           const BuildToSectionHeading(
             title: 'Supplier overview',
-            subtitle: 'Protected business figures require current verification.',
+            subtitle:
+                'Protected business figures require current verification.',
           ),
           const SizedBox(height: 20),
           BuildToStatePanel(
@@ -148,17 +157,33 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
 
     final data = snapshot!;
     final metrics = <_OverviewMetric>[
-      _OverviewMetric('Awaiting acceptance', 'Recent new orders',
-        data.awaitingAcceptance, Icons.pending_actions_outlined, BuildToPalette.orange),
-      _OverviewMetric('In fulfillment', 'Active order queue',
-        data.inFulfillment, Icons.local_shipping_outlined, BuildToPalette.blue),
-      _OverviewMetric('Published listings', 'Visible materials',
-        data.publishedListings, Icons.inventory_2_outlined, BuildToPalette.success),
+      _OverviewMetric(
+          'Awaiting acceptance',
+          'Recent new orders',
+          data.awaitingAcceptance,
+          Icons.pending_actions_outlined,
+          BuildToPalette.orange),
+      _OverviewMetric(
+          'In fulfillment',
+          'Active order queue',
+          data.inFulfillment,
+          Icons.local_shipping_outlined,
+          BuildToPalette.blue),
+      _OverviewMetric(
+          'Published listings',
+          'Visible materials',
+          data.publishedListings,
+          Icons.inventory_2_outlined,
+          BuildToPalette.success),
       _OverviewMetric('Active warehouses', 'Stock locations',
-        data.activeWarehouses, Icons.warehouse_outlined, BuildToPalette.navy),
+          data.activeWarehouses, Icons.warehouse_outlined, BuildToPalette.navy),
       if (data.openInvitations != null)
-        _OverviewMetric('Open RFQ invites', 'Available requests',
-          data.openInvitations!, Icons.request_quote_outlined, BuildToPalette.blue),
+        _OverviewMetric(
+            'Open RFQ invites',
+            'Available requests',
+            data.openInvitations!,
+            Icons.request_quote_outlined,
+            BuildToPalette.blue),
     ];
     return RefreshIndicator(
       color: BuildToPalette.navy,
@@ -217,7 +242,8 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
           if (data.recentOrders.isEmpty)
             const BuildToStatePanel(
               title: 'No supplier orders yet',
-              message: 'When an order reaches this supplier, its real status will appear here.',
+              message:
+                  'When an order reaches this supplier, its real status will appear here.',
               icon: Icons.receipt_long_outlined,
             )
           else
@@ -242,8 +268,9 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
             const Icon(Icons.shield_outlined,
                 size: 16, color: BuildToPalette.success),
             const SizedBox(width: 7),
-            Expanded(child: Text('Clerk-secured scope · manual refresh',
-                style: Theme.of(context).textTheme.bodySmall)),
+            Expanded(
+                child: Text('Clerk-secured scope · manual refresh',
+                    style: Theme.of(context).textTheme.bodySmall)),
           ]),
         ],
       ),
@@ -262,66 +289,81 @@ class _OverviewMetric {
 
 class _DashboardHero extends StatelessWidget {
   const _DashboardHero({
-    required this.pending, required this.onOrders, required this.onRefresh,
+    required this.pending,
+    required this.onOrders,
+    required this.onRefresh,
   });
   final DashboardCount pending;
   final VoidCallback onOrders, onRefresh;
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(22, 23, 22, 21),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [
-          BuildToPalette.navyDeep, BuildToPalette.navy, Color(0xFF07528B),
-        ],
-        begin: Alignment.topLeft, end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(22),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Row(children: [
-        Icon(Icons.auto_graph_rounded, size: 19, color: BuildToPalette.orange),
-        SizedBox(width: 9),
-        Expanded(child: Text('BUILDTO • BUSINESS PULSE',
-          style: TextStyle(color: Colors.white, letterSpacing: 1,
-            fontWeight: FontWeight.w800, fontSize: 11),
-        )),
-      ]),
-      const SizedBox(height: 18),
-      const Text('Building business,\nmade easier.',
-        style: TextStyle(fontSize: 25, color: Colors.white,
-          height: 1.12, fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        '${pending.label} awaiting acceptance in your recent supplier orders',
-        style: const TextStyle(
-          color: Color(0xFFE6F2FF), fontSize: 13, height: 1.45),
-      ),
-      const SizedBox(height: 18),
-      Wrap(spacing: 10, runSpacing: 10, children: [
-        FilledButton.icon(
-          onPressed: onOrders,
-          style: FilledButton.styleFrom(
-            backgroundColor: BuildToPalette.orange,
-            foregroundColor: BuildToPalette.navyDeep,
+        padding: const EdgeInsets.fromLTRB(22, 23, 22, 21),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              BuildToPalette.navyDeep,
+              BuildToPalette.navy,
+              Color(0xFF07528B),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-          label: const Text('Review orders'),
+          borderRadius: BorderRadius.circular(22),
         ),
-        OutlinedButton.icon(
-          onPressed: onRefresh,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFF9BBDD9)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [
+            Icon(Icons.auto_graph_rounded,
+                size: 19, color: BuildToPalette.orange),
+            SizedBox(width: 9),
+            Expanded(
+                child: Text(
+              'BUILDTO • BUSINESS PULSE',
+              style: TextStyle(
+                  color: Colors.white,
+                  letterSpacing: 1,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11),
+            )),
+          ]),
+          const SizedBox(height: 18),
+          const Text(
+            'Building business,\nmade easier.',
+            style: TextStyle(
+                fontSize: 25,
+                color: Colors.white,
+                height: 1.12,
+                fontWeight: FontWeight.w800),
           ),
-          icon: const Icon(Icons.refresh_rounded, size: 18),
-          label: const Text('Refresh'),
-        ),
-      ]),
-    ]),
-  );
+          const SizedBox(height: 12),
+          Text(
+            '${pending.label} awaiting acceptance in your recent supplier orders',
+            style: const TextStyle(
+                color: Color(0xFFE6F2FF), fontSize: 13, height: 1.45),
+          ),
+          const SizedBox(height: 18),
+          Wrap(spacing: 10, runSpacing: 10, children: [
+            FilledButton.icon(
+              onPressed: onOrders,
+              style: FilledButton.styleFrom(
+                backgroundColor: BuildToPalette.orange,
+                foregroundColor: BuildToPalette.navyDeep,
+              ),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: const Text('Review orders'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF9BBDD9)),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Refresh'),
+            ),
+          ]),
+        ]),
+      );
 }
 
 class _MetricTile extends StatelessWidget {
@@ -330,32 +372,38 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BuildToCard(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 146),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 39, height: 39,
-          decoration: BoxDecoration(
-            color: metric.accent.withValues(alpha: .1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(metric.icon, color: metric.accent, size: 22),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 146),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 39,
+              height: 39,
+              decoration: BoxDecoration(
+                color: metric.accent.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(metric.icon, color: metric.accent, size: 22),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              metric.count.label,
+              key: Key('dashboard-metric-${metric.label}'),
+              style: const TextStyle(
+                  color: BuildToPalette.navyDeep,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  height: 1.0),
+            ),
+            const SizedBox(height: 9),
+            Text(metric.label,
+                maxLines: 2, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 3),
+            Text(metric.hint,
+                maxLines: 2, style: Theme.of(context).textTheme.bodySmall),
+          ]),
         ),
-        const SizedBox(height: 14),
-        Text(metric.count.label,
-          key: Key('dashboard-metric-${metric.label}'),
-          style: const TextStyle(color: BuildToPalette.navyDeep,
-            fontSize: 26, fontWeight: FontWeight.w900, height: 1.0),
-        ),
-        const SizedBox(height: 9),
-        Text(metric.label, maxLines: 2,
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 3),
-        Text(metric.hint, maxLines: 2,
-            style: Theme.of(context).textTheme.bodySmall),
-      ]),
-    ),
-  );
+      );
 }
 
 class _QuickActions extends StatelessWidget {
@@ -364,32 +412,38 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(children: [
-    _QuickActionTile(
-      title: 'Orders & fulfillment', subtitle: 'Order workspace',
-      icon: Icons.local_shipping_outlined,
-      action: () => onNavigate(DashboardDestination.orders)),
-    const SizedBox(height: 10),
-    _QuickActionTile(
-      title: 'Product catalog', subtitle: 'Materials & listing status',
-      icon: Icons.category_outlined,
-      action: () => onNavigate(DashboardDestination.catalog)),
-    const SizedBox(height: 10),
-    _QuickActionTile(
-      title: 'Warehouse stock', subtitle: 'Stock locations',
-      icon: Icons.warehouse_outlined,
-      action: () => onNavigate(DashboardDestination.stock)),
-    const SizedBox(height: 10),
-    _QuickActionTile(
-      title: 'Business & support', subtitle: 'Applications & account tools',
-      icon: Icons.business_center_outlined,
-      action: () => onNavigate(DashboardDestination.more)),
-  ]);
+        _QuickActionTile(
+            title: 'Orders & fulfillment',
+            subtitle: 'Order workspace',
+            icon: Icons.local_shipping_outlined,
+            action: () => onNavigate(DashboardDestination.orders)),
+        const SizedBox(height: 10),
+        _QuickActionTile(
+            title: 'Product catalog',
+            subtitle: 'Materials & listing status',
+            icon: Icons.category_outlined,
+            action: () => onNavigate(DashboardDestination.catalog)),
+        const SizedBox(height: 10),
+        _QuickActionTile(
+            title: 'Warehouse stock',
+            subtitle: 'Stock locations',
+            icon: Icons.warehouse_outlined,
+            action: () => onNavigate(DashboardDestination.stock)),
+        const SizedBox(height: 10),
+        _QuickActionTile(
+            title: 'Business & support',
+            subtitle: 'Applications & account tools',
+            icon: Icons.business_center_outlined,
+            action: () => onNavigate(DashboardDestination.more)),
+      ]);
 }
 
 class _QuickActionTile extends StatelessWidget {
   const _QuickActionTile({
-    required this.title, required this.subtitle,
-    required this.icon, required this.action,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.action,
   });
   final String title, subtitle;
   final IconData icon;
@@ -397,21 +451,23 @@ class _QuickActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BuildToCard(
-    padding: EdgeInsets.zero,
-    child: ListTile(
-      onTap: action,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      leading: CircleAvatar(
-        backgroundColor: BuildToPalette.sky,
-        foregroundColor: BuildToPalette.navy,
-        child: Icon(icon),
-      ),
-      title: Text(title, style: Theme.of(context).textTheme.titleMedium),
-      subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded,
-        size: 17, color: BuildToPalette.blue),
-    ),
-  );
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          onTap: action,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          leading: CircleAvatar(
+            backgroundColor: BuildToPalette.sky,
+            foregroundColor: BuildToPalette.navy,
+            child: Icon(icon),
+          ),
+          title: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          subtitle:
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+          trailing: const Icon(Icons.arrow_forward_ios_rounded,
+              size: 17, color: BuildToPalette.blue),
+        ),
+      );
 }
 
 class _OrderPreview extends StatelessWidget {
@@ -419,16 +475,19 @@ class _OrderPreview extends StatelessWidget {
   final DashboardOrder order;
 
   BuildToStatus get status => switch (order.status) {
-    DashboardOrderStatus.pendingAcceptance => BuildToStatus.warning,
-    DashboardOrderStatus.confirmed ||
-    DashboardOrderStatus.packing ||
-    DashboardOrderStatus.ready => BuildToStatus.pending,
-    DashboardOrderStatus.dispatched ||
-    DashboardOrderStatus.partiallyDelivered => BuildToStatus.warning,
-    DashboardOrderStatus.delivered => BuildToStatus.success,
-    DashboardOrderStatus.cancelled ||
-    DashboardOrderStatus.rejected => BuildToStatus.danger,
-  };
+        DashboardOrderStatus.pendingAcceptance => BuildToStatus.warning,
+        DashboardOrderStatus.confirmed ||
+        DashboardOrderStatus.packing ||
+        DashboardOrderStatus.ready =>
+          BuildToStatus.pending,
+        DashboardOrderStatus.dispatched ||
+        DashboardOrderStatus.partiallyDelivered =>
+          BuildToStatus.warning,
+        DashboardOrderStatus.delivered => BuildToStatus.success,
+        DashboardOrderStatus.cancelled ||
+        DashboardOrderStatus.rejected =>
+          BuildToStatus.danger,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -441,16 +500,20 @@ class _OrderPreview extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Icon(Icons.receipt_long_outlined,
-            color: BuildToPalette.navy, size: 20),
+              color: BuildToPalette.navy, size: 20),
           const SizedBox(width: 8),
-          Expanded(child: Text('Order • ${order.shortId}',
-            maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium)),
+          Expanded(
+              child: Text('Order • ${order.shortId}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium)),
           const SizedBox(width: 8),
           Text(date, style: Theme.of(context).textTheme.bodySmall),
         ]),
         const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             BuildToStatusChip(label: order.status.label, status: status),
