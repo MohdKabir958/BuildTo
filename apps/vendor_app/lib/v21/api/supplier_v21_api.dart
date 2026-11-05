@@ -143,9 +143,14 @@ class SupplierV21Api {
     if (body != null && method == 'GET') {
       throw ArgumentError('GET cannot send a business mutation payload');
     }
-    if (query != null && (method != 'GET' || query.length > 8 ||
-        query.entries.any((entry) =>
-            !RegExp(r'^[a-zA-Z][a-zA-Z0-9]{0,39}
+    if (query != null &&
+        (method != 'GET' || query.length > 8 ||
+          query.entries.any((entry) =>
+            !RegExp(r'^[a-zA-Z][a-zA-Z0-9]{0,39}$').hasMatch(entry.key) ||
+            entry.value.isEmpty || entry.value.length > 240 ||
+            RegExp(r'[\x00-\x1f\x7f]').hasMatch(entry.value)))) {
+      throw ArgumentError.value(query, 'query', 'Invalid V2.1 GET filters');
+    }
     if (idempotencyKey != null &&
         (idempotencyKey.isEmpty ||
             idempotencyKey.length > 128 ||
@@ -172,96 +177,6 @@ class SupplierV21Api {
           : uri.replace(queryParameters: query);
       final response = await _client
           .send(http.Request(method, resource)
-            ..headers.addAll(headers)
-            ..body = body == null ? '' : jsonEncode(body))
-          .timeout(timeout);
-      final payload = await http.Response.fromStream(response).timeout(timeout);
-      Object? decoded;
-      try {
-        decoded = jsonDecode(payload.body);
-      } on FormatException {
-        throw SupplierV21Exception(
-          SupplierV21Problem.invalidResponse,
-          statusCode: payload.statusCode,
-          requestId: payload.headers['x-request-id'],
-        );
-      }
-      if (decoded is! Map<String, dynamic>) {
-        throw SupplierV21Exception(SupplierV21Problem.invalidResponse,
-            statusCode: payload.statusCode);
-      }
-      final requestId = decoded['requestId'] is String
-          ? decoded['requestId'] as String
-          : payload.headers['x-request-id'];
-      if (payload.statusCode >= 200 && payload.statusCode < 300) {
-        if (!decoded.containsKey('data')) {
-          throw SupplierV21Exception(SupplierV21Problem.invalidResponse,
-              requestId: requestId);
-        }
-        return SupplierV21Response(data: decoded['data'], requestId: requestId);
-      }
-      final err = decoded['error'];
-      final code = err is Map<String, dynamic> && err['code'] is String
-          ? err['code'] as String
-          : null;
-      final problem = switch (payload.statusCode) {
-        400 || 422 => SupplierV21Problem.validation,
-        401 => SupplierV21Problem.authentication,
-        403 => SupplierV21Problem.forbidden,
-        404 => SupplierV21Problem.notFound,
-        409 => SupplierV21Problem.conflict,
-        428 => SupplierV21Problem.precondition,
-        429 => SupplierV21Problem.rateLimited,
-        >= 500 => SupplierV21Problem.server,
-        _ => SupplierV21Problem.invalidResponse,
-      };
-      final seconds = int.tryParse(payload.headers['retry-after'] ?? '');
-      throw SupplierV21Exception(
-        problem,
-        code: code,
-        statusCode: payload.statusCode,
-        requestId: requestId,
-        retryAfter:
-            seconds == null || seconds < 0 ? null : Duration(seconds: seconds),
-      );
-    } on TimeoutException {
-      // A timed-out mutation MAY have committed. UI must re-read and retry
-      // with the same intent/idempotency key, never show success or failure blindly.
-      throw const SupplierV21Exception(SupplierV21Problem.network,
-          code: 'TIMEOUT_UNKNOWN_OUTCOME');
-    } on http.ClientException {
-      throw const SupplierV21Exception(SupplierV21Problem.network,
-          code: 'NETWORK_UNAVAILABLE');
-    }
-  }
-}
-).hasMatch(entry.key) ||
-            entry.value.isEmpty || entry.value.length > 240 ||
-            RegExp(r'[\x00-\x1f\x7f]').hasMatch(entry.value)))) {
-      throw ArgumentError.value(query, 'query', 'Invalid V2.1 GET filters');
-    }
-    if (idempotencyKey != null &&
-        (idempotencyKey.isEmpty ||
-            idempotencyKey.length > 128 ||
-            RegExp(r'[\r\n]').hasMatch(idempotencyKey))) {
-      throw ArgumentError.value(
-          idempotencyKey, 'idempotencyKey', 'Invalid idempotency key');
-    }
-
-    final token = requiresAuth ? await _token() : null;
-    if (requiresAuth && (token == null || token.trim().isEmpty)) {
-      throw const SupplierV21Exception(SupplierV21Problem.authentication,
-          code: 'NO_SESSION');
-    }
-    final headers = <String, String>{'Accept': 'application/json'};
-    if (body != null) headers['Content-Type'] = 'application/json';
-    if (requiresAuth) headers['Authorization'] = 'Bearer ${token!.trim()}';
-    if (idempotencyKey != null) headers['Idempotency-Key'] = idempotencyKey;
-    if (ifMatch != null) headers['If-Match'] = ifMatch;
-
-    try {
-      final response = await _client
-          .send(http.Request(method, _origin.resolve(path))
             ..headers.addAll(headers)
             ..body = body == null ? '' : jsonEncode(body))
           .timeout(timeout);
