@@ -221,6 +221,12 @@ void main() {
         ),
         const Size(320, 800),
         scale: 1.5);
+    await tester.scrollUntilVisible(
+      find.text('Business at a glance'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Business at a glance'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
