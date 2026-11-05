@@ -28,7 +28,7 @@ void main(){
     throwsFormatException);
   expect(()=>SupplierApplicationSummary.fromJson({
     ...application(),'id':'not-a-uuid'}),throwsFormatException);
-  expect(()=>SupplierApplicationDetail.fromJson({
+  expect(SupplierApplicationDetail.fromJson({
     ...application(),'documents':[{
       'id':evidence,'documentType':'BUSINESS_REGISTRATION',
       'status':'VERIFIED','reviewNote':'Checked by operations',
