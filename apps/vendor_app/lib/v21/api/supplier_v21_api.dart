@@ -107,13 +107,15 @@ class SupplierV21Api {
     if (_ownsClient) _client.close();
   }
 
-  Future<SupplierV21Response> get(String path, {bool requiresAuth = true}) =>
-      request('GET', path, requiresAuth: requiresAuth);
+  Future<SupplierV21Response> get(String path,
+          {bool requiresAuth = true, Map<String, String>? query}) =>
+      request('GET', path, requiresAuth: requiresAuth, query: query);
 
   Future<SupplierV21Response> request(
     String method,
     String path, {
     bool requiresAuth = true,
+    Map<String, String>? query,
     Map<String, Object?>? body,
     String? idempotencyKey,
     String? ifMatch,
@@ -141,6 +143,16 @@ class SupplierV21Api {
     if (body != null && method == 'GET') {
       throw ArgumentError('GET cannot send a business mutation payload');
     }
+    if (query != null &&
+        (method != 'GET' ||
+            query.length > 8 ||
+            query.entries.any((entry) =>
+                !RegExp(r'^[a-zA-Z][a-zA-Z0-9]{0,39}$').hasMatch(entry.key) ||
+                entry.value.isEmpty ||
+                entry.value.length > 240 ||
+                RegExp(r'[\x00-\x1f\x7f]').hasMatch(entry.value)))) {
+      throw ArgumentError.value(query, 'query', 'Invalid V2.1 GET filters');
+    }
     if (idempotencyKey != null &&
         (idempotencyKey.isEmpty ||
             idempotencyKey.length > 128 ||
@@ -161,8 +173,12 @@ class SupplierV21Api {
     if (ifMatch != null) headers['If-Match'] = ifMatch;
 
     try {
+      final uri = _origin.resolve(path);
+      final resource = query == null || query.isEmpty
+          ? uri
+          : uri.replace(queryParameters: query);
       final response = await _client
-          .send(http.Request(method, _origin.resolve(path))
+          .send(http.Request(method, resource)
             ..headers.addAll(headers)
             ..body = body == null ? '' : jsonEncode(body))
           .timeout(timeout);

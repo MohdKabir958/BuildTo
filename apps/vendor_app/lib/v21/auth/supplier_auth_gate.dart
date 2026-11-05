@@ -125,6 +125,7 @@ class _SupplierAccessView extends StatelessWidget {
             '${controller.sessionKey}|${membership.supplierId}|${membership.role.name}'),
         verifiedSupplier: membership,
         dashboardRepository: controller.dashboardRepository,
+        catalogRepository: controller.catalogRepository,
         displayName: controller.account?.displayName,
         onSwitchSupplier: controller.showSupplierChooser,
         onSignOut: controller.signOut,
