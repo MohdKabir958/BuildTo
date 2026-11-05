@@ -63,7 +63,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.9'
