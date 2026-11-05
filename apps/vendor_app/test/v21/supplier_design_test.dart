@@ -83,6 +83,11 @@ void main() {
   testWidgets('no mock money or orders displayed as live values',
       (tester) async {
     await pumpPhone(tester, const Size(393, 852));
+    await tester.scrollUntilVisible(
+      find.text('Account connection required'), 180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Account connection required'), findsOneWidget);
     expect(find.textContaining('No sample business figures'), findsOneWidget);
     expect(find.textContaining('₹'), findsNothing);
