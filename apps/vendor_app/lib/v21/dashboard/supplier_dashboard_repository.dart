@@ -34,7 +34,8 @@ class SupplierDashboardRepository {
     ]);
 
     final orders = dashboardRecords(
-      responses[0].data, DashboardOrder.fromJson,
+      responses[0].data,
+      DashboardOrder.fromJson,
       (DashboardOrder order) => order.id,
     );
     final listings = dashboardRecords(
@@ -62,8 +63,10 @@ class SupplierDashboardRepository {
       supplierId: supplierId,
       refreshedAt: DateTime.now().toUtc(),
       awaitingAcceptance: DashboardCount(
-        orders.where((order) =>
-            order.status == DashboardOrderStatus.pendingAcceptance).length,
+        orders
+            .where((order) =>
+                order.status == DashboardOrderStatus.pendingAcceptance)
+            .length,
         bounded: orderLimit,
       ),
       inFulfillment: DashboardCount(
@@ -80,7 +83,8 @@ class SupplierDashboardRepository {
       ),
       openInvitations: invitations == null
           ? null
-          : DashboardCount(invitations.length, bounded: invitations.length == 100),
+          : DashboardCount(invitations.length,
+              bounded: invitations.length == 100),
       recentOrders: List.unmodifiable(orders.take(5)),
     );
   }
