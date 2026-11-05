@@ -22,9 +22,20 @@ import 'services/vendor_backend.dart';
 import 'services/partner_auth_service.dart';
 import 'services/vendor_api_service.dart';
 import 'session/session_controller.dart';
+import 'v21/supplier_foundation_app.dart';
+
+/// S01-only opt-in. Legacy vendor production remains unchanged until the
+/// authenticated BuildTo V2.1 replacement clears S02+ release gates.
+const bool _buildtoSupplierPreview = bool.fromEnvironment(
+  'BUILDTO_SUPPLIER_V21_PREVIEW', defaultValue: false,
+);
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (_buildtoSupplierPreview) {
+    runApp(const SupplierFoundationApp());
+    return;
+  }
   // Push is an addition: Firebase starts inside the controller (defensively), after the first frame is on its way.
   final push = PushController(
     messaging: FirebasePushMessaging(),
