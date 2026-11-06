@@ -93,7 +93,7 @@ export async function refundEvidence(tx:Tx,returnId:string):Promise<RefundEviden
  return {returnId:r.id,supplierId:r.supplierOrder.supplierId,
   purchaseOrderId:r.supplierOrder.purchaseOrderId,
   amountPaise:r.supplierOrder.totalPaise,paymentId:payment.id,
-  providerPayRef:payment.providerPayRef,creditNoteId:r.creditNote.id,
+  providerPayRef:payment.providerPayRef!,creditNoteId:r.creditNote.id,
   sourceInvoiceId:r.creditNote.sourceInvoiceId!};
 }
 export async function requestFullRefund(db:PrismaClient,userId:string,
