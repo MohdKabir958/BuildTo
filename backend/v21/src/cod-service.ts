@@ -45,16 +45,16 @@ export async function selectCod(db:PrismaClient,customerId:string,orderId:string
    select:{id:true,status:true,currency:true,totalPaise:true,
     supplierOrders:{select:{id:true,status:true,items:{select:{
      listingId:true,quantity:true,reservations:{
-      select:{id:true,state:true,quantity:true,expiresAt:true}
+      select:{id:true,state:true,quantity:true,expiresAt:true,orderItemId:true,balanceId:true}
      }}}}},payments:{select:{id:true,provider:true,paymentMethod:true,
       idempotencyKey:true,status:true}}}});
   if(!order)throw new ApiError(404,'NOT_FOUND','Order not found.');
   const replay=order.payments.find(p=>p.provider==='MANUAL'&&p.paymentMethod==='COD'&&p.idempotencyKey===key);
   if(replay)return {orderId,method:'COD' as const,status:'COLLECTION_DUE' as const,
    amountPaise:order.totalPaise.toString(),replayed:true};
-  // A timed-out gateway order can capture later; do NOT allow mixing COD with
-  // any previous gateway attempt, even if it now appears failed.
-  if(order.payments.length)
+  // A reconciled cancelled/failed attempt no longer blocks COD.
+  // Authorized/pending provider payments still prevent double charging.
+  if(order.payments.some(p=>!['FAILED','CANCELLED'].includes(p.status)))
    throw new ApiError(409,'PAYMENT_METHOD_LOCKED','Payment is already selected for this order.');
   if(order.status!=='PLACED'||order.currency!=='INR'||order.totalPaise<=0n||
    order.supplierOrders.length===0)
@@ -73,7 +73,7 @@ export async function selectCod(db:PrismaClient,customerId:string,orderId:string
    purchaseOrderId:orderId,provider:'MANUAL',paymentMethod:'COD',
    idempotencyKey:key,amountPaise:order.totalPaise,status:'PENDING'
   }});
-  for(const hold of holds.sort((a,b)=>a.id.localeCompare(b.id)))
+  for(const hold of holds.sort((a,b)=>a.balanceId.localeCompare(b.balanceId)||a.orderItemId.localeCompare(b.orderItemId)||a.id.localeCompare(b.id)))
    await commitOrderItemStock(tx,hold.id);
   await tx.purchaseOrder.update({where:{id:orderId},data:{status:'CONFIRMED'}});
   await event(tx,orderId,customerId,'ORDER_COD_SELECTED','CUSTOMER_COD');
@@ -126,7 +126,7 @@ export async function recordCod(db:PrismaClient,userId:string,supplierId:string,
   }
   if(order.status!=='DELIVERED'||order.totalPaise<=0n)
    throw new ApiError(409,'COD_NOT_DELIVERED','COD collection requires a delivered supplier order.');
-  if(order.purchaseOrder.payments.length!==1||
+  if(order.purchaseOrder.payments.filter(p=>!['FAILED','CANCELLED'].includes(p.status)).length!==1||
    !order.purchaseOrder.payments.some(p=>p.provider==='MANUAL'&&p.paymentMethod==='COD'&&p.status==='PENDING'))
    throw new ApiError(409,'COD_NOT_SELECTED','Customer has not selected COD.');
   const shipment=order.shipments[0];

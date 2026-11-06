@@ -311,3 +311,39 @@ test('expired unpaid holds are recovered without a separate background service',
   supplierOrders:{some:{items:{some:{reservations:{some:{state:'EXPIRED'}}}}}}
  }}),0);
 });
+
+test('opposite cart line order uses deterministic stock locks, no PostgreSQL deadlock',async()=>{
+ const reset=async who=>{
+  const value=await cart(who);
+  const response=await send('post','/api/v2/cart/clear',who,{expectedVersion:value.version});
+  assert.equal(response.status,200,JSON.stringify(response.body));
+ };
+ await reset('customer');await reset('otherCustomer');
+ // Two buyers select the same stock in opposite visual/cart order.
+ assert.equal((await add('customer',state.listingA.id,'2.000')).status,200);
+ assert.equal((await add('customer',state.listingB.id,'2.000')).status,200);
+ assert.equal((await add('otherCustomer',state.listingB.id,'2.000')).status,200);
+ assert.equal((await add('otherCustomer',state.listingA.id,'2.000')).status,200);
+ const a=await createQuote('customer',(await cart('customer')).version);
+ const b=await createQuote('otherCustomer',(await cart('otherCustomer')).version,
+  null,state.otherAddress.id);
+ assert.equal(a.status,201,JSON.stringify(a.body));
+ assert.equal(b.status,201,JSON.stringify(b.body));
+ const attempts=await Promise.allSettled([
+  place('customer',a.body.data.id),
+  place('otherCustomer',b.body.data.id)
+ ]);
+ assert(attempts.every(result=>result.status==='fulfilled'),JSON.stringify(attempts));
+ for(const result of attempts){
+  assert.equal(result.value.status,201,JSON.stringify(result.value.body));
+  assert.equal(result.value.body.data.suppliers.length,2);
+ }
+ const balances=await db.inventoryBalance.findMany({where:{
+  listingId:{in:[state.listingA.id,state.listingB.id]}
+ }});
+ assert.equal(balances.length,2);
+ for(const balance of balances){
+  assert.equal(balance.reservedQty.toString(),'4');
+  assert(balance.reservedQty.lte(balance.onHandQty));
+ }
+});

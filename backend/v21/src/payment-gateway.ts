@@ -8,7 +8,11 @@ export interface GatewayRefund {
  id:string;paymentId:string;amount:bigint;currency:'INR';
  status:'processed'|'pending'|'failed';
 }
+export interface GatewayPaymentInspection {
+ status:'NO_ACTIVE_PAYMENT'|'ACTIVE_PAYMENT'|'CAPTURED';
+}
 export interface PaymentGateway {
+ inspectOrderPayments?(orderId:string):Promise<GatewayPaymentInspection>;
  lookupRefund?(refundId:string):Promise<GatewayRefund>;
  readonly publicKey:string;
  createOrder(input:{amount:bigint;receipt:string}):Promise<GatewayOrder>;
@@ -95,6 +99,48 @@ export class RazorpayGateway implements PaymentGateway {
   return {id:refundId,paymentId:p.payment_id,
    amount:BigInt(p.amount),currency:'INR',
    status:p.status as GatewayRefund['status']};
+ }
+ /**
+  * Read-only inspection of payments for one Razorpay Order.
+  * A payment.failed event only reports one try, NOT the whole order.
+  */
+ async inspectOrderPayments(orderId:string):Promise<GatewayPaymentInspection>{
+  if(!/^order_[A-Za-z0-9]{8,60}$/.test(orderId))
+   throw new ApiError(400,'INVALID_PROVIDER_ORDER','Invalid gateway order ID.');
+  let response:globalThis.Response;
+  try {
+   response=await fetch('https://api.razorpay.com/v1/orders/'+
+    encodeURIComponent(orderId)+'/payments?count=100',{
+    headers:{Authorization:'Basic '+
+     Buffer.from(this.publicKey+':'+this.secretKey).toString('base64')},
+    signal:AbortSignal.timeout(7000)
+   });
+  }catch{
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_UNAVAILABLE','Provider payment lookup unavailable.');
+  }
+  if(!response.ok)
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_UNAVAILABLE','Provider payment lookup failed.');
+  let body:unknown;
+  try{body=await response.json();}catch{
+   throw new ApiError(503,'PAYMENT_PROVIDER_INVALID_RESPONSE','Invalid provider payments response.');
+  }
+  if(!body||typeof body!=='object'||Array.isArray(body))
+   throw new ApiError(503,'PAYMENT_PROVIDER_INVALID_RESPONSE','Invalid provider payments response.');
+  const {items,count}=body as {items?:unknown;count?:unknown};
+  if(!Array.isArray(items)||!Number.isSafeInteger(count)||typeof count!=='number'||
+     count<0||count!==items.length||count>=100)
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_INCOMPLETE','Complete provider payment history required.');
+  let active=false,captured=false;
+  for(const item of items){
+   if(!item||typeof item!=='object'||Array.isArray(item))
+    throw new ApiError(503,'PAYMENT_PROVIDER_INVALID_RESPONSE','Invalid provider payment row.');
+   const p=item as Record<string,unknown>;
+   if(p.order_id!==orderId||typeof p.status!=='string')
+    throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Provider payment does not belong to order.');
+   if(['captured','refunded'].includes(p.status))captured=true;
+   else if(p.status!=='failed')active=true;
+  }
+  return {status:captured?'CAPTURED':active?'ACTIVE_PAYMENT':'NO_ACTIVE_PAYMENT'};
  }
  // Lookup is read-only. It is used to reconcile an UNKNOWN create outcome;
  // never blindly issue another POST after a timeout or missing response.

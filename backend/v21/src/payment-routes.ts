@@ -1,7 +1,7 @@
 import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
-import {startPayment,customerPayments} from './payment-service';
+import {startPayment,customerPayments,cancelPaymentSession} from './payment-service';
 import type {PaymentGateway} from './payment-gateway';
 const actor=(res:Response):string=>{
  const id=(res.locals.principal as {id?:unknown}|undefined)?.id;
@@ -19,6 +19,15 @@ export function registerProtectedPayments(app:Express,db:PrismaClient,
     data:result.payment,replayed:result.replayed,
     initializing:result.initializing,requestId:res.locals.requestId
    });
+  }catch(error){next(error);}
+ });
+ app.post('/api/v2/orders/:orderId/payments/:paymentId/cancel',auth,async(req,res,next)=>{
+  try{
+   if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||Object.keys(req.body).length)
+    throw new ApiError(400,'INVALID_PAYMENT_REQUEST','Cancellation requires empty JSON.');
+   const result=await cancelPaymentSession(db,actor(res),req.params.orderId,
+    req.params.paymentId,gateway);
+   res.status(200).json({data:result,requestId:res.locals.requestId});
   }catch(error){next(error);}
  });
  app.get('/api/v2/orders/:orderId/payments',auth,async(req,res,next)=>{

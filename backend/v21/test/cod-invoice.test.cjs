@@ -124,7 +124,7 @@ test('COD is owner-authorized, exact-amount, idempotent and not an online captur
   'MANUAL COD records must not be mislabeled Razorpay payment attempts');
  assert.equal((await call('post',customerUrl()+'/cancel','customer',{})).status,409);
 });
-test('a prior Razorpay attempt, even FAILED, blocks COD method switching',async()=>{
+test('terminated Razorpay attempt cannot make an incomplete order COD-eligible',async()=>{
  const order=await db.purchaseOrder.create({data:{
   customerId:store.customer.id,clientRequestId:key(),
   publicNumber:'BT-'+id().replaceAll('-').slice(0,24),
@@ -135,7 +135,7 @@ test('a prior Razorpay attempt, even FAILED, blocks COD method switching',async(
   idempotencyKey:key(),amountPaise:1000n,status:'FAILED'
  }});
  const r=await call('post','/api/v2/orders/'+order.id+'/cod','customer',{},key());
- assert.equal(r.status,409);assert.equal(r.body.error.code,'PAYMENT_METHOD_LOCKED');
+ assert.equal(r.status,409);assert.equal(r.body.error.code,'ORDER_NOT_COD_ELIGIBLE');
 });
 test('supplier cash claim requires delivered shipment with verified handover',async()=>{
  const url=supplierUrl()+'/cod';
