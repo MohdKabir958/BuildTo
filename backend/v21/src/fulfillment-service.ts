@@ -6,6 +6,7 @@ import {serializable} from './transaction';
 import {executeIdempotently} from './idempotency';
 import {publishOutbox} from './outbox';
 import {releaseOrderItemStock} from './inventory-reservations';
+import {verifiedFulfillmentPayment} from './payment-funding';
 import {isUuid,requireAdminPermission,requireSupplierPermission} from './permissions';
 
 type Tx=Prisma.TransactionClient;
@@ -118,13 +119,8 @@ async function source(tx:Tx,supplierId:string,supplierOrderId:string){
 function paymentReady(order:Awaited<ReturnType<typeof source>>){
  const parent=order.purchaseOrder;
  if(!['CONFIRMED','PARTIALLY_FULFILLED','FULFILLED'].includes(parent.status)||
-   parent.currency!=='INR'||parent.payments.length!==1)
-  throw new ApiError(409,'FULFILLMENT_PAYMENT_REQUIRED','Order has no reconciled payment or selected COD.');
- const p=parent.payments[0];
- if(p.amountPaise!==parent.totalPaise||
-   !(p.provider==='MANUAL'&&p.paymentMethod==='COD'&&p.status==='PENDING'&&p.capturedPaise===0n||
-     p.provider==='RAZORPAY'&&p.status==='CAPTURED'&&
-     p.capturedPaise===parent.totalPaise&&p.verifiedAt&&p.providerPayRef))
+   parent.currency!=='INR'||
+   !verifiedFulfillmentPayment(parent.payments,parent.totalPaise))
   throw new ApiError(409,'FULFILLMENT_PAYMENT_REQUIRED','Order has no reconciled payment or selected COD.');
  if(!order.items.length||order.items.some(item=>
   !item.listingId || !item.reservations.filter(r=>r.state==='COMMITTED')
