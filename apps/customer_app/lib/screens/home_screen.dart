@@ -13,7 +13,8 @@ import '../providers/wishlist_provider.dart';
 import '../widgets/ui/k_image.dart';
 import '../widgets/ui/customer_photo_rail.dart';
 import '../widgets/ui/snack.dart';
-import 'addresses_screen.dart';
+import 'addresses_screen.dart';
+import 'customer_preview_addresses_screen.dart';
 import 'browse_category_screen.dart';
 import 'notifications_screen.dart';
 import 'product_detail_screen.dart';
@@ -184,7 +185,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final session = context.watch<SessionProvider>();
     final notifs = context.watch<NotificationsProvider>();
     final dhaba = context.watch<DhabaProvider>();
-    final addressText = session.addressText.isNotEmpty ? session.addressText : 'Lal Bihara, New Delhi';
+    final addressText = kBuildtoCustomerShowcase
+        ? ClientPreviewAddressStore.selected.value.formatted
+        : (session.addressText.isNotEmpty ? session.addressText : 'Lal Bihara, New Delhi');
     final categories = dhaba.homeCategories;
     final suppliers = dhaba.allDhabas;
     final allProducts = dhaba.allProducts;
