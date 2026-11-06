@@ -6,7 +6,7 @@ on:
     paths:
       - '.github/workflows/buildto-supplier-test-apk.yml'
       - 'apps/vendor_app/lib/v21/auth/**'
-      - 'apps/vendor_app/test/v21/supplier_auth_*'
+      - 'apps/vendor_app/test/v21/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -82,6 +82,9 @@ jobs:
           
           BuildTo-Supplier-Staging-ARM64.apk
              Android package: in.buildto.supplier.staging
+             Welcome-first supplier flow, full V2.1 screens, native Clerk SDK.
+             Supports separate Sign in, Create account, and recovery actions.
+             Real device E2E testing still required.
              Full Flutter V2.1 screens, native Clerk SDK, real user-provided
              Clerk publishable TEST key (informed-griffon-7675).
              Live sign-in depends on an active configured Clerk test instance,
