@@ -293,6 +293,6 @@ test('settlement eligibility accepts captured money after a failed UPI try',asyn
  const created=await send('post',admin('/settlements/drafts'),'maker',
   makeDraft(order.child.id,key()),key());
  assert.equal(created.status,201,JSON.stringify(created.body));
- assert.equal(created.body.data.supplierId,st.supplier.id);
- assert.equal(created.body.data.status,'ON_HOLD');
+ assert.equal(created.body.data.settlement.supplierId,st.supplier.id);
+ assert.equal(created.body.data.settlement.status,'ON_HOLD');
 });
