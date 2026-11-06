@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,12 +15,15 @@ const supplier = '123e4567-e89b-12d3-a456-426614174000';
 const second = '123e4567-e89b-12d3-a456-426614174001';
 
 class UiClerk implements SupplierClerkPort {
+  Future<void> Function()? initializeOverride;
   final state = ValueNotifier<ClerkIdentity>(
       const ClerkIdentity(ready: true, signedIn: false));
   @override
   ValueListenable<ClerkIdentity> get identity => state;
   @override
-  Future<void> initialize() async {}
+  Future<void> initialize() async {
+    await initializeOverride?.call();
+  }
   @override
   Future<bool> authenticate({String mode = 'signInOrUp'}) async {
     state.value = const ClerkIdentity(
@@ -41,12 +45,14 @@ class UiClerk implements SupplierClerkPort {
   }
 }
 
-SupplierAuthController makeController(UiClerk clerk, {bool multi = false}) {
+SupplierAuthController makeController(UiClerk clerk,
+    {bool multi = false, Completer<http.Response>? delayedMe}) {
   final api = SupplierV21Api(
     origin: Uri.parse('https://buildto-v21-staging.onrender.com'),
     token: () => clerk.token(),
     httpClient: MockClient((request) async {
       if (request.url.path == '/api/v2/me') {
+        if (delayedMe != null) return delayedMe.future;
         return http.Response(
             jsonEncode({
               'data': {
@@ -93,6 +99,82 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
+      'cold start shows welcome immediately even if native Clerk is delayed',
+      (tester) async {
+    final delayed = Completer<void>();
+    final clerk = UiClerk()..initializeOverride = () => delayed.future;
+    final controller = makeController(clerk);
+    addTearDown(() {
+      if (!delayed.isCompleted) delayed.complete();
+      controller.dispose();
+      clerk.state.dispose();
+    });
+    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
+        const Size(393, 852));
+    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(find.text('Sign in to my account'), findsOneWidget);
+    expect(find.text('Create a new account'), findsOneWidget);
+    expect(find.text('Verifying your supplier account'), findsNothing);
+    delayed.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+  });
+
+  testWidgets('failed native initialization stays on recoverable welcome',
+      (tester) async {
+    var attempts = 0;
+    final clerk = UiClerk()
+      ..initializeOverride = () async {
+        attempts++;
+        if (attempts == 1) throw StateError('native SDK unavailable');
+      };
+    final controller = makeController(clerk);
+    addTearDown(() {
+      controller.dispose();
+      clerk.state.dispose();
+    });
+    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
+        const Size(360, 800));
+    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(find.text('Sign in to my account'), findsOneWidget);
+    expect(find.text('Create a new account'), findsOneWidget);
+    expect(find.text('Retry Clerk connection'), findsOneWidget);
+    await tester.tap(find.text('Retry Clerk connection'));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('Retry Clerk connection'), findsNothing);
+    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('checking membership offers cancel back to welcome',
+      (tester) async {
+    final delayedMe = Completer<http.Response>();
+    final clerk = UiClerk();
+    final controller = makeController(clerk, delayedMe: delayedMe);
+    addTearDown(() {
+      if (!delayedMe.isCompleted) {
+        delayedMe.complete(http.Response('{"error":{"code":"UNKNOWN"}}', 500));
+      }
+      controller.dispose();
+      clerk.state.dispose();
+    });
+    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
+        const Size(393, 852));
+    await tester.tap(find.text('Sign in to my account'));
+    await tester.pump();
+    expect(find.text('Verifying your supplier account'), findsOneWidget);
+    expect(find.text('Cancel and return to welcome'), findsOneWidget);
+    await tester.tap(find.text('Cancel and return to welcome'));
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    delayedMe.complete(http.Response('{"error":{"code":"UNKNOWN"}}', 500));
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
       'BuildTo Clerk sign-in leads to backend-authorized supplier shell',
       (tester) async {
     final clerk = UiClerk();
@@ -104,7 +186,7 @@ void main() {
     await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
         const Size(393, 852));
     expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
-    await tester.tap(find.text('Continue securely with Clerk'));
+    await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
     expect(find.text('Verified'), findsOneWidget);
     expect(find.text('BuildTo Verified'), findsOneWidget);
@@ -124,7 +206,7 @@ void main() {
     });
     await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
         const Size(393, 852));
-    await tester.tap(find.text('Continue securely with Clerk'));
+    await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
     expect(find.text('Choose your supplier'), findsOneWidget);
     expect(find.text('Role: OWNER'), findsOneWidget);
