@@ -7,7 +7,7 @@ const {PrismaClient,Prisma}=require('../../generated/buildto-v21');
 const {createV21App}=require('../dist/app.js');
 const {InMemoryTestLimiter}=require('../dist/rateLimit.js');
 const {ApiError}=require('../dist/errors.js');
-const {verifyRazorpayWebhook}=require('../dist/payment-service.js');
+const {verifyRazorpayWebhook,recoverExpiredPaymentSessions}=require('../dist/payment-service.js');
 
 const db=new PrismaClient();
 test.after(async()=>db.$disconnect());
@@ -17,6 +17,7 @@ const secret='ci_razorpay_webhook_secret_01234567890123456789';
 const tokens={};
 const state={calls:0};
 const gateway={publicKey:'rzp_test_fake12345678',
+ inspectOrderPayments:async()=>({status:state.providerInspection||'NO_ACTIVE_PAYMENT'}),
  createOrder:async({amount,receipt})=>{
   state.calls++;
   return {id:'order_'+uuid().replaceAll('-','').slice(0,20),
@@ -265,4 +266,90 @@ test('simultaneous delivery of one signed event ID is deduplicated',async()=>{
  assert.equal(b.status,200,JSON.stringify(b.body));
  assert.equal(Number(a.body.duplicate)+Number(b.body.duplicate),1);
  assert.equal((await db.purchaseOrder.findUniqueOrThrow({where:{id:state.order.id}})).status,'CONFIRMED');
+});
+
+async function newPayableOrder(){
+ const parent=await db.purchaseOrder.create({data:{
+  customerId:state.customer.id,publicNumber:'BT-'+uuid().replaceAll('-').slice(0,24),
+  clientRequestId:'PAY-'+uuid().replaceAll('-'),currency:'INR',status:'PLACED',
+  addressSnapshot:{city:'Hyderabad'},subtotalPaise:7500n,totalPaise:7500n
+ }});
+ const child=await db.supplierOrder.create({data:{
+  purchaseOrderId:parent.id,supplierId:state.supplier.id,
+  subtotalPaise:7500n,totalPaise:7500n
+ }});
+ const item=await db.supplierOrderItem.create({data:{
+  supplierOrderId:child.id,listingId:state.item.listingId,
+  skuSnapshot:'RETRY-'+uuid().slice(0,12),nameSnapshot:'Cement',
+  unitCode:'BAG',packSizeSnapshot:new Prisma.Decimal(1),
+  quantity:new Prisma.Decimal(1),unitPrice:new Prisma.Decimal(75),
+  taxRateBps:0,taxablePaise:7500n,lineTotalPaise:7500n
+ }});
+ await db.inventoryBalance.update({where:{id:state.balance.id},data:{
+  reservedQty:{increment:new Prisma.Decimal(1)}
+ }});
+ const hold=await db.inventoryReservation.create({data:{
+  balanceId:state.balance.id,orderItemId:item.id,
+  quantity:new Prisma.Decimal(1),state:'HELD',
+  expiresAt:new Date(Date.now()+1200000)
+ }});
+ return {parent,child,item,hold};
+}
+test('individual failed Razorpay try is not a terminal order failure; verified cancel permits COD',async()=>{
+ const x=await newPayableOrder();
+ const endpoint='/api/v2/orders/'+x.parent.id+'/payments';
+ const pay=await call('post',endpoint,'customer',{paymentMethod:'UPI'},
+  'retry_'+uuid().replaceAll('-'));
+ assert.equal(pay.status,201,JSON.stringify(pay.body));
+ const attemptId=pay.body.data.id;
+ const failed=await signedEvent('payment.failed',{
+  id:'pay_'+uuid().replaceAll('-').slice(0,20),
+  order_id:pay.body.data.providerOrderId,amount:7500,
+  currency:'INR',status:'failed',method:'upi'
+ });
+ assert.equal(failed.status,200,JSON.stringify(failed.body));
+ assert.equal((await db.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}})).status,'PENDING',
+  'one failed UPI PIN is not proof that the Razorpay order has closed');
+ state.providerInspection='ACTIVE_PAYMENT';
+ const url=endpoint+'/'+attemptId+'/cancel';
+ const blocked=await call('post',url,'customer',{});
+ assert.equal(blocked.status,409,JSON.stringify(blocked.body));
+ state.providerInspection='NO_ACTIVE_PAYMENT';
+ assert.equal((await call('post',url,'outsider',{})).status,404);
+ const stopped=await call('post',url,'customer',{});
+ assert.equal(stopped.status,200,JSON.stringify(stopped.body));
+ assert.equal(stopped.body.data.status,'CANCELLED');
+ assert.equal(stopped.body.data.orderCancelled,false);
+ assert.equal((await call('post',url,'customer',{})).body.data.replayed,true);
+ const cod=await call('post','/api/v2/orders/'+x.parent.id+'/cod','customer',{},
+  'cod_'+uuid().replaceAll('-'));
+ assert.equal(cod.status,201,JSON.stringify(cod.body));
+ assert.equal((await db.purchaseOrder.findUniqueOrThrow({where:{id:x.parent.id}})).status,'CONFIRMED');
+ assert.equal((await db.inventoryReservation.findUniqueOrThrow({where:{id:x.hold.id}})).state,'COMMITTED');
+ state.providerInspection=undefined;
+});
+test('expired payment session is reclaimed after provider verification; a late capture goes to review',async()=>{
+ const x=await newPayableOrder();
+ const endpoint='/api/v2/orders/'+x.parent.id+'/payments';
+ const pay=await call('post',endpoint,'customer',{paymentMethod:'CARD'},
+  'recover_'+uuid().replaceAll('-'));
+ assert.equal(pay.status,201,JSON.stringify(pay.body));
+ await db.inventoryReservation.update({where:{id:x.hold.id},
+  data:{expiresAt:new Date(Date.now()-30000)}});
+ state.providerInspection='NO_ACTIVE_PAYMENT';
+ const recovered=await recoverExpiredPaymentSessions(db,gateway,25);
+ assert(recovered.cancelled>=1,JSON.stringify(recovered));
+ assert.equal((await db.inventoryReservation.findUniqueOrThrow({where:{id:x.hold.id}})).state,'EXPIRED');
+ assert.equal((await db.paymentAttempt.findUniqueOrThrow({where:{id:pay.body.data.id}})).status,'CANCELLED');
+ assert.equal((await db.purchaseOrder.findUniqueOrThrow({where:{id:x.parent.id}})).status,'CANCELLED');
+ const late=await signedEvent('payment.captured',{
+  id:'pay_'+uuid().replaceAll('-').slice(0,20),
+  order_id:pay.body.data.providerOrderId,amount:7500,currency:'INR',
+  status:'captured',method:'card'
+ });
+ assert.equal(late.status,200,JSON.stringify(late.body));
+ assert.equal((await db.purchaseOrder.findUniqueOrThrow({where:{id:x.parent.id}})).status,'CANCELLED');
+ assert.equal(await db.auditEvent.count({where:{
+  entityId:x.parent.id,action:'PAYMENT_CAPTURED_REQUIRES_REVIEW'}}),1);
+ state.providerInspection=undefined;
 });
