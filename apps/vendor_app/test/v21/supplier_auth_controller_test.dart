@@ -13,6 +13,7 @@ const idA = '123e4567-e89b-12d3-a456-426614174000';
 const idB = '123e4567-e89b-12d3-a456-426614174001';
 
 class FakeClerk implements SupplierClerkPort {
+  Future<void> Function()? initializeOverride;
   final state = ValueNotifier<ClerkIdentity>(
     const ClerkIdentity(ready: true, signedIn: false),
   );
@@ -25,7 +26,9 @@ class FakeClerk implements SupplierClerkPort {
   @override
   ValueListenable<ClerkIdentity> get identity => state;
   @override
-  Future<void> initialize() async {}
+  Future<void> initialize() async {
+    await initializeOverride?.call();
+  }
   @override
   Future<bool> authenticate({String mode = 'signInOrUp'}) async {
     if (!authenticates) return false;
@@ -98,6 +101,45 @@ Future<void> until(SupplierAuthController c, SupplierAccessStage stage) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('cold startup keeps welcome available during pending Clerk initialization',
+      () async {
+    final delayed = Completer<void>();
+    final clerk = FakeClerk()..initializeOverride = () => delayed.future;
+    final controller =
+        makeController(clerk, MockClient((_) async => me([])));
+    final starting = controller.start();
+    expect(controller.stage, SupplierAccessStage.signedOut);
+    expect(controller.busy, isFalse);
+    expect(controller.activeSupplier, isNull);
+    delayed.complete();
+    await starting;
+    expect(controller.stage, SupplierAccessStage.signedOut);
+    controller.dispose();
+    clerk.state.dispose();
+  });
+
+  test('failed Clerk initialization never dead-ends and can retry',
+      () async {
+    var attempts = 0;
+    final clerk = FakeClerk()
+      ..initializeOverride = () async {
+        attempts++;
+        if (attempts == 1) throw StateError('offline');
+      };
+    final controller =
+        makeController(clerk, MockClient((_) async => me([])));
+    await controller.start();
+    expect(controller.stage, SupplierAccessStage.signedOut);
+    expect(controller.notice, contains('Clerk could not connect'));
+    expect(controller.activeSupplier, isNull);
+    await controller.retryClerkInitialization();
+    expect(attempts, 2);
+    expect(controller.notice, isNull);
+    expect(controller.stage, SupplierAccessStage.signedOut);
+    controller.dispose();
+    clerk.state.dispose();
+  });
 
   test('signed-out session cannot request protected supplier data', () async {
     final clerk = FakeClerk();
