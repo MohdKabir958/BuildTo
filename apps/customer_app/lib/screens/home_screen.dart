@@ -10,7 +10,8 @@ import '../providers/dhaba_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/wishlist_provider.dart';
-import '../widgets/ui/k_image.dart';
+import '../widgets/ui/k_image.dart';
+import '../widgets/ui/customer_photo_rail.dart';
 import '../widgets/ui/snack.dart';
 import 'addresses_screen.dart';
 import 'browse_category_screen.dart';
@@ -20,6 +21,9 @@ import 'profile_settings_screen.dart';
 import 'support_help_screen.dart';
 import 'view_cart_screen.dart';
 
+const bool kBuildtoCustomerShowcase =
+    bool.fromEnvironment('BUILDTO_CUSTOMER_CLIENT_SHOWCASE', defaultValue: false);
+
 /// Screen 01 — Home Screen
 /// Construction marketplace home feed with 4-tab bottom navigation, supplier cards, and wholesale catalog.
 class HomeScreen extends StatefulWidget {
@@ -184,12 +188,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final categories = dhaba.homeCategories;
     final suppliers = dhaba.allDhabas;
     final allProducts = dhaba.allProducts;
-    final featuredProducts = allProducts.isNotEmpty ? allProducts.take(6).toList() : getAllSampleProducts().take(6).toList();
+    final featuredProducts = kBuildtoCustomerShowcase
+        ? <MenuItemModel>[
+            ...getSampleProductsByCategory('Cement & Concrete').take(2),
+            ...getSampleProductsByCategory('Steel & TMT Bars').take(1),
+            ...getSampleProductsByCategory('Bricks & Blocks').take(1),
+            ...getSampleProductsByCategory('Sand & Aggregates').take(1),
+            ...getSampleProductsByCategory('Cement & Concrete').skip(2).take(1),
+          ]
+        : (allProducts.isNotEmpty
+            ? allProducts.take(6).toList()
+            : getAllSampleProducts().take(6).toList());
 
     return SafeArea(
       child: RefreshIndicator(
         color: BuildtoColors.primaryNavy,
-        onRefresh: () => dhaba.refreshHome(),
+        onRefresh: () => kBuildtoCustomerShowcase
+            ? Future<void>.value()
+            : dhaba.refreshHome(),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -355,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: dhaba.isUsingFallbackData ? BuildtoColors.warningBg : BuildtoColors.successBg,
+                  color: kBuildtoCustomerShowcase || dhaba.isUsingFallbackData ? BuildtoColors.warningBg : BuildtoColors.successBg,
                   borderRadius: BorderRadius.circular(BuildtoRadius.sm),
                   border: Border.all(
                     color: dhaba.isUsingFallbackData
@@ -373,7 +389,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        dhaba.dataSourceLabel,
+                        kBuildtoCustomerShowcase
+                            ? 'CLIENT PREVIEW  •  Sample catalog  •  No live payments'
+                            : dhaba.dataSourceLabel,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -382,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     InkWell(
-                      onTap: () => dhaba.refreshHome(),
+                      onTap: kBuildtoCustomerShowcase ? null : () => dhaba.refreshHome(),
                       child: const Icon(LucideIcons.refreshCw, size: 13, color: BuildtoColors.primaryNavy),
                     ),
                   ],
@@ -485,6 +503,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 20),
 
+            if (kBuildtoCustomerShowcase) ...[
+              CustomerPhotoRail(
+                onCategorySelected: (category) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => BrowseCategoryScreen(categoryName: category),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
+            ],
+
             // Section: Nearby Suppliers matching reference
             _buildSectionHeader(
               title: 'Nearby Suppliers',
