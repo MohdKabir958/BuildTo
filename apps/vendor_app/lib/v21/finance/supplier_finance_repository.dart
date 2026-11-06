@@ -210,7 +210,7 @@ class SupplierBeneficiary {
     }
     final masked = j['maskedBankAccount'];
     if (masked != null &&
-        (masked is! String || !RegExp(r'^\*{4}[0-9]{4}.hasMatch(masked))) {
+        (masked is! String || !RegExp(r'^\*{4}[0-9]{4}$').hasMatch(masked))) {
       throw const FormatException('Unmasked beneficiary account rejected');
     }
     if (j['verifiedAt'] != null) financeUtc(j['verifiedAt']);
@@ -402,7 +402,7 @@ class SupplierPayout {
     }
     final masked = j['maskedBankAccount'];
     if (masked != null &&
-        (masked is! String || !RegExp(r'^\*{4}[0-9]{4}.hasMatch(masked))) {
+        (masked is! String || !RegExp(r'^\*{4}[0-9]{4}$').hasMatch(masked))) {
       throw const FormatException('Unsafe bank account display');
     }
     if (j['completedAt'] != null) financeUtc(j['completedAt']);
