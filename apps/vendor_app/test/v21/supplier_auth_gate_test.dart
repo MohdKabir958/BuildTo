@@ -17,21 +17,24 @@ const second = '123e4567-e89b-12d3-a456-426614174001';
 class UiClerk implements SupplierClerkPort {
   Future<void> Function()? initializeOverride;
   final state = ValueNotifier<ClerkIdentity>(
-      const ClerkIdentity(ready: true, signedIn: false));
+    const ClerkIdentity(ready: true, signedIn: false),
+  );
   @override
   ValueListenable<ClerkIdentity> get identity => state;
   @override
   Future<void> initialize() async {
     await initializeOverride?.call();
   }
+
   @override
   Future<bool> authenticate({String mode = 'signInOrUp'}) async {
     state.value = const ClerkIdentity(
-        ready: true,
-        signedIn: true,
-        userId: 'user_SupplierTest',
-        sessionId: 'sess_SupplierTest',
-        email: 'supplier@example.invalid');
+      ready: true,
+      signedIn: true,
+      userId: 'user_SupplierTest',
+      sessionId: 'sess_SupplierTest',
+      email: 'supplier@example.invalid',
+    );
     return true;
   }
 
@@ -45,8 +48,11 @@ class UiClerk implements SupplierClerkPort {
   }
 }
 
-SupplierAuthController makeController(UiClerk clerk,
-    {bool multi = false, Completer<http.Response>? delayedMe}) {
+SupplierAuthController makeController(
+  UiClerk clerk, {
+  bool multi = false,
+  Completer<http.Response>? delayedMe,
+}) {
   final api = SupplierV21Api(
     origin: Uri.parse('https://buildto-v21-staging.onrender.com'),
     token: () => clerk.token(),
@@ -54,29 +60,31 @@ SupplierAuthController makeController(UiClerk clerk,
       if (request.url.path == '/api/v2/me') {
         if (delayedMe != null) return delayedMe.future;
         return http.Response(
-            jsonEncode({
-              'data': {
-                'id': 'db-account',
-                'displayName': 'BuildTo Verified',
-                'adminRole': null,
-                'suppliers': [
-                  {'supplierId': supplier, 'role': 'OWNER'},
-                  if (multi) {'supplierId': second, 'role': 'VIEWER'},
-                ],
-              },
-            }),
-            200);
+          jsonEncode({
+            'data': {
+              'id': 'db-account',
+              'displayName': 'BuildTo Verified',
+              'adminRole': null,
+              'suppliers': [
+                {'supplierId': supplier, 'role': 'OWNER'},
+                if (multi) {'supplierId': second, 'role': 'VIEWER'},
+              ],
+            },
+          }),
+          200,
+        );
       }
       if (request.url.path.endsWith('/access')) {
         final id = request.url.path.split('/')[4];
         return http.Response(
-            jsonEncode({
-              'data': {
-                'supplierId': id,
-                'role': id == supplier ? 'OWNER' : 'VIEWER'
-              }
-            }),
-            200);
+          jsonEncode({
+            'data': {
+              'supplierId': id,
+              'role': id == supplier ? 'OWNER' : 'VIEWER',
+            },
+          }),
+          200,
+        );
       }
       return http.Response('{"error":{"code":"NOT_FOUND"}}', 404);
     }),
@@ -99,29 +107,34 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-      'cold start shows welcome immediately even if native Clerk is delayed',
-      (tester) async {
-    final delayed = Completer<void>();
-    final clerk = UiClerk()..initializeOverride = () => delayed.future;
-    final controller = makeController(clerk);
-    addTearDown(() {
-      if (!delayed.isCompleted) delayed.complete();
-      controller.dispose();
-      clerk.state.dispose();
-    });
-    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
-        const Size(393, 852));
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
-    expect(find.text('Sign in to my account'), findsOneWidget);
-    expect(find.text('Create a new account'), findsOneWidget);
-    expect(find.text('Verifying your supplier account'), findsNothing);
-    delayed.complete();
-    await tester.pumpAndSettle();
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
-  });
+    'cold start shows welcome immediately even if native Clerk is delayed',
+    (tester) async {
+      final delayed = Completer<void>();
+      final clerk = UiClerk()..initializeOverride = () => delayed.future;
+      final controller = makeController(clerk);
+      addTearDown(() {
+        if (!delayed.isCompleted) delayed.complete();
+        controller.dispose();
+        clerk.state.dispose();
+      });
+      await pumpPhone(
+        tester,
+        BuildToSupplierV21App(controller: controller),
+        const Size(393, 852),
+      );
+      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+      expect(find.text('Sign in to my account'), findsOneWidget);
+      expect(find.text('Create a new account'), findsOneWidget);
+      expect(find.text('Verifying your supplier account'), findsNothing);
+      delayed.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    },
+  );
 
-  testWidgets('failed native initialization stays on recoverable welcome',
-      (tester) async {
+  testWidgets('failed native initialization stays on recoverable welcome', (
+    tester,
+  ) async {
     var attempts = 0;
     final clerk = UiClerk()
       ..initializeOverride = () async {
@@ -133,8 +146,11 @@ void main() {
       controller.dispose();
       clerk.state.dispose();
     });
-    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
-        const Size(360, 800));
+    await pumpPhone(
+      tester,
+      BuildToSupplierV21App(controller: controller),
+      const Size(360, 800),
+    );
     expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
     expect(find.text('Sign in to my account'), findsOneWidget);
     expect(find.text('Create a new account'), findsOneWidget);
@@ -147,8 +163,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('checking membership offers cancel back to welcome',
-      (tester) async {
+  testWidgets('checking membership offers cancel back to welcome', (
+    tester,
+  ) async {
     final delayedMe = Completer<http.Response>();
     final clerk = UiClerk();
     final controller = makeController(clerk, delayedMe: delayedMe);
@@ -159,8 +176,11 @@ void main() {
       controller.dispose();
       clerk.state.dispose();
     });
-    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
-        const Size(393, 852));
+    await pumpPhone(
+      tester,
+      BuildToSupplierV21App(controller: controller),
+      const Size(393, 852),
+    );
     await tester.tap(find.text('Sign in to my account'));
     await tester.pump();
     expect(find.text('Verifying your supplier account'), findsOneWidget);
@@ -175,37 +195,45 @@ void main() {
   });
 
   testWidgets(
-      'BuildTo Clerk sign-in leads to backend-authorized supplier shell',
-      (tester) async {
-    final clerk = UiClerk();
-    final controller = makeController(clerk);
-    addTearDown(() {
-      controller.dispose();
-      clerk.state.dispose();
-    });
-    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
-        const Size(393, 852));
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
-    await tester.tap(find.text('Sign in to my account'));
-    await tester.pumpAndSettle();
-    expect(find.text('Verified'), findsOneWidget);
-    expect(find.text('BuildTo Verified'), findsOneWidget);
-    expect(find.textContaining('Supplier • '), findsOneWidget);
-    expect(find.text('Orders'), findsWidgets);
-    expect(find.textContaining('₹'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+    'BuildTo Clerk sign-in leads to backend-authorized supplier shell',
+    (tester) async {
+      final clerk = UiClerk();
+      final controller = makeController(clerk);
+      addTearDown(() {
+        controller.dispose();
+        clerk.state.dispose();
+      });
+      await pumpPhone(
+        tester,
+        BuildToSupplierV21App(controller: controller),
+        const Size(393, 852),
+      );
+      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+      await tester.tap(find.text('Sign in to my account'));
+      await tester.pumpAndSettle();
+      expect(find.text('Verified'), findsOneWidget);
+      expect(find.text('BuildTo Verified'), findsOneWidget);
+      expect(find.textContaining('Supplier • '), findsOneWidget);
+      expect(find.text('Orders'), findsWidgets);
+      expect(find.textContaining('₹'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('multi-supplier selection is explicit and shows verified role',
-      (tester) async {
+  testWidgets('multi-supplier selection is explicit and shows verified role', (
+    tester,
+  ) async {
     final clerk = UiClerk();
     final controller = makeController(clerk, multi: true);
     addTearDown(() {
       controller.dispose();
       clerk.state.dispose();
     });
-    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
-        const Size(393, 852));
+    await pumpPhone(
+      tester,
+      BuildToSupplierV21App(controller: controller),
+      const Size(393, 852),
+    );
     await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
     expect(find.text('Choose your supplier'), findsOneWidget);
@@ -223,22 +251,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Clerk status and empty supplier permission state stay readable',
-      (tester) async {
-    for (final size in [
-      const Size(320, 800),
-      const Size(360, 800),
-      const Size(412, 915)
-    ]) {
-      final clerk = UiClerk();
-      final controller = makeController(clerk);
-      await pumpPhone(
-          tester, BuildToSupplierV21App(controller: controller), size);
-      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
-      expect(tester.takeException(), isNull, reason: 'overflow at $size');
-      await tester.pumpWidget(const SizedBox.shrink());
-      controller.dispose();
-      clerk.state.dispose();
-    }
-  });
+  testWidgets(
+    'Clerk status and empty supplier permission state stay readable',
+    (tester) async {
+      for (final size in [
+        const Size(320, 800),
+        const Size(360, 800),
+        const Size(412, 915),
+      ]) {
+        final clerk = UiClerk();
+        final controller = makeController(clerk);
+        await pumpPhone(
+          tester,
+          BuildToSupplierV21App(controller: controller),
+          size,
+        );
+        expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: 'overflow at $size');
+        await tester.pumpWidget(const SizedBox.shrink());
+        controller.dispose();
+        clerk.state.dispose();
+      }
+    },
+  );
 }

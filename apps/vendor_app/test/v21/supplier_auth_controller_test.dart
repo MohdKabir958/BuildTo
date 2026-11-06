@@ -29,6 +29,7 @@ class FakeClerk implements SupplierClerkPort {
   Future<void> initialize() async {
     await initializeOverride?.call();
   }
+
   @override
   Future<bool> authenticate({String mode = 'signInOrUp'}) async {
     if (!authenticates) return false;
@@ -70,26 +71,30 @@ SupplierAuthController makeController(FakeClerk clerk, http.Client client) {
 }
 
 http.Response me(List<Map<String, Object?>> suppliers) => http.Response(
-    jsonEncode({
-      'data': {
-        'id': 'local-account',
-        'displayName': 'Verified BuildTo Supplier',
-        'adminRole': null,
-        'suppliers': suppliers
-      },
-      'requestId': 'request-me',
-    }),
-    200);
+  jsonEncode({
+    'data': {
+      'id': 'local-account',
+      'displayName': 'Verified BuildTo Supplier',
+      'adminRole': null,
+      'suppliers': suppliers,
+    },
+    'requestId': 'request-me',
+  }),
+  200,
+);
 
-Map<String, Object?> member(String id, String role) =>
-    {'supplierId': id, 'role': role};
+Map<String, Object?> member(String id, String role) => {
+  'supplierId': id,
+  'role': role,
+};
 
 http.Response access(String id, String role) => http.Response(
-    jsonEncode({
-      'data': {'supplierId': id, 'role': role},
-      'requestId': 'request-access',
-    }),
-    200);
+  jsonEncode({
+    'data': {'supplierId': id, 'role': role},
+    'requestId': 'request-access',
+  }),
+  200,
+);
 
 Future<void> until(SupplierAuthController c, SupplierAccessStage stage) async {
   for (var i = 0; i < 120; i++) {
@@ -102,33 +107,32 @@ Future<void> until(SupplierAuthController c, SupplierAccessStage stage) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('cold startup keeps welcome available during pending Clerk initialization',
-      () async {
-    final delayed = Completer<void>();
-    final clerk = FakeClerk()..initializeOverride = () => delayed.future;
-    final controller =
-        makeController(clerk, MockClient((_) async => me([])));
-    final starting = controller.start();
-    expect(controller.stage, SupplierAccessStage.signedOut);
-    expect(controller.busy, isFalse);
-    expect(controller.activeSupplier, isNull);
-    delayed.complete();
-    await starting;
-    expect(controller.stage, SupplierAccessStage.signedOut);
-    controller.dispose();
-    clerk.state.dispose();
-  });
+  test(
+    'cold startup keeps welcome available during pending Clerk initialization',
+    () async {
+      final delayed = Completer<void>();
+      final clerk = FakeClerk()..initializeOverride = () => delayed.future;
+      final controller = makeController(clerk, MockClient((_) async => me([])));
+      final starting = controller.start();
+      expect(controller.stage, SupplierAccessStage.signedOut);
+      expect(controller.busy, isFalse);
+      expect(controller.activeSupplier, isNull);
+      delayed.complete();
+      await starting;
+      expect(controller.stage, SupplierAccessStage.signedOut);
+      controller.dispose();
+      clerk.state.dispose();
+    },
+  );
 
-  test('failed Clerk initialization never dead-ends and can retry',
-      () async {
+  test('failed Clerk initialization never dead-ends and can retry', () async {
     var attempts = 0;
     final clerk = FakeClerk()
       ..initializeOverride = () async {
         attempts++;
         if (attempts == 1) throw StateError('offline');
       };
-    final controller =
-        makeController(clerk, MockClient((_) async => me([])));
+    final controller = makeController(clerk, MockClient((_) async => me([])));
     await controller.start();
     expect(controller.stage, SupplierAccessStage.signedOut);
     expect(controller.notice, contains('Clerk could not connect'));
@@ -144,10 +148,13 @@ void main() {
   test('signed-out session cannot request protected supplier data', () async {
     final clerk = FakeClerk();
     var calls = 0;
-    final controller = makeController(clerk, MockClient((_) async {
-      calls++;
-      return me([]);
-    }));
+    final controller = makeController(
+      clerk,
+      MockClient((_) async {
+        calls++;
+        return me([]);
+      }),
+    );
     await controller.start();
     expect(controller.stage, SupplierAccessStage.signedOut);
     expect(controller.activeSupplier, isNull);
@@ -159,17 +166,23 @@ void main() {
   test('Clerk sign-in checks /me and exact /access before unlock', () async {
     final clerk = FakeClerk();
     final routes = <String>[];
-    final controller = makeController(clerk, MockClient((request) async {
-      routes.add(request.url.path);
-      expect(request.headers['Authorization'], 'Bearer clerk-session-fixture');
-      if (request.url.path == '/api/v2/me') {
-        return me([member(idA, 'INVENTORY')]);
-      }
-      if (request.url.path == '/api/v2/suppliers/$idA/access') {
-        return access(idA, 'INVENTORY');
-      }
-      return http.Response('{}', 404);
-    }));
+    final controller = makeController(
+      clerk,
+      MockClient((request) async {
+        routes.add(request.url.path);
+        expect(
+          request.headers['Authorization'],
+          'Bearer clerk-session-fixture',
+        );
+        if (request.url.path == '/api/v2/me') {
+          return me([member(idA, 'INVENTORY')]);
+        }
+        if (request.url.path == '/api/v2/suppliers/$idA/access') {
+          return access(idA, 'INVENTORY');
+        }
+        return http.Response('{}', 404);
+      }),
+    );
     await controller.start();
     await controller.authenticate();
     await until(controller, SupplierAccessStage.authorized);
@@ -192,41 +205,50 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('multi-supplier switch clears old scope before async access response',
-      () async {
-    final clerk = FakeClerk();
-    final delayedB = Completer<http.Response>();
-    final controller = makeController(clerk, MockClient((request) async {
-      if (request.url.path == '/api/v2/me') {
-        return me([member(idA, 'OWNER'), member(idB, 'VIEWER')]);
-      }
-      if (request.url.path.endsWith('$idA/access')) return access(idA, 'OWNER');
-      return delayedB.future;
-    }));
-    await controller.start();
-    clerk.login('user_SupplierOne', 'sess_SupplierOne');
-    await until(controller, SupplierAccessStage.chooseSupplier);
-    await controller.selectSupplier(idA);
-    expect(controller.stage, SupplierAccessStage.authorized);
-    controller.showSupplierChooser();
-    expect(controller.activeSupplier, isNull);
-    final future = controller.selectSupplier(idB);
-    expect(controller.activeSupplier, isNull);
-    expect(controller.stage, SupplierAccessStage.checking);
-    delayedB.complete(access(idB, 'VIEWER'));
-    await future;
-    expect(controller.activeSupplier!.supplierId, idB);
-    expect(controller.activeSupplier!.role.name, 'viewer');
-    controller.dispose();
-    clerk.state.dispose();
-  });
+  test(
+    'multi-supplier switch clears old scope before async access response',
+    () async {
+      final clerk = FakeClerk();
+      final delayedB = Completer<http.Response>();
+      final controller = makeController(
+        clerk,
+        MockClient((request) async {
+          if (request.url.path == '/api/v2/me') {
+            return me([member(idA, 'OWNER'), member(idB, 'VIEWER')]);
+          }
+          if (request.url.path.endsWith('$idA/access'))
+            return access(idA, 'OWNER');
+          return delayedB.future;
+        }),
+      );
+      await controller.start();
+      clerk.login('user_SupplierOne', 'sess_SupplierOne');
+      await until(controller, SupplierAccessStage.chooseSupplier);
+      await controller.selectSupplier(idA);
+      expect(controller.stage, SupplierAccessStage.authorized);
+      controller.showSupplierChooser();
+      expect(controller.activeSupplier, isNull);
+      final future = controller.selectSupplier(idB);
+      expect(controller.activeSupplier, isNull);
+      expect(controller.stage, SupplierAccessStage.checking);
+      delayedB.complete(access(idB, 'VIEWER'));
+      await future;
+      expect(controller.activeSupplier!.supplierId, idB);
+      expect(controller.activeSupplier!.role.name, 'viewer');
+      controller.dispose();
+      clerk.state.dispose();
+    },
+  );
 
   test('foreign supplier scope response is rejected', () async {
     final clerk = FakeClerk();
-    final controller = makeController(clerk, MockClient((request) async {
-      if (request.url.path == '/api/v2/me') return me([member(idA, 'OWNER')]);
-      return access(idB, 'OWNER');
-    }));
+    final controller = makeController(
+      clerk,
+      MockClient((request) async {
+        if (request.url.path == '/api/v2/me') return me([member(idA, 'OWNER')]);
+        return access(idB, 'OWNER');
+      }),
+    );
     await controller.start();
     clerk.login('user_SupplierOne', 'sess_SupplierOne');
     await until(controller, SupplierAccessStage.accessDenied);
@@ -235,71 +257,83 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('late response from previous Clerk identity cannot restore access',
-      () async {
-    final clerk = FakeClerk();
-    final delayed = Completer<http.Response>();
-    var reads = 0;
-    final controller = makeController(clerk, MockClient((request) async {
-      if (request.url.path == '/api/v2/me') {
-        reads++;
-        if (reads == 1) {
-          return await delayed.future;
-        }
-        return me([]);
+  test(
+    'late response from previous Clerk identity cannot restore access',
+    () async {
+      final clerk = FakeClerk();
+      final delayed = Completer<http.Response>();
+      var reads = 0;
+      final controller = makeController(
+        clerk,
+        MockClient((request) async {
+          if (request.url.path == '/api/v2/me') {
+            reads++;
+            if (reads == 1) {
+              return await delayed.future;
+            }
+            return me([]);
+          }
+          return access(idA, 'OWNER');
+        }),
+      );
+      await controller.start();
+      clerk.login('user_SupplierOne', 'sess_SupplierOne');
+      for (var i = 0; i < 60 && reads == 0; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 2));
       }
-      return access(idA, 'OWNER');
-    }));
-    await controller.start();
-    clerk.login('user_SupplierOne', 'sess_SupplierOne');
-    for (var i = 0; i < 60 && reads == 0; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 2));
-    }
-    expect(reads, 1);
-    clerk.login('user_SupplierTwo', 'sess_SupplierTwo');
-    await until(controller, SupplierAccessStage.noSupplier);
-    delayed.complete(me([member(idA, 'OWNER')]));
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    expect(controller.stage, SupplierAccessStage.noSupplier);
-    expect(controller.activeSupplier, isNull);
-    controller.dispose();
-    clerk.state.dispose();
-  });
+      expect(reads, 1);
+      clerk.login('user_SupplierTwo', 'sess_SupplierTwo');
+      await until(controller, SupplierAccessStage.noSupplier);
+      delayed.complete(me([member(idA, 'OWNER')]));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(controller.stage, SupplierAccessStage.noSupplier);
+      expect(controller.activeSupplier, isNull);
+      controller.dispose();
+      clerk.state.dispose();
+    },
+  );
 
-  test('resume/recheck immediately hides revoked supplier membership',
-      () async {
-    final clerk = FakeClerk();
-    var revoked = false;
-    final pending = Completer<http.Response>();
-    final controller = makeController(clerk, MockClient((request) async {
-      if (request.url.path == '/api/v2/me') {
-        if (revoked) {
-          return await pending.future;
-        }
-        return me([member(idA, 'OWNER')]);
-      }
-      return access(idA, 'OWNER');
-    }));
-    await controller.start();
-    clerk.login('user_SupplierOne', 'sess_SupplierOne');
-    await until(controller, SupplierAccessStage.authorized);
-    revoked = true;
-    final check = controller.refresh();
-    expect(controller.activeSupplier, isNull);
-    expect(controller.stage, SupplierAccessStage.checking);
-    pending.complete(me([]));
-    await check;
-    expect(controller.stage, SupplierAccessStage.noSupplier);
-    controller.dispose();
-    clerk.state.dispose();
-  });
+  test(
+    'resume/recheck immediately hides revoked supplier membership',
+    () async {
+      final clerk = FakeClerk();
+      var revoked = false;
+      final pending = Completer<http.Response>();
+      final controller = makeController(
+        clerk,
+        MockClient((request) async {
+          if (request.url.path == '/api/v2/me') {
+            if (revoked) {
+              return await pending.future;
+            }
+            return me([member(idA, 'OWNER')]);
+          }
+          return access(idA, 'OWNER');
+        }),
+      );
+      await controller.start();
+      clerk.login('user_SupplierOne', 'sess_SupplierOne');
+      await until(controller, SupplierAccessStage.authorized);
+      revoked = true;
+      final check = controller.refresh();
+      expect(controller.activeSupplier, isNull);
+      expect(controller.stage, SupplierAccessStage.checking);
+      pending.complete(me([]));
+      await check;
+      expect(controller.stage, SupplierAccessStage.noSupplier);
+      controller.dispose();
+      clerk.state.dispose();
+    },
+  );
 
   test('invalid Clerk session does not unlock supplier', () async {
     final clerk = FakeClerk();
     final controller = makeController(
-        clerk,
-        MockClient((_) async =>
-            http.Response('{"error":{"code":"INVALID_SESSION"}}', 401)));
+      clerk,
+      MockClient(
+        (_) async => http.Response('{"error":{"code":"INVALID_SESSION"}}', 401),
+      ),
+    );
     await controller.start();
     clerk.login('user_SupplierOne', 'sess_SupplierOne');
     await until(controller, SupplierAccessStage.sessionExpired);
@@ -308,22 +342,28 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('local logout clears access even if remote revocation is uncertain',
-      () async {
-    final clerk = FakeClerk()..remoteRevoked = false;
-    final controller = makeController(clerk, MockClient((request) async {
-      if (request.url.path == '/api/v2/me') return me([member(idA, 'OWNER')]);
-      return access(idA, 'OWNER');
-    }));
-    await controller.start();
-    clerk.login('user_SupplierOne', 'sess_SupplierOne');
-    await until(controller, SupplierAccessStage.authorized);
-    await controller.signOut();
-    expect(controller.stage, SupplierAccessStage.signedOut);
-    expect(controller.activeSupplier, isNull);
-    expect(controller.notice, contains('not confirmed'));
-    expect(clerk.signOutCalls, 1);
-    controller.dispose();
-    clerk.state.dispose();
-  });
+  test(
+    'local logout clears access even if remote revocation is uncertain',
+    () async {
+      final clerk = FakeClerk()..remoteRevoked = false;
+      final controller = makeController(
+        clerk,
+        MockClient((request) async {
+          if (request.url.path == '/api/v2/me')
+            return me([member(idA, 'OWNER')]);
+          return access(idA, 'OWNER');
+        }),
+      );
+      await controller.start();
+      clerk.login('user_SupplierOne', 'sess_SupplierOne');
+      await until(controller, SupplierAccessStage.authorized);
+      await controller.signOut();
+      expect(controller.stage, SupplierAccessStage.signedOut);
+      expect(controller.activeSupplier, isNull);
+      expect(controller.notice, contains('not confirmed'));
+      expect(clerk.signOutCalls, 1);
+      controller.dispose();
+      clerk.state.dispose();
+    },
+  );
 }
