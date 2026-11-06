@@ -67,7 +67,8 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
       SupplierV21Role.catalog,
     }.contains(widget.role);
     final canReadFinance = {
-      SupplierV21Role.owner, SupplierV21Role.manager,
+      SupplierV21Role.owner,
+      SupplierV21Role.manager,
       SupplierV21Role.finance,
     }.contains(widget.role);
     return Column(children: [
@@ -100,7 +101,8 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
             ),
             if (canReadFinance || canManageDelivery)
               ChoiceChip(
-                avatar: const Icon(Icons.account_balance_wallet_outlined, size: 17),
+                avatar:
+                    const Icon(Icons.account_balance_wallet_outlined, size: 17),
                 selectedColor: BuildToPalette.sky,
                 label: const Text('Finance & GST'),
                 selected: section == 3,
