@@ -1,7 +1,6 @@
 import '../api/supplier_v21_api.dart';
 import '../catalog/supplier_catalog_models.dart';
 import '../inventory/supplier_inventory_models.dart';
-import '../inventory/supplier_inventory_repository.dart';
 import '../orders/supplier_orders_repository.dart';
 
 enum SupplierShipmentStatus {
@@ -150,8 +149,9 @@ class SupplierShipment {
         (SupplierShipmentEvent event) =>
             '${event.at.toIso8601String()}-${event.to.name}',
         max: 100);
-    if (items.isEmpty)
+    if (items.isEmpty) {
       throw const FormatException('Shipment has no material lines');
+    }
     return SupplierShipment(
       id: catalogId(row['id']),
       shipmentNumber: catalogString(row['shipmentNumber'], max: 50),

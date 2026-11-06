@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:vendor_app/v21/api/supplier_v21_api.dart';
-import 'package:vendor_app/v21/dashboard/supplier_dashboard_models.dart';
 import 'package:vendor_app/v21/orders/supplier_orders_repository.dart';
 import 'package:vendor_app/v21/shipments/supplier_shipments_repository.dart';
 

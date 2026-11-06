@@ -79,7 +79,9 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
     final member = widget.verifiedSupplier;
     if (member == null ||
         widget.shipmentsRepository == null ||
-        widget.inventoryRepository == null) return;
+        widget.inventoryRepository == null) {
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

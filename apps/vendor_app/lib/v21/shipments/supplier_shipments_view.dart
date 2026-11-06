@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/supplier_v21_api.dart';
 import '../dashboard/supplier_dashboard_models.dart';
-import '../catalog/supplier_catalog_models.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import '../inventory/supplier_inventory_models.dart';
@@ -318,7 +317,9 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
 
   Future<void> handover(SupplierShipment shipment) async {
     if (!widget.canFulfill ||
-        shipment.status != SupplierShipmentStatus.outForDelivery) return;
+        shipment.status != SupplierShipmentStatus.outForDelivery) {
+      return;
+    }
     final code = TextEditingController();
     final recipient = TextEditingController();
     bool busy = false;
