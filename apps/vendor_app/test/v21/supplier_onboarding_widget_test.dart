@@ -121,7 +121,7 @@ void main() {
     });
     await pumpAt(tester, BuildToSupplierV21App(controller: controller),
         const Size(393, 852));
-    await tester.tap(find.text('Continue securely with Clerk'));
+    await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
     expect(find.text('Supplier approval required'), findsOneWidget);
     await tester.tap(find.text('Open supplier applications'));
@@ -195,7 +195,7 @@ void main() {
     });
     await pumpAt(tester, BuildToSupplierV21App(controller: controller),
         const Size(320, 800));
-    await tester.tap(find.text('Continue securely with Clerk'));
+    await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open supplier applications'));
     await tester.pumpAndSettle();
