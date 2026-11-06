@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
@@ -13,6 +14,8 @@ import '../business/supplier_business_view.dart';
 import '../rfq/supplier_rfq_repository.dart';
 import '../orders/supplier_orders_repository.dart';
 import '../orders/supplier_orders_view.dart';
+import '../shipments/supplier_shipments_repository.dart';
+import '../shipments/supplier_shipments_view.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -41,6 +44,7 @@ class BuildToSupplierShell extends StatefulWidget {
     this.deliveryRepository,
     this.rfqRepository,
     this.ordersRepository,
+    this.shipmentsRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -56,6 +60,7 @@ class BuildToSupplierShell extends StatefulWidget {
   final SupplierDeliveryRepository? deliveryRepository;
   final SupplierRfqRepository? rfqRepository;
   final SupplierOrdersRepository? ordersRepository;
+  final SupplierShipmentsRepository? shipmentsRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -69,6 +74,33 @@ class BuildToSupplierShell extends StatefulWidget {
 
 class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
   BuildToSupplierTab selected = BuildToSupplierTab.home;
+
+  Future<void> _openShipments(SupplierOrder order) async {
+    final member = widget.verifiedSupplier;
+    if (member == null || widget.shipmentsRepository == null ||
+        widget.inventoryRepository == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheet) => FractionallySizedBox(
+        heightFactor: .96,
+        child: SupplierShipmentsView(
+          key: ValueKey('${member.supplierId}-${order.id}'),
+          supplierId: member.supplierId,
+          order: order,
+          repository: widget.shipmentsRepository!,
+          inventory: widget.inventoryRepository!,
+          canFulfill: const {
+            SupplierV21Role.owner, SupplierV21Role.manager,
+            SupplierV21Role.fulfillment,
+          }.contains(member.role),
+          onRecheckAccess: widget.onRefresh,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -210,6 +242,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                           SupplierV21Role.fulfillment,
                         }.contains(widget.verifiedSupplier!.role),
                         onRecheckAccess: widget.onRefresh,
+                        onOpenShipments: (order) => unawaited(_openShipments(order)),
                       )
                     else if (widget.verifiedSupplier != null &&
                         widget.ordersRepository != null)

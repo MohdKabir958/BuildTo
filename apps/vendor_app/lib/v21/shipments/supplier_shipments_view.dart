@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/supplier_v21_api.dart';
+import '../dashboard/supplier_dashboard_models.dart';
 import '../catalog/supplier_catalog_models.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
@@ -375,9 +376,11 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
       ]);
     }
     final eligible = widget.canFulfill &&
-      !{ 'PENDING_ACCEPTANCE', 'CANCELLED', 'REJECTED' }
-        .contains(widget.order.status.name.toUpperCase()) &&
-      warehouses.any((w) => w.active);
+        !{DashboardOrderStatus.pendingAcceptance,
+          DashboardOrderStatus.cancelled,
+          DashboardOrderStatus.rejected,
+          DashboardOrderStatus.delivered}.contains(widget.order.status) &&
+        warehouses.any((w) => w.active);
     return RefreshIndicator(
       onRefresh: refresh,
       child: ListView(
