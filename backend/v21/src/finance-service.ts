@@ -105,7 +105,7 @@ async function eligibility(tx:Tx,supplierId:string,supplierOrderId:string){
  if(s.invoices.length!==1||s.invoices[0].totalPaise!==s.totalPaise)
   throw new ApiError(409,'SETTLEMENT_INVOICE_REQUIRED','An exact issued invoice is required.');
  if(!s.items.length||s.items.some(i=>!i.shipmentLines.length||!
-  i.shipmentLines.filter(l=>l.shipment.status==='DELIVERED'&&l.shipment.deliveredAt&&
+  i.shipmentLines.filter(l=>['DELIVERED','PARTIALLY_DELIVERED'].includes(l.shipment.status)&&l.shipment.deliveredAt&&
     (l.shipment.handoverMethod==='OTP'&&l.shipment.otpVerifiedAt||
      l.shipment.handoverMethod==='APPROVED_EXCEPTION'&&l.shipment.exceptionApprovedAt))
   .reduce((n,l)=>n.plus(l.deliveredQty),new Prisma.Decimal(0)).eq(i.quantity)))
@@ -302,7 +302,7 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
    if(!order||order.status!=='DELIVERED'||order.returnRequests.length||
     order.purchaseOrder.refunds.length||order.settlementLines.length||
     !order.items.length||order.items.some(i=>!i.shipmentLines.length||!
-     i.shipmentLines.filter(l=>l.shipment.status==='DELIVERED'&&l.shipment.deliveredAt&&
+     i.shipmentLines.filter(l=>['DELIVERED','PARTIALLY_DELIVERED'].includes(l.shipment.status)&&l.shipment.deliveredAt&&
       (l.shipment.handoverMethod==='OTP'&&l.shipment.otpVerifiedAt||
        l.shipment.handoverMethod==='APPROVED_EXCEPTION'&&l.shipment.exceptionApprovedAt))
      .reduce((n,l)=>n.plus(l.deliveredQty),new Prisma.Decimal(0)).eq(i.quantity))||
