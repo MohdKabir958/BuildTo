@@ -236,6 +236,9 @@ export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGateway
   // A failure may describe only one failed checkout try within the same
   // Razorpay Order. It is NOT proof the entire order has permanently failed.
   if(event.name==='payment.failed'){
+   // One Razorpay attempt can fail while the same gateway Order stays open.
+   // Record evidence; only provider reconciliation can end the session.
+   await audit(tx,order.id,null,'RAZORPAY_PAYMENT_TRY_FAILED');
    await finish(null);return {duplicate:false,retry:false};
   }
   if(event.name==='payment.authorized'){
