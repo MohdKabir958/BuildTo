@@ -11,6 +11,8 @@ import '../inventory/supplier_inventory_view.dart';
 import '../delivery/supplier_delivery_repository.dart';
 import '../business/supplier_business_view.dart';
 import '../rfq/supplier_rfq_repository.dart';
+import '../orders/supplier_orders_repository.dart';
+import '../orders/supplier_orders_view.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -38,6 +40,7 @@ class BuildToSupplierShell extends StatefulWidget {
     this.inventoryRepository,
     this.deliveryRepository,
     this.rfqRepository,
+    this.ordersRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -52,6 +55,7 @@ class BuildToSupplierShell extends StatefulWidget {
   final SupplierInventoryRepository? inventoryRepository;
   final SupplierDeliveryRepository? deliveryRepository;
   final SupplierRfqRepository? rfqRepository;
+  final SupplierOrdersRepository? ordersRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -193,13 +197,31 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                       )
                     else
                       _HomeTab(verifiedSupplier: widget.verifiedSupplier),
-                    _RestrictedTab(
-                      verifiedSupplier: widget.verifiedSupplier,
-                      title: 'Supplier orders',
-                      subtitle:
-                          'Review committed orders, prepare shipments and track handover.',
-                      icon: Icons.receipt_long_outlined,
-                    ),
+                    if (widget.verifiedSupplier != null &&
+                        widget.ordersRepository != null &&
+                        selected == BuildToSupplierTab.orders)
+                      SupplierOrdersView(
+                        key: ValueKey(widget.verifiedSupplier!.supplierId),
+                        supplierId: widget.verifiedSupplier!.supplierId,
+                        repository: widget.ordersRepository!,
+                        canFulfill: const {
+                          SupplierV21Role.owner,
+                          SupplierV21Role.manager,
+                          SupplierV21Role.fulfillment,
+                        }.contains(widget.verifiedSupplier!.role),
+                        onRecheckAccess: widget.onRefresh,
+                      )
+                    else if (widget.verifiedSupplier != null &&
+                        widget.ordersRepository != null)
+                      const SizedBox.shrink()
+                    else
+                      _RestrictedTab(
+                        verifiedSupplier: widget.verifiedSupplier,
+                        title: 'Supplier orders',
+                        subtitle:
+                            'Review committed orders, prepare shipments and track handover.',
+                        icon: Icons.receipt_long_outlined,
+                      ),
                     if (widget.verifiedSupplier != null &&
                         widget.catalogRepository != null &&
                         selected == BuildToSupplierTab.catalog)
