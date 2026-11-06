@@ -4,9 +4,12 @@ import '../delivery/supplier_delivery_repository.dart';
 import '../delivery/supplier_delivery_view.dart';
 import '../rfq/supplier_rfq_repository.dart';
 import '../rfq/supplier_rfq_view.dart';
+import '../orders/supplier_orders_repository.dart';
+import '../care/supplier_care_repository.dart';
+import '../care/supplier_care_view.dart';
 import '../design/buildto_theme.dart';
 
-/// Two independent business workspaces sharing a verified supplier identity.
+/// Three independent business workspaces sharing a verified supplier identity.
 /// Role gates mirror backend permissions; every request is still authorized
 /// afresh by the V2.1 server.
 class SupplierBusinessView extends StatefulWidget {
@@ -16,6 +19,8 @@ class SupplierBusinessView extends StatefulWidget {
     required this.role,
     required this.delivery,
     required this.rfqs,
+    required this.orders,
+    required this.care,
     this.onRecheckAccess,
   });
 
@@ -23,6 +28,8 @@ class SupplierBusinessView extends StatefulWidget {
   final SupplierV21Role role;
   final SupplierDeliveryRepository delivery;
   final SupplierRfqRepository rfqs;
+  final SupplierOrdersRepository orders;
+  final SupplierCareRepository care;
   final VoidCallback? onRecheckAccess;
 
   @override
@@ -73,6 +80,13 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
               selected: section == 1,
               onSelected: (_) => setState(() => section = 1),
             ),
+            ChoiceChip(
+              avatar: const Icon(Icons.assignment_return_outlined, size: 17),
+              selectedColor: BuildToPalette.sky,
+              label: const Text('Returns & reviews'),
+              selected: section == 2,
+              onSelected: (_) => setState(() => section = 2),
+            ),
           ],
         ),
       ),
@@ -85,13 +99,22 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
                   canWrite: canManageDelivery,
                   onRecheckAccess: widget.onRecheckAccess,
                 )
-              : SupplierRfqView(
-                  key: ValueKey('rfq-${widget.supplierId}'),
-                  supplierId: widget.supplierId,
-                  repository: widget.rfqs,
-                  canQuote: canQuote,
-                  onRecheckAccess: widget.onRecheckAccess,
-                )),
+              : section == 1
+                  ? SupplierRfqView(
+                      key: ValueKey('rfq-${widget.supplierId}'),
+                      supplierId: widget.supplierId,
+                      repository: widget.rfqs,
+                      canQuote: canQuote,
+                      onRecheckAccess: widget.onRecheckAccess,
+                    )
+                  : SupplierCareView(
+                      key: ValueKey('care-${widget.supplierId}'),
+                      supplierId: widget.supplierId,
+                      repository: widget.care,
+                      ordersRepository: widget.orders,
+                      canReceive: canManageDelivery,
+                      onRecheckAccess: widget.onRecheckAccess,
+                    )),
     ]);
   }
 }

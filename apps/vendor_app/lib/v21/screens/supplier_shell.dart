@@ -16,6 +16,7 @@ import '../orders/supplier_orders_repository.dart';
 import '../orders/supplier_orders_view.dart';
 import '../shipments/supplier_shipments_repository.dart';
 import '../shipments/supplier_shipments_view.dart';
+import '../care/supplier_care_repository.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -45,6 +46,7 @@ class BuildToSupplierShell extends StatefulWidget {
     this.rfqRepository,
     this.ordersRepository,
     this.shipmentsRepository,
+    this.careRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -61,6 +63,7 @@ class BuildToSupplierShell extends StatefulWidget {
   final SupplierRfqRepository? rfqRepository;
   final SupplierOrdersRepository? ordersRepository;
   final SupplierShipmentsRepository? shipmentsRepository;
+  final SupplierCareRepository? careRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -315,6 +318,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                     if (widget.verifiedSupplier != null &&
                         widget.deliveryRepository != null &&
                         widget.rfqRepository != null &&
+                        widget.ordersRepository != null &&
+                        widget.careRepository != null &&
                         selected == BuildToSupplierTab.more)
                       SupplierBusinessView(
                         key: ValueKey(widget.verifiedSupplier!.supplierId),
@@ -322,11 +327,15 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         role: widget.verifiedSupplier!.role,
                         delivery: widget.deliveryRepository!,
                         rfqs: widget.rfqRepository!,
+                        orders: widget.ordersRepository!,
+                        care: widget.careRepository!,
                         onRecheckAccess: widget.onRefresh,
                       )
                     else if (widget.verifiedSupplier != null &&
                         widget.deliveryRepository != null &&
-                        widget.rfqRepository != null)
+                        widget.rfqRepository != null &&
+                        widget.ordersRepository != null &&
+                        widget.careRepository != null)
                       const SizedBox.shrink()
                     else
                       _RestrictedTab(
