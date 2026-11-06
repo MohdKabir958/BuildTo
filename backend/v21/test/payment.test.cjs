@@ -283,7 +283,7 @@ async function newPayableOrder(){
   skuSnapshot:'RETRY-'+uuid().slice(0,12),nameSnapshot:'Cement',
   unitCode:'BAG',packSizeSnapshot:new Prisma.Decimal(1),
   quantity:new Prisma.Decimal(1),unitPrice:new Prisma.Decimal(75),
-  taxRateBps:0,taxablePaise:7500n,lineTotalPaise:7500n
+  taxRateBps:0,taxablePaise:7500n,taxPaise:0n,lineTotalPaise:7500n
  }});
  await db.inventoryBalance.update({where:{id:state.balance.id},data:{
   reservedQty:{increment:new Prisma.Decimal(1)}
