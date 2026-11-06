@@ -325,3 +325,94 @@ test('supplier can refuse an unpaid child without cancelling other supplier chil
  assert.equal((await send('post',sup()+'/orders/'+part.child.id+'/reject',
   'fulfillment',{reason:'Unpaid order cannot be supplied from this warehouse'})).body.data.replayed,true);
 });
+
+test('captured fulfillment survives a previous failed UPI payment attempt',async()=>{
+ const extra=await completeOnline('1');
+ await db.paymentAttempt.create({data:{
+  purchaseOrderId:extra.parent.id,provider:'RAZORPAY',
+  paymentMethod:'UPI',status:'FAILED',amountPaise:extra.money,
+  idempotencyKey:key()
+ }});
+ const route=sup()+'/orders/'+extra.child.id;
+ const a=await send('post',route+'/accept','fulfillment',{});
+ assert.equal(a.status,200,JSON.stringify(a.body));
+ const b=await send('post',route+'/shipments','fulfillment',{
+  warehouseId:st.warehouse.id,lines:[{orderItemId:extra.item.id,quantity:'1'}]
+ },key());
+ assert.equal(b.status,201,JSON.stringify(b.body));
+});
+test('cancelled planned and packed lorries release allocated quantity exactly once',async()=>{
+ const extra=await completeOnline('1');
+ const route=sup()+'/orders/'+extra.child.id;
+ assert.equal((await send('post',route+'/accept','fulfillment',{})).status,200);
+ const plan=()=>send('post',route+'/shipments','fulfillment',{
+  warehouseId:st.warehouse.id,lines:[{orderItemId:extra.item.id,quantity:'1'}]
+ },key());
+ const planned=await plan();
+ assert.equal(planned.status,201,JSON.stringify(planned.body));
+ const a=ship(planned.body.data.id)+'/cancel';
+ assert.equal((await send('post',a,'outsider',{reason:'Truck unavailable'})).status,404);
+ const done=await send('post',a,'fulfillment',{reason:'Truck unavailable before loading'});
+ assert.equal(done.status,200,JSON.stringify(done.body));
+ assert.equal((await db.supplierOrderItem.findUniqueOrThrow({where:{id:extra.item.id}}))
+  .allocatedShipmentQty.toString(),'0');
+ assert.equal((await send('post',a,'fulfillment',{reason:'Truck unavailable before loading'})).body.data.replayed,true);
+ const next=await plan();assert.equal(next.status,201,JSON.stringify(next.body));
+ const second=ship(next.body.data.id);
+ assert.equal((await send('post',second+'/pack','fulfillment',{})).status,200);
+ assert.equal((await send('post',second+'/cancel','fulfillment',{reason:'Crane breakdown before dispatch'})).status,200);
+ assert.equal((await db.supplierOrderItem.findUniqueOrThrow({where:{id:extra.item.id}}))
+  .allocatedShipmentQty.toString(),'0');
+ const final=await plan();assert.equal(final.status,201,JSON.stringify(final.body));
+ await advance(ship(final.body.data.id));
+ assert.equal((await send('post',ship(final.body.data.id)+'/cancel','fulfillment',{
+  reason:'Already dispatched; this cannot be silently cancelled'
+ })).status,409);
+});
+test('verified partially rejected material frees only rejected allocation for replacement shipment',async()=>{
+ const extra=await completeOnline('3');
+ const route=sup()+'/orders/'+extra.child.id;
+ assert.equal((await send('post',route+'/accept','fulfillment',{})).status,200);
+ const plan=quantity=>send('post',route+'/shipments','fulfillment',{
+  warehouseId:st.warehouse.id,lines:[{orderItemId:extra.item.id,quantity}]
+ },key());
+ const original=await plan('3');
+ assert.equal(original.status,201,JSON.stringify(original.body));
+ const first=ship(original.body.data.id);
+ await advance(first);
+ const otp=await send('post','/api/v2/orders/'+extra.parent.id+'/shipments/'+original.body.data.id+'/otp',
+  'customer',{});
+ assert.equal(otp.status,200,JSON.stringify(otp.body));
+ const partial=await send('post',first+'/handover','fulfillment',{
+  method:'OTP',otp:otp.body.data.otp,
+  lines:[{orderItemId:extra.item.id,deliveredQty:'2',rejectedQty:'1'}]
+ });
+ assert.equal(partial.status,200,JSON.stringify(partial.body));
+ assert.equal(partial.body.data.status,'PARTIALLY_DELIVERED');
+ assert.equal(partial.body.data.rejectedQty,'1');
+ assert.equal((await db.supplierOrderItem.findUniqueOrThrow({where:{id:extra.item.id}}))
+  .allocatedShipmentQty.toString(),'2');
+ const wrong=await send('post',first+'/handover','fulfillment',{
+  method:'OTP',otp:otp.body.data.otp,
+  lines:[{orderItemId:extra.item.id,deliveredQty:'1',rejectedQty:'2'}]
+ });
+ assert.equal(wrong.status,409);
+ const replacement=await plan('1');
+ assert.equal(replacement.status,201,JSON.stringify(replacement.body));
+ assert.equal((await db.supplierOrderItem.findUniqueOrThrow({where:{id:extra.item.id}}))
+  .allocatedShipmentQty.toString(),'3');
+ assert.equal((await plan('1')).status,409,'replacements cannot overship purchased qty');
+ const second=ship(replacement.body.data.id);
+ await advance(second);
+ const otp2=await send('post','/api/v2/orders/'+extra.parent.id+
+   '/shipments/'+replacement.body.data.id+'/otp','customer',{});
+ assert.equal(otp2.status,200,JSON.stringify(otp2.body));
+ const receipt=await send('post',second+'/handover','fulfillment',{
+  method:'OTP',otp:otp2.body.data.otp
+ });
+ assert.equal(receipt.status,200,JSON.stringify(receipt.body));
+ assert.equal(receipt.body.data.supplierOrderStatus,'DELIVERED');
+ assert.equal((await db.supplierOrder.findUniqueOrThrow({where:{id:extra.child.id}})).status,'DELIVERED');
+ const counts=await db.shipmentItem.findMany({where:{shipment:{supplierOrderId:extra.child.id}}});
+ assert.equal(counts.reduce((acc,l)=>acc.plus(l.deliveredQty),qty('0')).toString(),'3');
+});
