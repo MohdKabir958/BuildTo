@@ -6,7 +6,6 @@ import 'package:http/testing.dart';
 
 import '../api/supplier_v21_api.dart';
 import '../api/supplier_v21_models.dart';
-import '../business/supplier_business_view.dart';
 import '../care/supplier_care_repository.dart';
 import '../catalog/supplier_catalog_repository.dart';
 import '../dashboard/supplier_dashboard_repository.dart';
@@ -559,7 +558,7 @@ class _BuildToSupplierClientPreviewAppState
                 approval: SupplierApplicationStatus.pending,
                 gstRegistration: draft.gstRegistration,
                 createdAt: DateTime.now().toUtc(),
-                gstin: draft.gstin.isEmpty ? null : draft.gstin,
+                gstin: (draft.gstin?.isEmpty ?? true) ? null : draft.gstin,
               ),
               completed: (summary) {
                 submittedApplication = summary;
