@@ -47,8 +47,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
         _controller = SupplierAuthController(clerk: clerk, api: api);
         _ownsController = true;
       } catch (_) {
-        _setupFailure =
-            'Secure supplier sign-in is not configured. '
+        _setupFailure = 'Secure supplier sign-in is not configured. '
             'Check the BuildTo API origin and Android Clerk settings.';
       }
     }
@@ -78,39 +77,38 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'BuildTo Supplier',
-    debugShowCheckedModeBanner: false,
-    theme: BuildToTheme.light(),
-    home: _setupFailure == null
-        ? AnimatedBuilder(
-            animation: _controller!,
-            builder: (context, _) {
-              final controller = _controller!;
-              final canView =
-                  controller.sessionKey != null &&
-                  (controller.stage == SupplierAccessStage.authorized ||
-                      controller.stage == SupplierAccessStage.noSupplier);
-              if (_applicationsOpen && canView) {
-                return SupplierOnboardingFlow(
-                  key: ValueKey(controller.sessionKey),
-                  controller: controller,
-                  api: controller.applications,
-                  onClose: () => setState(() => _applicationsOpen = false),
-                );
-              }
-              return _SupplierAccessView(
-                controller: controller,
-                openApplications: () =>
-                    setState(() => _applicationsOpen = true),
-              );
-            },
-          )
-        : _AccessScaffold(
-            title: 'Secure setup required',
-            subtitle: _setupFailure!,
-            icon: Icons.admin_panel_settings_outlined,
-          ),
-  );
+        title: 'BuildTo Supplier',
+        debugShowCheckedModeBanner: false,
+        theme: BuildToTheme.light(),
+        home: _setupFailure == null
+            ? AnimatedBuilder(
+                animation: _controller!,
+                builder: (context, _) {
+                  final controller = _controller!;
+                  final canView = controller.sessionKey != null &&
+                      (controller.stage == SupplierAccessStage.authorized ||
+                          controller.stage == SupplierAccessStage.noSupplier);
+                  if (_applicationsOpen && canView) {
+                    return SupplierOnboardingFlow(
+                      key: ValueKey(controller.sessionKey),
+                      controller: controller,
+                      api: controller.applications,
+                      onClose: () => setState(() => _applicationsOpen = false),
+                    );
+                  }
+                  return _SupplierAccessView(
+                    controller: controller,
+                    openApplications: () =>
+                        setState(() => _applicationsOpen = true),
+                  );
+                },
+              )
+            : _AccessScaffold(
+                title: 'Secure setup required',
+                subtitle: _setupFailure!,
+                icon: Icons.admin_panel_settings_outlined,
+              ),
+      );
 }
 
 class _SupplierAccessView extends StatelessWidget {
@@ -173,45 +171,45 @@ class _SupplierAccessView extends StatelessWidget {
 
     final (title, description, icon) = switch (stage) {
       SupplierAccessStage.signedOut || SupplierAccessStage.starting => (
-        'Welcome to BuildTo Supplier',
-        'Already have an account? Sign in. New supplier? Create an '
-            'account to register your business and track approval.',
-        Icons.storefront_outlined,
-      ),
+          'Welcome to BuildTo Supplier',
+          'Already have an account? Sign in. New supplier? Create an '
+              'account to register your business and track approval.',
+          Icons.storefront_outlined,
+        ),
       SupplierAccessStage.noSupplier => (
-        'Supplier approval required',
-        'Your Clerk account is signed in, but no approved supplier business is linked. '
-            'You can register a construction-material business or track your application below.',
-        Icons.domain_verification_outlined,
-      ),
+          'Supplier approval required',
+          'Your Clerk account is signed in, but no approved supplier business is linked. '
+              'You can register a construction-material business or track your application below.',
+          Icons.domain_verification_outlined,
+        ),
       SupplierAccessStage.accessDenied => (
-        'Supplier access unavailable',
-        'The backend denied or changed your supplier membership. '
-            'No protected business data is shown.',
-        Icons.lock_person_outlined,
-      ),
+          'Supplier access unavailable',
+          'The backend denied or changed your supplier membership. '
+              'No protected business data is shown.',
+          Icons.lock_person_outlined,
+        ),
       SupplierAccessStage.sessionExpired => (
-        'Session expired',
-        'Please sign in again to continue securely.',
-        Icons.lock_clock_outlined,
-      ),
+          'Session expired',
+          'Please sign in again to continue securely.',
+          Icons.lock_clock_outlined,
+        ),
       SupplierAccessStage.unavailable => (
-        'Cannot verify your access',
-        'The connection or identity provider is unavailable. '
-            'We will not use cached roles while offline.',
-        Icons.wifi_off_outlined,
-      ),
+          'Cannot verify your access',
+          'The connection or identity provider is unavailable. '
+              'We will not use cached roles while offline.',
+          Icons.wifi_off_outlined,
+        ),
       SupplierAccessStage.misconfigured => (
-        'Connection setup needs attention',
-        'Your supplier account is protected. Retry the connection '
-            'or return to sign in; no business data has been unlocked.',
-        Icons.settings_suggest_outlined,
-      ),
+          'Connection setup needs attention',
+          'Your supplier account is protected. Retry the connection '
+              'or return to sign in; no business data has been unlocked.',
+          Icons.settings_suggest_outlined,
+        ),
       _ => (
-        'Access unavailable',
-        'Your supplier membership needs verification.',
-        Icons.shield_outlined,
-      ),
+          'Access unavailable',
+          'Your supplier membership needs verification.',
+          Icons.shield_outlined,
+        ),
     };
 
     return _AccessScaffold(
@@ -223,59 +221,61 @@ class _SupplierAccessView extends StatelessWidget {
       actions: switch (stage) {
         SupplierAccessStage.signedOut ||
         SupplierAccessStage.starting ||
-        SupplierAccessStage.sessionExpired => [
-          _AccessAction(
-            'Sign in to my account',
-            Icons.login_rounded,
-            () => controller.authenticate(mode: 'signIn'),
-          ),
-          _AccessAction(
-            'Create a new account',
-            Icons.person_add_alt_1_outlined,
-            () => controller.authenticate(mode: 'signUp'),
-            outlined: true,
-          ),
-          if (controller.notice != null)
+        SupplierAccessStage.sessionExpired =>
+          [
             _AccessAction(
-              'Retry Clerk connection',
-              Icons.refresh_rounded,
-              controller.retryClerkInitialization,
+              'Sign in to my account',
+              Icons.login_rounded,
+              () => controller.authenticate(mode: 'signIn'),
+            ),
+            _AccessAction(
+              'Create a new account',
+              Icons.person_add_alt_1_outlined,
+              () => controller.authenticate(mode: 'signUp'),
               outlined: true,
             ),
-        ],
+            if (controller.notice != null)
+              _AccessAction(
+                'Retry Clerk connection',
+                Icons.refresh_rounded,
+                controller.retryClerkInitialization,
+                outlined: true,
+              ),
+          ],
         SupplierAccessStage.noSupplier => [
-          _AccessAction(
-            'Open supplier applications',
-            Icons.add_business_rounded,
-            openApplications,
-          ),
-          _AccessAction(
-            'Recheck approval',
-            Icons.refresh_rounded,
-            controller.refresh,
-          ),
-          _AccessAction(
-            'Sign out / change account',
-            Icons.logout_rounded,
-            controller.signOut,
-            outlined: true,
-          ),
-        ],
+            _AccessAction(
+              'Open supplier applications',
+              Icons.add_business_rounded,
+              openApplications,
+            ),
+            _AccessAction(
+              'Recheck approval',
+              Icons.refresh_rounded,
+              controller.refresh,
+            ),
+            _AccessAction(
+              'Sign out / change account',
+              Icons.logout_rounded,
+              controller.signOut,
+              outlined: true,
+            ),
+          ],
         SupplierAccessStage.accessDenied ||
         SupplierAccessStage.unavailable ||
-        SupplierAccessStage.misconfigured => [
-          _AccessAction(
-            'Retry secure verification',
-            Icons.refresh_rounded,
-            controller.refresh,
-          ),
-          _AccessAction(
-            'Sign out / Back to welcome',
-            Icons.arrow_back_rounded,
-            controller.signOut,
-            outlined: true,
-          ),
-        ],
+        SupplierAccessStage.misconfigured =>
+          [
+            _AccessAction(
+              'Retry secure verification',
+              Icons.refresh_rounded,
+              controller.refresh,
+            ),
+            _AccessAction(
+              'Sign out / Back to welcome',
+              Icons.arrow_back_rounded,
+              controller.signOut,
+              outlined: true,
+            ),
+          ],
         _ => [],
       },
       busy: controller.busy,
@@ -315,101 +315,102 @@ class _AccessScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: BuildToPageWidth(
-        child: Center(
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-            children: [
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: BuildToBrandMark(),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                width: 80,
-                height: 80,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: BuildToPalette.sky,
-                  borderRadius: BorderRadius.circular(23),
-                ),
-                child: Icon(icon, color: BuildToPalette.navy, size: 42),
-              ),
-              const SizedBox(height: 24),
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 12),
-              Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-              if (email != null && email!.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Text(
-                  'Clerk account: ${email!}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              if (message != null && message!.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                BuildToCard(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.info_outline_rounded,
-                        color: BuildToPalette.warning,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text(message!)),
-                    ],
+        body: SafeArea(
+          child: BuildToPageWidth(
+            child: Center(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: BuildToBrandMark(),
                   ),
-                ),
-              ],
-              if (loading) ...[
-                const SizedBox(height: 24),
-                const Center(child: CircularProgressIndicator()),
-                const SizedBox(height: 18),
-                const BuildToSkeleton(height: 72),
-              ],
-              if (busy && !loading) ...[
-                const SizedBox(height: 18),
-                const LinearProgressIndicator(),
-                const SizedBox(height: 8),
-                Text(
-                  'Connecting securely. You can retry if this fails.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              if (actions.isNotEmpty) ...[
-                const SizedBox(height: 28),
-                for (final action in actions) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: action.outlined
-                        ? OutlinedButton.icon(
-                            onPressed: busy ? null : action.callback,
-                            icon: Icon(action.icon),
-                            label: Text(action.label),
-                          )
-                        : BuildToPrimaryButton(
-                            label: action.label,
-                            icon: action.icon,
-                            busy: busy,
-                            onPressed: action.callback,
-                          ),
+                  const SizedBox(height: 32),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: BuildToPalette.sky,
+                      borderRadius: BorderRadius.circular(23),
+                    ),
+                    child: Icon(icon, color: BuildToPalette.navy, size: 42),
                   ),
+                  const SizedBox(height: 24),
+                  Text(title,
+                      style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 12),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+                  if (email != null && email!.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      'Clerk account: ${email!}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (message != null && message!.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    BuildToCard(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            color: BuildToPalette.warning,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(message!)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (loading) ...[
+                    const SizedBox(height: 24),
+                    const Center(child: CircularProgressIndicator()),
+                    const SizedBox(height: 18),
+                    const BuildToSkeleton(height: 72),
+                  ],
+                  if (busy && !loading) ...[
+                    const SizedBox(height: 18),
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Connecting securely. You can retry if this fails.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (actions.isNotEmpty) ...[
+                    const SizedBox(height: 28),
+                    for (final action in actions) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: action.outlined
+                            ? OutlinedButton.icon(
+                                onPressed: busy ? null : action.callback,
+                                icon: Icon(action.icon),
+                                label: Text(action.label),
+                              )
+                            : BuildToPrimaryButton(
+                                label: action.label,
+                                icon: action.icon,
+                                busy: busy,
+                                onPressed: action.callback,
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
+                  const SizedBox(height: 20),
+                  Text(
+                    'BuildTo • Secure supplier workspace',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
-              ],
-              const SizedBox(height: 20),
-              Text(
-                'BuildTo • Secure supplier workspace',
-                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _SupplierPicker extends StatelessWidget {
@@ -429,8 +430,7 @@ class _SupplierPicker extends StatelessWidget {
               const SizedBox(height: 26),
               const BuildToSectionHeading(
                 title: 'Choose your supplier',
-                subtitle:
-                    'Select a business for this session. '
+                subtitle: 'Select a business for this session. '
                     'Every selection is verified with the backend.',
               ),
               const SizedBox(height: 18),

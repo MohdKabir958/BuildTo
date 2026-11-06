@@ -71,30 +71,30 @@ SupplierAuthController makeController(FakeClerk clerk, http.Client client) {
 }
 
 http.Response me(List<Map<String, Object?>> suppliers) => http.Response(
-  jsonEncode({
-    'data': {
-      'id': 'local-account',
-      'displayName': 'Verified BuildTo Supplier',
-      'adminRole': null,
-      'suppliers': suppliers,
-    },
-    'requestId': 'request-me',
-  }),
-  200,
-);
+      jsonEncode({
+        'data': {
+          'id': 'local-account',
+          'displayName': 'Verified BuildTo Supplier',
+          'adminRole': null,
+          'suppliers': suppliers,
+        },
+        'requestId': 'request-me',
+      }),
+      200,
+    );
 
 Map<String, Object?> member(String id, String role) => {
-  'supplierId': id,
-  'role': role,
-};
+      'supplierId': id,
+      'role': role,
+    };
 
 http.Response access(String id, String role) => http.Response(
-  jsonEncode({
-    'data': {'supplierId': id, 'role': role},
-    'requestId': 'request-access',
-  }),
-  200,
-);
+      jsonEncode({
+        'data': {'supplierId': id, 'role': role},
+        'requestId': 'request-access',
+      }),
+      200,
+    );
 
 Future<void> until(SupplierAuthController c, SupplierAccessStage stage) async {
   for (var i = 0; i < 120; i++) {
