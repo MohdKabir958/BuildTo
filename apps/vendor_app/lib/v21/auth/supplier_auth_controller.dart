@@ -13,6 +13,7 @@ import '../rfq/supplier_rfq_repository.dart';
 import '../orders/supplier_orders_repository.dart';
 import '../shipments/supplier_shipments_repository.dart';
 import '../care/supplier_care_repository.dart';
+import '../finance/supplier_finance_repository.dart';
 
 enum SupplierAccessStage {
   starting,
@@ -91,6 +92,9 @@ class SupplierAuthController extends ChangeNotifier {
 
   late final SupplierCareRepository careRepository =
       SupplierCareRepository(_api);
+
+  late final SupplierFinanceRepository financeRepository =
+      SupplierFinanceRepository(_api);
 
   bool _current(int generation, String? fingerprint) =>
       !_disposed &&

@@ -10,6 +10,8 @@ import 'package:vendor_app/v21/delivery/supplier_delivery_repository.dart';
 import 'package:vendor_app/v21/rfq/supplier_rfq_repository.dart';
 import 'package:vendor_app/v21/orders/supplier_orders_repository.dart';
 import 'package:vendor_app/v21/care/supplier_care_repository.dart';
+import 'package:vendor_app/v21/finance/supplier_finance_repository.dart';
+import 'package:vendor_app/v21/shipments/supplier_shipments_repository.dart';
 
 const supplier = '123e4567-e89b-42d3-a456-426614174000';
 
@@ -34,6 +36,8 @@ void main() {
         rfqs: SupplierRfqRepository(api),
         orders: SupplierOrdersRepository(api),
         care: SupplierCareRepository(api),
+        finance: SupplierFinanceRepository(api),
+        shipments: SupplierShipmentsRepository(api),
       ),
     )));
     await tester.pumpAndSettle();
