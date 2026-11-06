@@ -50,7 +50,9 @@ jobs:
           sed -i 's#^vendor.applicationId=.*#vendor.applicationId=in.buildto.supplier.preview#' ../../branding/android.properties
           sed -i 's#^vendor.label=.*#vendor.label=BuildTo Supplier Preview#' ../../branding/android.properties
           sed -i 's#Grozo Vendor#BuildTo Supplier Preview#' android/app/src/main/res/values/branding.xml
-          export CLERK_PUBLISHABLE_KEY="pk_test_$(printf 'buildto-native-ci-fixture.clerk.accounts.dev$' | base64 -w0)"
+          # Preview never initializes Clerk; keep the native Application in inert legacy mode.
+          export GROZO_AUTH_MODE=legacy
+          unset CLERK_PUBLISHABLE_KEY
           flutter build apk --debug --no-pub --split-per-abi --target-platform android-arm64 \
             --dart-define=BUILDTO_SUPPLIER_V21_PREVIEW=true \
             --dart-define=AUTH_MODE=clerk-test
