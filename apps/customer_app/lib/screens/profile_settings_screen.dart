@@ -16,7 +16,7 @@ import 'repeat_order_screen.dart';
 import 'support_help_screen.dart';
 import 'wishlist_screen.dart';
 
-const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: true);
+const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: false);
 
 /// Screen 13 — Profile / Settings
 /// Contractor profile information, account management, saved addresses, and preferences.
