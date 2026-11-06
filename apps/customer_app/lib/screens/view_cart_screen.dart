@@ -7,6 +7,10 @@ import '../providers/session_provider.dart';
 import '../widgets/ui/k_image.dart';
 import '../widgets/ui/snack.dart';
 import 'checkout_screen.dart';
+import 'customer_preview_addresses_screen.dart';
+
+const bool kClientShowcaseCart =
+    bool.fromEnvironment('BUILDTO_CUSTOMER_CLIENT_SHOWCASE', defaultValue: false);
 
 /// Screen 04 — View Cart
 /// Cart review screen with line item totals, quantities, bill breakdown, and checkout CTA.
@@ -23,9 +27,11 @@ class ViewCartScreen extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final session = context.watch<SessionProvider>();
     final items = cart.items;
-    final addressText = session.addressText.isNotEmpty
-        ? session.addressText
-        : '4891/1C Lal Bihara, Near Metro Pillar 42, New Delhi - 110001';
+    final addressText = kClientShowcaseCart
+        ? ClientPreviewAddressStore.selected.value.formatted
+        : (session.addressText.isNotEmpty
+            ? session.addressText
+            : '4891/1C Lal Bihara, Near Metro Pillar 42, New Delhi - 110001');
 
     final quote = cart.quote;
     final subtotal = quote.subtotal;
