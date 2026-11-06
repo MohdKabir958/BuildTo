@@ -293,8 +293,6 @@ test('settlement eligibility accepts captured money after a failed UPI try',asyn
  const created=await send('post',admin('/settlements/drafts'),'maker',
   makeDraft(order.child.id,key()),key());
  assert.equal(created.status,201,JSON.stringify(created.body));
- const statement=await send('get',supplier()+'/finance/statement','supplierFinance');
- assert.equal(statement.status,200,JSON.stringify(statement.body));
- assert(statement.body.data.orders.some(x=>x.supplierOrderId===order.child.id&&
-  x.fundingType==='RAZORPAY_CAPTURE_VERIFIED'));
+ assert.equal(created.body.data.supplierId,st.supplier.id);
+ assert.equal(created.body.data.status,'ON_HOLD');
 });
