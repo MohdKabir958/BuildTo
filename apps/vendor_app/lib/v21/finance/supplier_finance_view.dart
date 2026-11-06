@@ -242,7 +242,9 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
   Future<void> _issueCredit(SupplierReturn item) async {
     if (!widget.canIssue ||
         actionBusy ||
-        item.status != SupplierReturnStatus.received) return;
+        item.status != SupplierReturnStatus.received) {
+      return;
+    }
     final approved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -280,7 +282,9 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
   Future<void> _recordCod(SupplierOrder order) async {
     if (!widget.canRecordCod ||
         actionBusy ||
-        order.status != DashboardOrderStatus.delivered) return;
+        order.status != DashboardOrderStatus.delivered) {
+      return;
+    }
     final delivered = shipments
         .where((s) =>
             s.status == SupplierShipmentStatus.delivered && s.handoverVerified)
