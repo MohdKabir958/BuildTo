@@ -7,8 +7,12 @@ import '../providers/cart_provider.dart';
 import '../providers/session_provider.dart';
 import '../widgets/ui/snack.dart';
 import 'addresses_screen.dart';
+import 'customer_preview_addresses_screen.dart';
 import 'order_placed_screen.dart';
 import 'payment_success_alt_screen.dart';
+
+const bool kClientShowcaseCheckout =
+    bool.fromEnvironment('BUILDTO_CUSTOMER_CLIENT_SHOWCASE', defaultValue: false);
 
 /// Screen 05 — Checkout
 /// Three-step checkout: Address -> Payment -> Review with demo mode safety indicator.
@@ -43,9 +47,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final session = context.watch<SessionProvider>();
-    final addressText = session.addressText.isNotEmpty
-        ? session.addressText
-        : '4891/1C Lal Bihara, Near Metro Pillar 42, New Delhi - 110001';
+    final addressText = kClientShowcaseCheckout
+        ? ClientPreviewAddressStore.selected.value.formatted
+        : (session.addressText.isNotEmpty
+            ? session.addressText
+            : '4891/1C Lal Bihara, Near Metro Pillar 42, New Delhi - 110001');
 
     final quote = cart.quote;
     final subtotal = widget.customAmount != null
@@ -161,7 +167,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const AddressesScreen()),
+                            MaterialPageRoute(builder: (_) => kClientShowcaseCheckout
+                                ? const ClientPreviewAddressesScreen()
+                                : const AddressesScreen()),
                           );
                         },
                         style: TextButton.styleFrom(

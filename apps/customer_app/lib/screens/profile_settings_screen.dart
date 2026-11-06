@@ -8,6 +8,7 @@ import '../providers/session_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../widgets/ui/snack.dart';
 import 'addresses_screen.dart';
+import 'customer_preview_addresses_screen.dart';
 import 'auth_screen.dart';
 import 'my_orders_screen.dart';
 import 'notifications_screen.dart';
@@ -15,7 +16,7 @@ import 'repeat_order_screen.dart';
 import 'support_help_screen.dart';
 import 'wishlist_screen.dart';
 
-const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: true);
+const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', defaultValue: false);
 
 /// Screen 13 — Profile / Settings
 /// Contractor profile information, account management, saved addresses, and preferences.
@@ -211,7 +212,9 @@ class ProfileSettingsScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const AddressesScreen()),
+                        MaterialPageRoute(builder: (_) => kBuildtoOfflineDemo
+                              ? const ClientPreviewAddressesScreen()
+                              : const AddressesScreen()),
                       );
                     },
                   ),
