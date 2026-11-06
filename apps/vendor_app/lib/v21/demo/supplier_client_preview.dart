@@ -63,7 +63,7 @@ class _BuildToSupplierClientPreviewAppState
   }
 
   String uid(int suffix) =>
-      '123e4567-e89b-42d3-a456-' + (426614174000 + suffix).toString();
+      '123e4567-e89b-42d3-a456-${426614174000 + suffix}';
 
   Map<String, Object?> order(String id, String status, String sku,
       String quantity, String total, int line) => {
@@ -591,9 +591,7 @@ class _BuildToSupplierClientPreviewAppState
                   style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 12),
               Text(
-                (submittedApplication?.displayName ?? 'Sample supplier') +
-                    ' is awaiting review. This is a simulated status; '
-                        'nothing has been sent to BuildTo.',
+                '${submittedApplication?.displayName ?? 'Sample supplier'} is awaiting review. This is a simulated status; nothing has been sent to BuildTo.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 26),
