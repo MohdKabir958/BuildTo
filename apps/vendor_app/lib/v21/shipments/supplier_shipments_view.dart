@@ -99,20 +99,21 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
   }
 
   String actionError(Object e) => switch (e) {
-    SupplierV21Exception(problem: SupplierV21Problem.conflict) =>
-      'Shipment state or stock allocation changed. Refresh before a new action.',
-    SupplierV21Exception(problem: SupplierV21Problem.network) =>
-      'Outcome uncertain. Refresh shipments before trying again.',
-    SupplierV21Exception(problem: SupplierV21Problem.rateLimited) =>
-      'Too many attempts. Customer OTP may be temporarily locked.',
-    SupplierV21Exception(problem: SupplierV21Problem.validation) =>
-      'The backend rejected this handover or quantity. Check the details.',
-    SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
-    SupplierV21Exception(problem: SupplierV21Problem.notFound) =>
-      'Supplier access changed. Recheck current permissions.',
-    FormatException() => 'Check the exact quantity, warehouse and form details.',
-    _ => 'Shipment action not confirmed. Refresh before trying again.',
-  };
+        SupplierV21Exception(problem: SupplierV21Problem.conflict) =>
+          'Shipment state or stock allocation changed. Refresh before a new action.',
+        SupplierV21Exception(problem: SupplierV21Problem.network) =>
+          'Outcome uncertain. Refresh shipments before trying again.',
+        SupplierV21Exception(problem: SupplierV21Problem.rateLimited) =>
+          'Too many attempts. Customer OTP may be temporarily locked.',
+        SupplierV21Exception(problem: SupplierV21Problem.validation) =>
+          'The backend rejected this handover or quantity. Check the details.',
+        SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
+        SupplierV21Exception(problem: SupplierV21Problem.notFound) =>
+          'Supplier access changed. Recheck current permissions.',
+        FormatException() =>
+          'Check the exact quantity, warehouse and form details.',
+        _ => 'Shipment action not confirmed. Refresh before trying again.',
+      };
 
   void report(Object e) {
     if (!mounted) return;
@@ -148,97 +149,124 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
           builder: (sheet, change) => FractionallySizedBox(
             heightFactor: .92,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20,
-                  MediaQuery.viewInsetsOf(sheet).bottom + 12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+              padding: EdgeInsets.fromLTRB(
+                  20, 8, 20, MediaQuery.viewInsetsOf(sheet).bottom + 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Plan warehouse shipment',
-                    style: Theme.of(sheet).textTheme.headlineSmall),
+                      style: Theme.of(sheet).textTheme.headlineSmall),
                   const SizedBox(height: 8),
-                  const Text('Choose committed warehouse stock and exact order quantities. Allocation is rechecked by BuildTo.'),
+                  const Text(
+                      'Choose committed warehouse stock and exact order quantities. Allocation is rechecked by BuildTo.'),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: chosenWarehouse,
                     isExpanded: true,
                     decoration: const InputDecoration(
-                      labelText: 'Active dispatch warehouse'),
-                    items: available.map((w) => DropdownMenuItem(
-                      value: w.id, child: Text(w.name),
-                    )).toList(),
-                    onChanged: busy || uncertain ? null :
-                      (value) => change(() => chosenWarehouse = value ?? chosenWarehouse),
+                        labelText: 'Active dispatch warehouse'),
+                    items: available
+                        .map((w) => DropdownMenuItem(
+                              value: w.id,
+                              child: Text(w.name),
+                            ))
+                        .toList(),
+                    onChanged: busy || uncertain
+                        ? null
+                        : (value) => change(
+                            () => chosenWarehouse = value ?? chosenWarehouse),
                   ),
                   const SizedBox(height: 10),
-                  Expanded(child: ListView(children: [
+                  Expanded(
+                      child: ListView(children: [
                     for (final line in widget.order.items)
-                      BuildToCard(child: Column(children: [
+                      BuildToCard(
+                          child: Column(children: [
                         CheckboxListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(line.sku),
-                          subtitle: Text('Ordered ${line.quantity} ${line.unitCode}'),
+                          subtitle:
+                              Text('Ordered ${line.quantity} ${line.unitCode}'),
                           value: selected.contains(line.id),
-                          onChanged: busy || uncertain ? null :
-                            (value) => change(() {
-                              if (value == true) {
-                                selected.add(line.id);
-                              } else {
-                                selected.remove(line.id);
-                              }
-                            }),
+                          onChanged: busy || uncertain
+                              ? null
+                              : (value) => change(() {
+                                    if (value == true) {
+                                      selected.add(line.id);
+                                    } else {
+                                      selected.remove(line.id);
+                                    }
+                                  }),
                         ),
                         if (selected.contains(line.id))
                           TextField(
                             controller: quantity[line.id],
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             decoration: InputDecoration(
                               labelText: 'Quantity to ship (${line.unitCode})',
-                              helperText: 'May not exceed unallocated committed warehouse stock',
+                              helperText:
+                                  'May not exceed unallocated committed warehouse stock',
                             ),
                           ),
                       ])),
                     const SizedBox(height: 9),
-                    TextField(controller: carrier, maxLength: 160,
-                      decoration: const InputDecoration(labelText: 'Carrier name (optional)')),
+                    TextField(
+                        controller: carrier,
+                        maxLength: 160,
+                        decoration: const InputDecoration(
+                            labelText: 'Carrier name (optional)')),
                     const SizedBox(height: 9),
-                    TextField(controller: tracking, maxLength: 100,
-                      decoration: const InputDecoration(labelText: 'Tracking reference (optional)')),
+                    TextField(
+                        controller: tracking,
+                        maxLength: 100,
+                        decoration: const InputDecoration(
+                            labelText: 'Tracking reference (optional)')),
                     if (notice != null)
-                      Text(notice!, style: const TextStyle(color: BuildToPalette.danger)),
+                      Text(notice!,
+                          style: const TextStyle(color: BuildToPalette.danger)),
                   ])),
                   const SizedBox(height: 10),
                   BuildToPrimaryButton(
-                    label: uncertain ? 'Refresh to reconcile shipment' :
-                        'Create server-validated shipment',
+                    label: uncertain
+                        ? 'Refresh to reconcile shipment'
+                        : 'Create server-validated shipment',
                     busy: busy,
-                    onPressed: busy || uncertain || selected.isEmpty ? null : () async {
-                      change(() { busy = true; notice = null; });
-                      try {
-                        await widget.repository.plan(
-                          supplierId: widget.supplierId,
-                          order: widget.order,
-                          warehouseId: chosenWarehouse,
-                          lines: [
-                            for (final id in selected)
-                              SupplierShipmentPlanLine(id, quantity[id]!.text.trim()),
-                          ],
-                          carrierName: carrier.text,
-                          trackingReference: tracking.text,
-                          intent: intent,
-                        );
-                        if (sheet.mounted) Navigator.pop(sheet, true);
-                      } catch (e) {
-                        if (sheet.mounted) {
-                          change(() {
-                            busy = false;
-                            uncertain = e is SupplierV21Exception &&
-                                e.problem == SupplierV21Problem.network;
-                            notice = uncertain ?
-                              'Outcome may have committed. Close and refresh to reconcile; do not create a duplicate.' :
-                              'Shipment was not confirmed. Check selection, available stock and status.';
-                          });
-                        }
-                      }
-                    },
+                    onPressed: busy || uncertain || selected.isEmpty
+                        ? null
+                        : () async {
+                            change(() {
+                              busy = true;
+                              notice = null;
+                            });
+                            try {
+                              await widget.repository.plan(
+                                supplierId: widget.supplierId,
+                                order: widget.order,
+                                warehouseId: chosenWarehouse,
+                                lines: [
+                                  for (final id in selected)
+                                    SupplierShipmentPlanLine(
+                                        id, quantity[id]!.text.trim()),
+                                ],
+                                carrierName: carrier.text,
+                                trackingReference: tracking.text,
+                                intent: intent,
+                              );
+                              if (sheet.mounted) Navigator.pop(sheet, true);
+                            } catch (e) {
+                              if (sheet.mounted) {
+                                change(() {
+                                  busy = false;
+                                  uncertain = e is SupplierV21Exception &&
+                                      e.problem == SupplierV21Problem.network;
+                                  notice = uncertain
+                                      ? 'Outcome may have committed. Close and refresh to reconcile; do not create a duplicate.'
+                                      : 'Shipment was not confirmed. Check selection, available stock and status.';
+                                });
+                              }
+                            }
+                          },
                   ),
                 ],
               ),
@@ -267,19 +295,21 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
       builder: (dialog) => AlertDialog(
         title: Text('$expected shipment?'),
         content: Text('Only BuildTo can confirm the next shipment status. '
-          'Shipment: ${shipment.shipmentNumber}'),
+            'Shipment: ${shipment.shipmentNumber}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialog, false),
-            child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialog, true),
-            child: Text(expected)),
+          TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(expected)),
         ],
       ),
     );
     if (confirmed != true) return;
     try {
-      await widget.repository.progress(supplierId: widget.supplierId,
-        shipment: shipment, stage: stage);
+      await widget.repository.progress(
+          supplierId: widget.supplierId, shipment: shipment, stage: stage);
       if (mounted) await refresh();
     } catch (e) {
       report(e);
@@ -300,11 +330,13 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
         builder: (dialog) => StatefulBuilder(
           builder: (dialog, change) => AlertDialog(
             title: const Text('Customer delivery OTP'),
-            content: SingleChildScrollView(child: Column(
+            content: SingleChildScrollView(
+                child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Ask the customer to issue a fresh OTP from their own order. Never generate it here. OTP expires after five minutes.'),
+                const Text(
+                    'Ask the customer to issue a fresh OTP from their own order. Never generate it here. OTP expires after five minutes.'),
                 const SizedBox(height: 14),
                 TextField(
                   controller: code,
@@ -312,40 +344,51 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
                   maxLength: 6,
                   obscureText: true,
                   decoration: const InputDecoration(
-                    labelText: 'Customer-issued 6-digit code'),
+                      labelText: 'Customer-issued 6-digit code'),
                 ),
-                TextField(controller: recipient, maxLength: 160,
-                  decoration: const InputDecoration(
-                    labelText: 'Received by (optional)')),
-                if (notice != null) Text(notice!,
-                  style: const TextStyle(color: BuildToPalette.danger)),
+                TextField(
+                    controller: recipient,
+                    maxLength: 160,
+                    decoration: const InputDecoration(
+                        labelText: 'Received by (optional)')),
+                if (notice != null)
+                  Text(notice!,
+                      style: const TextStyle(color: BuildToPalette.danger)),
               ],
             )),
             actions: [
-              TextButton(onPressed: busy ? null : () => Navigator.pop(dialog, false),
-                child: const Text('Cancel')),
+              TextButton(
+                  onPressed: busy ? null : () => Navigator.pop(dialog, false),
+                  child: const Text('Cancel')),
               FilledButton(
-                onPressed: busy || uncertain ? null : () async {
-                  change(() { busy = true; notice = null; });
-                  try {
-                    await widget.repository.verifyCustomerOtp(
-                      supplierId: widget.supplierId, shipment: shipment,
-                      otp: code.text.trim(), receivedBy: recipient.text,
-                    );
-                    if (dialog.mounted) Navigator.pop(dialog, true);
-                  } catch (e) {
-                    if (dialog.mounted) {
-                      change(() {
-                        busy = false;
-                        uncertain = e is SupplierV21Exception &&
-                            e.problem == SupplierV21Problem.network;
-                        notice = uncertain ?
-                          'Outcome uncertain. Close and refresh before any retry.' :
-                          'Verification failed, expired or locked. Use a valid customer-issued code. Never guess.';
-                      });
-                    }
-                  }
-                },
+                onPressed: busy || uncertain
+                    ? null
+                    : () async {
+                        change(() {
+                          busy = true;
+                          notice = null;
+                        });
+                        try {
+                          await widget.repository.verifyCustomerOtp(
+                            supplierId: widget.supplierId,
+                            shipment: shipment,
+                            otp: code.text.trim(),
+                            receivedBy: recipient.text,
+                          );
+                          if (dialog.mounted) Navigator.pop(dialog, true);
+                        } catch (e) {
+                          if (dialog.mounted) {
+                            change(() {
+                              busy = false;
+                              uncertain = e is SupplierV21Exception &&
+                                  e.problem == SupplierV21Problem.network;
+                              notice = uncertain
+                                  ? 'Outcome uncertain. Close and refresh before any retry.'
+                                  : 'Verification failed, expired or locked. Use a valid customer-issued code. Never guess.';
+                            });
+                          }
+                        }
+                      },
                 child: const Text('Verify handover'),
               ),
             ],
@@ -362,24 +405,30 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return ListView(padding: const EdgeInsets.all(20),
-        children: const [BuildToSkeleton(height: 120), BuildToSkeleton()]);
+      return ListView(
+          padding: const EdgeInsets.all(20),
+          children: const [BuildToSkeleton(height: 120), BuildToSkeleton()]);
     }
     if (error != null) {
       return ListView(padding: const EdgeInsets.all(20), children: [
-        BuildToStatePanel(title: 'Shipment data unavailable',
-          message: error!, actionLabel: 'Retry shipments',
-          onAction: () => unawaited(refresh())),
-        if (widget.onRecheckAccess != null) OutlinedButton(
-          onPressed: widget.onRecheckAccess,
-          child: const Text('Recheck supplier access')),
+        BuildToStatePanel(
+            title: 'Shipment data unavailable',
+            message: error!,
+            actionLabel: 'Retry shipments',
+            onAction: () => unawaited(refresh())),
+        if (widget.onRecheckAccess != null)
+          OutlinedButton(
+              onPressed: widget.onRecheckAccess,
+              child: const Text('Recheck supplier access')),
       ]);
     }
     final eligible = widget.canFulfill &&
-        !{DashboardOrderStatus.pendingAcceptance,
+        !{
+          DashboardOrderStatus.pendingAcceptance,
           DashboardOrderStatus.cancelled,
           DashboardOrderStatus.rejected,
-          DashboardOrderStatus.delivered}.contains(widget.order.status) &&
+          DashboardOrderStatus.delivered
+        }.contains(widget.order.status) &&
         warehouses.any((w) => w.active);
     return RefreshIndicator(
       onRefresh: refresh,
@@ -389,23 +438,30 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 36),
         children: [
           Text('Order shipments',
-            style: Theme.of(context).textTheme.headlineMedium),
+              style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: BuildToPalette.navy,
-              borderRadius: BorderRadius.circular(20)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start,children: [
+            decoration: BoxDecoration(
+                color: BuildToPalette.navy,
+                borderRadius: BorderRadius.circular(20)),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('BUILDTO • MATERIAL HANDOVER',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
-                  color: BuildToPalette.orange)),
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: BuildToPalette.orange)),
               const SizedBox(height: 12),
-              Text('${shipments.length == 100 ? '100+' : shipments.length} verified shipments',
-                style: const TextStyle(color: Colors.white, fontSize: 21,
-                  fontWeight: FontWeight.w800)),
+              Text(
+                  '${shipments.length == 100 ? '100+' : shipments.length} verified shipments',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               const Text('Supplier-arranged dispatch • customer-issued OTP',
-                style: TextStyle(color: Color(0xFFDDECF9))),
+                  style: TextStyle(color: Color(0xFFDDECF9))),
             ]),
           ),
           const SizedBox(height: 14),
@@ -416,70 +472,77 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
               onPressed: () => unawaited(plan()),
             ),
           if (widget.canFulfill && !warehouses.any((w) => w.active))
-            const Text('Activate a warehouse in Stock before allocating shipments.'),
+            const Text(
+                'Activate a warehouse in Stock before allocating shipments.'),
           const SizedBox(height: 15),
           if (shipments.isEmpty)
             const BuildToStatePanel(
-              title: 'No shipments planned',
-              message: 'Only backend-confirmed warehouse allocations will appear here.',
-              icon: Icons.local_shipping_outlined),
-          ...shipments.map((shipment) => BuildToCard(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Expanded(child: Text(shipment.shipmentNumber,
-                  style: Theme.of(context).textTheme.titleMedium)),
-                BuildToStatusChip(label: shipment.status.label,
-                  status: shipment.status == SupplierShipmentStatus.delivered
-                      ? BuildToStatus.success :
-                      shipment.status == SupplierShipmentStatus.failed
-                      ? BuildToStatus.danger : BuildToStatus.pending),
-              ]),
-              const SizedBox(height: 9),
-              Text('Warehouse: ${warehouses.where((w) => w.id ==
-                 shipment.warehouseId).map((w) => w.name).firstOrNull ?? 'Unavailable'}'),
-              if (shipment.carrierName != null)
-                Text('Carrier: ${shipment.carrierName}'),
-              if (shipment.trackingReference != null)
-                Text('Tracking: ${shipment.trackingReference}'),
-              const Divider(),
-              ...shipment.items.map((line) => Text(
-                '${widget.order.items.where((e) => e.id == line.orderItemId)
-                    .map((e) => e.sku).firstOrNull ?? 'Material'} • ${line.quantity}')),
-              if (shipment.events.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                const Text('Verified movement history',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-                ...shipment.events.take(5).map((event) => Text(
-                  '${event.to.label} · ${event.at.toLocal().toString().split('.').first}',
-                  style: Theme.of(context).textTheme.bodySmall)),
-              ],
-              const SizedBox(height: 9),
-              if (widget.canFulfill && shipment.status.nextStep != null)
-                OutlinedButton.icon(
-                  onPressed: () => unawaited(progress(shipment,
-                    shipment.status.nextStep!)),
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(switch (shipment.status.nextStep!) {
-                    'pack' => 'Confirm packed',
-                    'dispatch' => 'Confirm dispatch',
-                    _ => 'Out for delivery',
-                  }),
-                ),
-              if (widget.canFulfill &&
-                  shipment.status == SupplierShipmentStatus.outForDelivery)
-                BuildToPrimaryButton(
-                  label: 'Verify customer handover OTP',
-                  icon: Icons.verified_user_outlined,
-                  onPressed: () => unawaited(handover(shipment)),
-                ),
-              if (shipment.handoverVerified)
-                const Text('Delivery verified by backend.',
-                  style: TextStyle(color: BuildToPalette.success)),
-            ],
-          ))),
+                title: 'No shipments planned',
+                message:
+                    'Only backend-confirmed warehouse allocations will appear here.',
+                icon: Icons.local_shipping_outlined),
+          ...shipments.map((shipment) => BuildToCard(
+                  child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Expanded(
+                        child: Text(shipment.shipmentNumber,
+                            style: Theme.of(context).textTheme.titleMedium)),
+                    BuildToStatusChip(
+                        label: shipment.status.label,
+                        status: shipment.status ==
+                                SupplierShipmentStatus.delivered
+                            ? BuildToStatus.success
+                            : shipment.status == SupplierShipmentStatus.failed
+                                ? BuildToStatus.danger
+                                : BuildToStatus.pending),
+                  ]),
+                  const SizedBox(height: 9),
+                  Text(
+                      'Warehouse: ${warehouses.where((w) => w.id == shipment.warehouseId).map((w) => w.name).firstOrNull ?? 'Unavailable'}'),
+                  if (shipment.carrierName != null)
+                    Text('Carrier: ${shipment.carrierName}'),
+                  if (shipment.trackingReference != null)
+                    Text('Tracking: ${shipment.trackingReference}'),
+                  const Divider(),
+                  ...shipment.items.map((line) => Text(
+                      '${widget.order.items.where((e) => e.id == line.orderItemId).map((e) => e.sku).firstOrNull ?? 'Material'} • ${line.quantity}')),
+                  if (shipment.events.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    const Text('Verified movement history',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    ...shipment.events.take(5).map((event) => Text(
+                        '${event.to.label} · ${event.at.toLocal().toString().split('.').first}',
+                        style: Theme.of(context).textTheme.bodySmall)),
+                  ],
+                  const SizedBox(height: 9),
+                  if (widget.canFulfill && shipment.status.nextStep != null)
+                    OutlinedButton.icon(
+                      onPressed: () => unawaited(
+                          progress(shipment, shipment.status.nextStep!)),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: Text(switch (shipment.status.nextStep!) {
+                        'pack' => 'Confirm packed',
+                        'dispatch' => 'Confirm dispatch',
+                        _ => 'Out for delivery',
+                      }),
+                    ),
+                  if (widget.canFulfill &&
+                      shipment.status == SupplierShipmentStatus.outForDelivery)
+                    BuildToPrimaryButton(
+                      label: 'Verify customer handover OTP',
+                      icon: Icons.verified_user_outlined,
+                      onPressed: () => unawaited(handover(shipment)),
+                    ),
+                  if (shipment.handoverVerified)
+                    const Text('Delivery verified by backend.',
+                        style: TextStyle(color: BuildToPalette.success)),
+                ],
+              ))),
           const SizedBox(height: 16),
-          const Text('Delivery exception requires independent admin approval. No supplier bypass is offered.'),
+          const Text(
+              'Delivery exception requires independent admin approval. No supplier bypass is offered.'),
           if (shipments.length == 100)
             const Text('Showing at most 100 shipments for this order.'),
         ],

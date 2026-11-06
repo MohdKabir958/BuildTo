@@ -77,7 +77,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
 
   Future<void> _openShipments(SupplierOrder order) async {
     final member = widget.verifiedSupplier;
-    if (member == null || widget.shipmentsRepository == null ||
+    if (member == null ||
+        widget.shipmentsRepository == null ||
         widget.inventoryRepository == null) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -93,7 +94,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
           repository: widget.shipmentsRepository!,
           inventory: widget.inventoryRepository!,
           canFulfill: const {
-            SupplierV21Role.owner, SupplierV21Role.manager,
+            SupplierV21Role.owner,
+            SupplierV21Role.manager,
             SupplierV21Role.fulfillment,
           }.contains(member.role),
           onRecheckAccess: widget.onRefresh,
@@ -242,7 +244,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                           SupplierV21Role.fulfillment,
                         }.contains(widget.verifiedSupplier!.role),
                         onRecheckAccess: widget.onRefresh,
-                        onOpenShipments: (order) => unawaited(_openShipments(order)),
+                        onOpenShipments: (order) =>
+                            unawaited(_openShipments(order)),
                       )
                     else if (widget.verifiedSupplier != null &&
                         widget.ordersRepository != null)

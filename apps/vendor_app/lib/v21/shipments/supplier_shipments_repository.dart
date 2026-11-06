@@ -16,35 +16,35 @@ enum SupplierShipmentStatus {
   cancelled;
 
   static SupplierShipmentStatus parse(Object? value) => switch (value) {
-    'PLANNED' => planned,
-    'PACKED' => packed,
-    'DISPATCHED' => dispatched,
-    'OUT_FOR_DELIVERY' => outForDelivery,
-    'PARTIALLY_DELIVERED' => partiallyDelivered,
-    'DELIVERED' => delivered,
-    'FAILED' => failed,
-    'RETURNED' => returned,
-    'CANCELLED' => cancelled,
-    _ => throw const FormatException('Unknown shipment status'),
-  };
+        'PLANNED' => planned,
+        'PACKED' => packed,
+        'DISPATCHED' => dispatched,
+        'OUT_FOR_DELIVERY' => outForDelivery,
+        'PARTIALLY_DELIVERED' => partiallyDelivered,
+        'DELIVERED' => delivered,
+        'FAILED' => failed,
+        'RETURNED' => returned,
+        'CANCELLED' => cancelled,
+        _ => throw const FormatException('Unknown shipment status'),
+      };
 
   String get label => switch (this) {
-    planned => 'Planned',
-    packed => 'Packed',
-    dispatched => 'Dispatched',
-    outForDelivery => 'Out for delivery',
-    partiallyDelivered => 'Partially delivered',
-    delivered => 'Delivered',
-    failed => 'Delivery failed',
-    returned => 'Returned',
-    cancelled => 'Cancelled',
-  };
+        planned => 'Planned',
+        packed => 'Packed',
+        dispatched => 'Dispatched',
+        outForDelivery => 'Out for delivery',
+        partiallyDelivered => 'Partially delivered',
+        delivered => 'Delivered',
+        failed => 'Delivery failed',
+        returned => 'Returned',
+        cancelled => 'Cancelled',
+      };
   String? get nextStep => switch (this) {
-    planned => 'pack',
-    packed => 'dispatch',
-    dispatched => 'out-for-delivery',
-    _ => null,
-  };
+        planned => 'pack',
+        packed => 'dispatch',
+        dispatched => 'out-for-delivery',
+        _ => null,
+      };
 }
 
 class SupplierShipmentLine {
@@ -63,7 +63,7 @@ class SupplierShipmentLine {
     final delivered = exactStockQuantity(row['deliveredQty']);
     final rejected = exactStockQuantity(row['rejectedQty']);
     if (catalogScaled(delivered, whole: 15, scale: 3, positive: false) +
-        catalogScaled(rejected, whole: 15, scale: 3, positive: false) >
+            catalogScaled(rejected, whole: 15, scale: 3, positive: false) >
         catalogScaled(qty, whole: 15, scale: 3)) {
       throw const FormatException('Shipment line exceeds ordered quantity');
     }
@@ -90,8 +90,9 @@ class SupplierShipmentEvent {
   factory SupplierShipmentEvent.parse(Object? value) {
     final row = catalogObject(value);
     return SupplierShipmentEvent(
-      from: row['fromStatus'] == null ? null :
-          SupplierShipmentStatus.parse(row['fromStatus']),
+      from: row['fromStatus'] == null
+          ? null
+          : SupplierShipmentStatus.parse(row['fromStatus']),
       to: SupplierShipmentStatus.parse(row['toStatus']),
       at: shipmentUtc(row['at']),
     );
@@ -141,11 +142,16 @@ class SupplierShipment {
       throw const FormatException('Foreign or invalid shipment');
     }
     final items = shipmentRows(row['items'], SupplierShipmentLine.parse,
-        (SupplierShipmentLine item) => item.id, max: 40);
-    final events = shipmentRows(row['events'], SupplierShipmentEvent.parse,
+        (SupplierShipmentLine item) => item.id,
+        max: 40);
+    final events = shipmentRows(
+        row['events'],
+        SupplierShipmentEvent.parse,
         (SupplierShipmentEvent event) =>
-            '${event.at.toIso8601String()}-${event.to.name}', max: 100);
-    if (items.isEmpty) throw const FormatException('Shipment has no material lines');
+            '${event.at.toIso8601String()}-${event.to.name}',
+        max: 100);
+    if (items.isEmpty)
+      throw const FormatException('Shipment has no material lines');
     return SupplierShipment(
       id: catalogId(row['id']),
       shipmentNumber: catalogString(row['shipmentNumber'], max: 50),
@@ -155,19 +161,23 @@ class SupplierShipment {
       status: SupplierShipmentStatus.parse(row['status']),
       handoverVerified: row['handoverVerified'] as bool,
       createdAt: shipmentUtc(row['createdAt']),
-      deliveredAt: row['deliveredAt'] == null ? null : shipmentUtc(row['deliveredAt']),
-      carrierName: row['carrierName'] == null ? null :
-          catalogString(row['carrierName'], max: 160),
-      trackingReference: row['trackingReference'] == null ? null :
-          catalogString(row['trackingReference'], max: 100),
+      deliveredAt:
+          row['deliveredAt'] == null ? null : shipmentUtc(row['deliveredAt']),
+      carrierName: row['carrierName'] == null
+          ? null
+          : catalogString(row['carrierName'], max: 160),
+      trackingReference: row['trackingReference'] == null
+          ? null
+          : catalogString(row['trackingReference'], max: 100),
       items: items,
       events: events,
     );
   }
 }
 
-List<T> shipmentRows<T>(Object? raw, T Function(Object?) parse,
-    String Function(T) identity, {int max = 100}) {
+List<T> shipmentRows<T>(
+    Object? raw, T Function(Object?) parse, String Function(T) identity,
+    {int max = 100}) {
   if (raw is! List<dynamic> || raw.length > max) {
     throw const FormatException('Invalid bounded shipment data');
   }
@@ -179,8 +189,8 @@ List<T> shipmentRows<T>(Object? raw, T Function(Object?) parse,
 }
 
 class SupplierShipmentDecision {
-  const SupplierShipmentDecision({required this.id, required this.status,
-    required this.replayed});
+  const SupplierShipmentDecision(
+      {required this.id, required this.status, required this.replayed});
   final String id;
   final SupplierShipmentStatus status;
   final bool replayed;
@@ -189,11 +199,12 @@ class SupplierShipmentDecision {
     final row = catalogObject(raw);
     final status = SupplierShipmentStatus.parse(row['status']);
     if (catalogId(row['id']) != shipmentId ||
-        status != expected || row['replayed'] is! bool) {
+        status != expected ||
+        row['replayed'] is! bool) {
       throw const FormatException('Unconfirmed shipment state transition');
     }
-    return SupplierShipmentDecision(id: shipmentId, status: status,
-        replayed: row['replayed'] as bool);
+    return SupplierShipmentDecision(
+        id: shipmentId, status: status, replayed: row['replayed'] as bool);
   }
 }
 
@@ -216,11 +227,13 @@ class SupplierShipmentsRepository {
   Future<List<SupplierShipment>> list(
       String supplierId, String supplierOrderId) async {
     final id = catalogId(supplierOrderId);
-    final data = (await client.get('${_base(supplierId)}/orders/$id/shipments')).data;
-    return shipmentRows(data,
-      (row) => SupplierShipment.parse(row,
-          supplierId: supplierId, orderId: id),
-      (SupplierShipment shipment) => shipment.id);
+    final data =
+        (await client.get('${_base(supplierId)}/orders/$id/shipments')).data;
+    return shipmentRows(
+        data,
+        (row) =>
+            SupplierShipment.parse(row, supplierId: supplierId, orderId: id),
+        (SupplierShipment shipment) => shipment.id);
   }
 
   Future<SupplierShipment> plan({
@@ -232,7 +245,8 @@ class SupplierShipmentsRepository {
     String? carrierName,
     String? trackingReference,
   }) async {
-    if (lines.isEmpty || lines.length > 40 ||
+    if (lines.isEmpty ||
+        lines.length > 40 ||
         lines.map((line) => line.orderItemId).toSet().length != lines.length) {
       throw const FormatException('Select 1–40 unique order lines');
     }
@@ -250,6 +264,7 @@ class SupplierShipmentsRepository {
       if (text == null || text.trim().isEmpty) return null;
       return catalogString(text.trim(), max: max);
     }
+
     final payload = {
       'warehouseId': catalogId(warehouseId),
       'lines': lines.map((e) => e.toJson()).toList(),
@@ -257,8 +272,9 @@ class SupplierShipmentsRepository {
       'trackingReference': optional(trackingReference, 100),
     };
     final data = (await client.request('POST',
-        '${_base(supplierId)}/orders/${catalogId(order.id)}/shipments',
-        idempotencyKey: intent, body: payload)).data;
+            '${_base(supplierId)}/orders/${catalogId(order.id)}/shipments',
+            idempotencyKey: intent, body: payload))
+        .data;
     return SupplierShipment.parse(data,
         supplierId: supplierId, orderId: order.id);
   }
@@ -268,7 +284,8 @@ class SupplierShipmentsRepository {
     required SupplierShipment shipment,
     required String stage,
   }) async {
-    if (shipment.supplierId != supplierId || shipment.status.nextStep != stage) {
+    if (shipment.supplierId != supplierId ||
+        shipment.status.nextStep != stage) {
       throw StateError('Shipment transition no longer available');
     }
     final expected = switch (stage) {
@@ -278,8 +295,9 @@ class SupplierShipmentsRepository {
       _ => throw StateError('Unsupported shipment stage'),
     };
     final data = (await client.request('POST',
-        '${_base(supplierId)}/shipments/${catalogId(shipment.id)}/$stage',
-        body: {})).data;
+            '${_base(supplierId)}/shipments/${catalogId(shipment.id)}/$stage',
+            body: {}))
+        .data;
     return SupplierShipmentDecision.parse(data,
         shipmentId: shipment.id, expected: expected);
   }
@@ -298,15 +316,21 @@ class SupplierShipmentsRepository {
       throw const FormatException('Enter customer-issued six digit OTP');
     }
     final recipient = receivedBy?.trim();
-    if (recipient != null && recipient.isNotEmpty &&
-        (recipient.length < 2 || recipient.length > 160 ||
+    if (recipient != null &&
+        recipient.isNotEmpty &&
+        (recipient.length < 2 ||
+            recipient.length > 160 ||
             recipient.runes.any((code) => code < 32 || code == 127))) {
       throw const FormatException('Invalid recipient name');
     }
     final data = (await client.request('POST',
-        '${_base(supplierId)}/shipments/${catalogId(shipment.id)}/handover',
-        body: {'method': 'OTP', 'otp': otp,
-          if (recipient != null && recipient.isNotEmpty) 'receivedBy': recipient})).data;
+            '${_base(supplierId)}/shipments/${catalogId(shipment.id)}/handover',
+            body: {
+          'method': 'OTP',
+          'otp': otp,
+          if (recipient != null && recipient.isNotEmpty) 'receivedBy': recipient
+        }))
+        .data;
     return SupplierShipmentDecision.parse(data,
         shipmentId: shipment.id, expected: SupplierShipmentStatus.delivered);
   }
