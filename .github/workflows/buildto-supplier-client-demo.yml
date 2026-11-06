@@ -1,0 +1,83 @@
+name: BuildTo Supplier Client UI Preview APK
+on:
+  push:
+    branches:
+      - buildto/supplier-client-ui-demo-20261106
+    paths:
+      - '.github/workflows/buildto-supplier-client-demo.yml'
+      - 'apps/vendor_app/**'
+      - 'packages/kraveo_ui/**'
+      - 'branding/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-client-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      GROZO_AUTH_MODE: clerk-test
+      GRADLE_OPTS: '-Dorg.gradle.project.disableFirebase=true'
+      CLERK_PUBLISHABLE_KEY: 'pk_test_aW5mb3JtZWQtZ3JpZmZvbi03Njc1LmNsZXJrLmFjY291bnRzLmRldiQ='
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Format, analyze and test client demo and V2.1 views
+        working-directory: apps/vendor_app
+        run: |
+          dart format lib/main.dart lib/v21/demo/
+          flutter analyze --no-pub lib/main.dart lib/v21 test/v21
+          flutter test --no-pub --concurrency=2 test/v21
+      - name: Set BuildTo demo branding
+        run: |
+          sed -i 's#branding/assets/grozo-icon.png#branding/assets/buildto-icon.png#' apps/vendor_app/pubspec.yaml
+          cd apps/vendor_app
+          dart run flutter_launcher_icons
+          sed -i 's#^vendor.applicationId=.*#vendor.applicationId=in.buildto.supplier.clientdemo#' ../../branding/android.properties
+          sed -i 's#^vendor.label=.*#vendor.label=BuildTo Supplier Demo#' ../../branding/android.properties
+          sed -i 's#Grozo Vendor#BuildTo Supplier Demo#' android/app/src/main/res/values/branding.xml
+      - name: Build isolated ARM64 Android client demo
+        working-directory: apps/vendor_app
+        run: |
+          flutter build apk --debug --no-pub --target-platform android-arm64 \
+            --dart-define=BUILDTO_CLIENT_UI_PREVIEW=true
+          mkdir -p ../../build/client-ui-preview
+          cp build/app/outputs/flutter-apk/app-debug.apk \
+            ../../build/client-ui-preview/BuildTo-Supplier-Client-Demo-ARM64.apk
+      - name: Include demo notes and integrity check
+        run: |
+          cd build/client-ui-preview
+          sha256sum *.apk > SHA256SUMS.txt
+          cat > README-INSTALL.txt <<'EOF'
+          BuildTo Supplier - CLIENT UI SHOWROOM - Android ARM64 Debug APK
+          Install the APK on a modern 64-bit Android phone (allow unknown-source installs).
+          It opens on a BuildTo welcome page. Tap "Explore complete supplier app".
+          Use Home, Orders, Catalog, Stock and More tabs.
+          More has Delivery areas, RFQs & quotes, Returns & reviews and Finance & GST.
+          The welcome page includes the real four-step supplier registration widget.
+          Data is entirely local and illustrative; no account, Clerk session, backend,
+          live order, real payment, GST invoice or supplier approval is created.
+          The UI is adapted from the V2.1 Flutter views in the same repository.
+          This is not a production signing key or Play Store release.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BuildTo-Supplier-Client-UI-Demo-ARM64
+          path: build/client-ui-preview/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
