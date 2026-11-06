@@ -7,6 +7,7 @@ import '../design/buildto_theme.dart';
 import '../screens/supplier_shell.dart';
 import 'supplier_auth_controller.dart';
 import 'supplier_clerk_port.dart';
+import 'supplier_release_policy.dart';
 import '../onboarding/supplier_onboarding_flow.dart';
 
 /// Opt-in staging experience. Android's official native Clerk UI authenticates,
@@ -37,6 +38,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
         if (!GrozoAuthConfig.usesClerk) {
           throw StateError('Native Clerk mode must be enabled.');
         }
+        SupplierReleasePolicy.validate(authMode: GrozoAuthConfig.mode);
         final clerk = NativeSupplierClerkPort();
         final api = SupplierV21Api(
           origin: SupplierV21Config.origin,
