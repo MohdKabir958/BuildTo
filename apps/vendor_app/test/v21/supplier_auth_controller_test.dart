@@ -216,8 +216,9 @@ void main() {
           if (request.url.path == '/api/v2/me') {
             return me([member(idA, 'OWNER'), member(idB, 'VIEWER')]);
           }
-          if (request.url.path.endsWith('$idA/access'))
+          if (request.url.path.endsWith('$idA/access')) {
             return access(idA, 'OWNER');
+          }
           return delayedB.future;
         }),
       );
@@ -349,8 +350,9 @@ void main() {
       final controller = makeController(
         clerk,
         MockClient((request) async {
-          if (request.url.path == '/api/v2/me')
+          if (request.url.path == '/api/v2/me') {
             return me([member(idA, 'OWNER')]);
+          }
           return access(idA, 'OWNER');
         }),
       );
