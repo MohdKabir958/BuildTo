@@ -105,15 +105,16 @@ class SupplierOrdersRepository {
 
   Future<List<SupplierOrder>> orders(String supplierId) async {
     final data = (await client.get(_scope(supplierId))).data;
-    return deliveryRows(data, SupplierOrder.parse,
-        (SupplierOrder order) => order.id);
+    return deliveryRows(
+        data, SupplierOrder.parse, (SupplierOrder order) => order.id);
   }
 
   Future<SupplierOrderDecision> accept(
       String supplierId, String supplierOrderId) async {
     final id = catalogId(supplierOrderId);
-    final data = (await client.request('POST',
-        '${_scope(supplierId)}/$id/accept', body: {})).data;
+    final data = (await client
+            .request('POST', '${_scope(supplierId)}/$id/accept', body: {}))
+        .data;
     final result = SupplierOrderDecision.parse(data, id);
     if (result.status != DashboardOrderStatus.confirmed) {
       throw const FormatException('Order was not confirmed by the server');
@@ -127,14 +128,17 @@ class SupplierOrdersRepository {
     required String reason,
   }) async {
     final cleaned = reason.trim();
-    if (cleaned.length < 12 || cleaned.length > 200 ||
+    if (cleaned.length < 12 ||
+        cleaned.length > 200 ||
         cleaned.runes.any((code) => code < 32 || code == 127)) {
-      throw const FormatException('Provide an audit reason (12–200 characters)');
+      throw const FormatException(
+          'Provide an audit reason (12–200 characters)');
     }
     final id = catalogId(supplierOrderId);
-    final data = (await client.request('POST',
-        '${_scope(supplierId)}/$id/reject',
-        body: {'reason': cleaned})).data;
+    final data = (await client.request(
+            'POST', '${_scope(supplierId)}/$id/reject',
+            body: {'reason': cleaned}))
+        .data;
     final result = SupplierOrderDecision.parse(data, id);
     if (result.status != DashboardOrderStatus.rejected) {
       throw const FormatException('Order refusal was not confirmed');

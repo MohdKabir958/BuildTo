@@ -12,19 +12,30 @@ const parent = '123e4567-e89b-42d3-a456-426614174002';
 const line = '123e4567-e89b-42d3-a456-426614174003';
 
 Map<String, Object?> orderDto({String status = 'PENDING_ACCEPTANCE'}) => {
-  'id': order, 'purchaseOrderId': parent, 'status': status,
-  'totalPaise': '150000', 'createdAt': '2026-11-05T10:00:00.000Z',
-  'items': [{'id': line, 'sku':'CEMENT-43', 'quantity':'25.000',
-    'unitCode':'BAG'}],
-};
+      'id': order,
+      'purchaseOrderId': parent,
+      'status': status,
+      'totalPaise': '150000',
+      'createdAt': '2026-11-05T10:00:00.000Z',
+      'items': [
+        {
+          'id': line,
+          'sku': 'CEMENT-43',
+          'quantity': '25.000',
+          'unitCode': 'BAG'
+        }
+      ],
+    };
 
 SupplierOrdersRepository repository(http.Client httpClient) =>
     SupplierOrdersRepository(SupplierV21Api(
       origin: Uri.parse('https://buildto-v21-staging.onrender.com'),
-      token: () async => 'verified-clerk-token', httpClient: httpClient,
+      token: () async => 'verified-clerk-token',
+      httpClient: httpClient,
     ));
 
-http.Response ok(Object? data) => http.Response(jsonEncode({'data': data}),200);
+http.Response ok(Object? data) =>
+    http.Response(jsonEncode({'data': data}), 200);
 
 void main() {
   test('supplier-scoped queue uses authenticated V2.1 route', () async {
@@ -46,7 +57,7 @@ void main() {
       expect(jsonDecode(request.body), <String, dynamic>{});
       return ok({'id': order, 'status': 'CONFIRMED', 'replayed': false});
     }));
-    final result = await repo.accept(supplier,order);
+    final result = await repo.accept(supplier, order);
     expect(result.status, DashboardOrderStatus.confirmed);
   });
 
@@ -54,24 +65,32 @@ void main() {
     final repo = repository(MockClient((request) async {
       expect(request.method, 'POST');
       expect(jsonDecode(request.body)['reason'], 'Buyer cancelled offline');
-      return http.Response('{"error":{"code":"FINANCIAL_ADJUSTMENT_REQUIRED"}}',409);
+      return http.Response(
+          '{"error":{"code":"FINANCIAL_ADJUSTMENT_REQUIRED"}}', 409);
     }));
-    await expectLater(repo.rejectUnpaid(
-      supplierId:supplier,supplierOrderId:order,
-      reason:'Buyer cancelled offline',
-    ), throwsA(isA<SupplierV21Exception>().having(
-      (e)=>e.problem, 'status',SupplierV21Problem.conflict)));
+    await expectLater(
+        repo.rejectUnpaid(
+          supplierId: supplier,
+          supplierOrderId: order,
+          reason: 'Buyer cancelled offline',
+        ),
+        throwsA(isA<SupplierV21Exception>()
+            .having((e) => e.problem, 'status', SupplierV21Problem.conflict)));
   });
 
   test('invalid order payloads never appear in UI', () {
-    expect(() => SupplierOrder.parse({...orderDto(), 'status':'MYSTERY'}),
-      throwsFormatException);
-    expect(() => SupplierOrder.parse({...orderDto(), 'totalPaise':150000}),
-      throwsFormatException);
-    expect(() => SupplierOrder.parse({...orderDto(), 'items':[]}),
-      throwsFormatException);
-    expect(() => SupplierOrderDecision.parse({
-      'id':parent, 'status':'CONFIRMED', 'replayed':false,
-    },order),throwsFormatException);
+    expect(() => SupplierOrder.parse({...orderDto(), 'status': 'MYSTERY'}),
+        throwsFormatException);
+    expect(() => SupplierOrder.parse({...orderDto(), 'totalPaise': 150000}),
+        throwsFormatException);
+    expect(() => SupplierOrder.parse({...orderDto(), 'items': []}),
+        throwsFormatException);
+    expect(
+        () => SupplierOrderDecision.parse({
+              'id': parent,
+              'status': 'CONFIRMED',
+              'replayed': false,
+            }, order),
+        throwsFormatException);
   });
 }
