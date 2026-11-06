@@ -5,6 +5,8 @@ on:
       - buildto/supplier-apk-test-20261106
     paths:
       - '.github/workflows/buildto-supplier-test-apk.yml'
+      - 'apps/vendor_app/lib/v21/auth/**'
+      - 'apps/vendor_app/test/v21/supplier_auth_*'
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,7 +19,7 @@ jobs:
       GROZO_AUTH_MODE: clerk-test
       GRADLE_OPTS: '-Dorg.gradle.project.disableFirebase=true'
       # Publishable key is public by design. Override in repo Variables for future rebuilds.
-      STAGING_CLERK_PUBLISHABLE_KEY: ${{ vars.BUILDTO_SUPPLIER_CLERK_PUBLISHABLE_KEY || 'pk_test_aW5mb3JtZWQtZ3JpZmZvbi03Njc1LmNsZXJrLmFjY291bnRzLmRldiQ' }}
+      STAGING_CLERK_PUBLISHABLE_KEY: ${{ vars.BUILDTO_SUPPLIER_CLERK_PUBLISHABLE_KEY || 'pk_test_aW5mb3JtZWQtZ3JpZmZvbi03Njc1LmNsZXJrLmFjY291bnRzLmRldiQ=' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
