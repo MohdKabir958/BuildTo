@@ -323,7 +323,8 @@ class _SupplierOrdersViewState extends State<SupplierOrdersView> {
                         const Text('Read-only supplier role.',
                             style: TextStyle(color: BuildToPalette.muted)),
                       if (widget.onOpenShipments != null &&
-                          order.status.fulfillmentInProgress)
+                          (order.status.fulfillmentInProgress ||
+                              order.status == DashboardOrderStatus.delivered))
                         OutlinedButton.icon(
                           onPressed: () => widget.onOpenShipments!(order),
                           icon: const Icon(Icons.local_shipping_outlined),
