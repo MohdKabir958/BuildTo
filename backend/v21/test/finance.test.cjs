@@ -282,3 +282,19 @@ test('COD commission requires finance-verified full receipt and posted cash memo
  assert.equal(statement.body.data.payoutExecutionEnabled,false);
  assert.equal((await db.payoutTransfer.count()),0);
 });
+
+
+test('settlement eligibility accepts captured money after a failed UPI try',async()=>{
+ const order=await makeOrder('RAZORPAY',19000n,1100n);
+ await db.paymentAttempt.create({data:{
+  purchaseOrderId:order.parent.id,provider:'RAZORPAY',paymentMethod:'UPI',
+  idempotencyKey:key(),status:'FAILED',amountPaise:19000n
+ }});
+ const created=await send('post',admin('/settlements/drafts'),'maker',
+  makeDraft(order.child.id,key()),key());
+ assert.equal(created.status,201,JSON.stringify(created.body));
+ const statement=await send('get',supplier()+'/finance/statement','supplierFinance');
+ assert.equal(statement.status,200,JSON.stringify(statement.body));
+ assert(statement.body.data.orders.some(x=>x.supplierOrderId===order.child.id&&
+  x.fundingType==='RAZORPAY_CAPTURE_VERIFIED'));
+});
