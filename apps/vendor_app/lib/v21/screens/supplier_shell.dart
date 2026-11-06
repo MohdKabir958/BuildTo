@@ -17,6 +17,7 @@ import '../orders/supplier_orders_view.dart';
 import '../shipments/supplier_shipments_repository.dart';
 import '../shipments/supplier_shipments_view.dart';
 import '../care/supplier_care_repository.dart';
+import '../finance/supplier_finance_repository.dart';
 
 /// S01 visual shell. It does not activate the legacy restaurant APIs or
 /// represent unauthenticated fixture values as live supplier data.
@@ -47,6 +48,7 @@ class BuildToSupplierShell extends StatefulWidget {
     this.ordersRepository,
     this.shipmentsRepository,
     this.careRepository,
+    this.financeRepository,
     this.displayName,
     this.onSwitchSupplier,
     this.onSignOut,
@@ -64,6 +66,7 @@ class BuildToSupplierShell extends StatefulWidget {
   final SupplierOrdersRepository? ordersRepository;
   final SupplierShipmentsRepository? shipmentsRepository;
   final SupplierCareRepository? careRepository;
+  final SupplierFinanceRepository? financeRepository;
   final String? displayName;
   final VoidCallback? onSwitchSupplier,
       onSignOut,
@@ -320,6 +323,8 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         widget.rfqRepository != null &&
                         widget.ordersRepository != null &&
                         widget.careRepository != null &&
+                        widget.financeRepository != null &&
+                        widget.shipmentsRepository != null &&
                         selected == BuildToSupplierTab.more)
                       SupplierBusinessView(
                         key: ValueKey(widget.verifiedSupplier!.supplierId),
@@ -329,13 +334,17 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         rfqs: widget.rfqRepository!,
                         orders: widget.ordersRepository!,
                         care: widget.careRepository!,
+                        finance: widget.financeRepository!,
+                        shipments: widget.shipmentsRepository!,
                         onRecheckAccess: widget.onRefresh,
                       )
                     else if (widget.verifiedSupplier != null &&
                         widget.deliveryRepository != null &&
                         widget.rfqRepository != null &&
                         widget.ordersRepository != null &&
-                        widget.careRepository != null)
+                        widget.careRepository != null &&
+                        widget.financeRepository != null &&
+                        widget.shipmentsRepository != null)
                       const SizedBox.shrink()
                     else
                       _RestrictedTab(

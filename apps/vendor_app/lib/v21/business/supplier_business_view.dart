@@ -7,6 +7,9 @@ import '../rfq/supplier_rfq_view.dart';
 import '../orders/supplier_orders_repository.dart';
 import '../care/supplier_care_repository.dart';
 import '../care/supplier_care_view.dart';
+import '../finance/supplier_finance_repository.dart';
+import '../finance/supplier_finance_view.dart';
+import '../shipments/supplier_shipments_repository.dart';
 import '../design/buildto_theme.dart';
 
 /// Three independent business workspaces sharing a verified supplier identity.
@@ -21,6 +24,8 @@ class SupplierBusinessView extends StatefulWidget {
     required this.rfqs,
     required this.orders,
     required this.care,
+    required this.finance,
+    required this.shipments,
     this.onRecheckAccess,
   });
 
@@ -30,6 +35,8 @@ class SupplierBusinessView extends StatefulWidget {
   final SupplierRfqRepository rfqs;
   final SupplierOrdersRepository orders;
   final SupplierCareRepository care;
+  final SupplierFinanceRepository finance;
+  final SupplierShipmentsRepository shipments;
   final VoidCallback? onRecheckAccess;
 
   @override
@@ -59,6 +66,10 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
       SupplierV21Role.manager,
       SupplierV21Role.catalog,
     }.contains(widget.role);
+    final canReadFinance = {
+      SupplierV21Role.owner, SupplierV21Role.manager,
+      SupplierV21Role.finance,
+    }.contains(widget.role);
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
@@ -87,6 +98,14 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
               selected: section == 2,
               onSelected: (_) => setState(() => section = 2),
             ),
+            if (canReadFinance || canManageDelivery)
+              ChoiceChip(
+                avatar: const Icon(Icons.account_balance_wallet_outlined, size: 17),
+                selectedColor: BuildToPalette.sky,
+                label: const Text('Finance & GST'),
+                selected: section == 3,
+                onSelected: (_) => setState(() => section = 3),
+              ),
           ],
         ),
       ),
@@ -107,14 +126,27 @@ class _SupplierBusinessViewState extends State<SupplierBusinessView> {
                       canQuote: canQuote,
                       onRecheckAccess: widget.onRecheckAccess,
                     )
-                  : SupplierCareView(
-                      key: ValueKey('care-${widget.supplierId}'),
-                      supplierId: widget.supplierId,
-                      repository: widget.care,
-                      ordersRepository: widget.orders,
-                      canReceive: canManageDelivery,
-                      onRecheckAccess: widget.onRecheckAccess,
-                    )),
+                  : section == 2
+                      ? SupplierCareView(
+                          key: ValueKey('care-${widget.supplierId}'),
+                          supplierId: widget.supplierId,
+                          repository: widget.care,
+                          ordersRepository: widget.orders,
+                          canReceive: canManageDelivery,
+                          onRecheckAccess: widget.onRecheckAccess,
+                        )
+                      : SupplierFinanceView(
+                          key: ValueKey('finance-${widget.supplierId}'),
+                          supplierId: widget.supplierId,
+                          finance: widget.finance,
+                          orders: widget.orders,
+                          shipments: widget.shipments,
+                          care: widget.care,
+                          canRead: canReadFinance,
+                          canIssue: canReadFinance,
+                          canRecordCod: canManageDelivery,
+                          onRecheckAccess: widget.onRecheckAccess,
+                        )),
     ]);
   }
 }
