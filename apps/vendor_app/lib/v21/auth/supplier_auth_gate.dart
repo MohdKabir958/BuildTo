@@ -150,22 +150,31 @@ class _SupplierAccessView extends StatelessWidget {
         controller.account != null) {
       return _SupplierPicker(controller: controller);
     }
-    if (stage == SupplierAccessStage.starting ||
-        stage == SupplierAccessStage.checking) {
-      return const _AccessScaffold(
+    if (stage == SupplierAccessStage.checking) {
+      return _AccessScaffold(
         title: 'Verifying your supplier account',
         subtitle:
             'Checking your Clerk session and current BuildTo permissions.',
         icon: Icons.shield_outlined,
         loading: true,
+        actions: [
+          _AccessAction(
+            'Cancel and return to welcome',
+            Icons.arrow_back_rounded,
+            controller.signOut,
+            outlined: true,
+          ),
+        ],
+        busy: controller.busy,
       );
     }
 
     final (title, description, icon) = switch (stage) {
-      SupplierAccessStage.signedOut => (
+      SupplierAccessStage.signedOut || SupplierAccessStage.starting => (
           'Welcome to BuildTo Supplier',
-          'Securely sign in to manage your approved construction-material business.',
-          Icons.apartment_rounded,
+          'Already have an account? Sign in. New supplier? Create an '
+              'account to register your business and track approval.',
+          Icons.storefront_outlined,
         ),
       SupplierAccessStage.noSupplier => (
           'Supplier approval required',
@@ -191,8 +200,9 @@ class _SupplierAccessView extends StatelessWidget {
           Icons.wifi_off_outlined,
         ),
       SupplierAccessStage.misconfigured => (
-          'Clerk configuration required',
-          'Check the native Clerk setup and BuildTo staging API.',
+          'Connection setup needs attention',
+          'Your supplier account is protected. Retry the connection '
+              'or return to sign in; no business data has been unlocked.',
           Icons.settings_suggest_outlined,
         ),
       _ => (
@@ -209,18 +219,27 @@ class _SupplierAccessView extends StatelessWidget {
       message: controller.notice,
       email: controller.signedInEmail,
       actions: switch (stage) {
-        SupplierAccessStage.signedOut || SupplierAccessStage.sessionExpired => [
+        SupplierAccessStage.signedOut ||
+        SupplierAccessStage.starting ||
+        SupplierAccessStage.sessionExpired => [
             _AccessAction(
-              'Continue securely with Clerk',
+              'Sign in to my account',
               Icons.login_rounded,
-              () => controller.authenticate(),
+              () => controller.authenticate(mode: 'signIn'),
             ),
             _AccessAction(
-              'Create a Clerk account',
+              'Create a new account',
               Icons.person_add_alt_1_outlined,
               () => controller.authenticate(mode: 'signUp'),
               outlined: true,
             ),
+            if (controller.notice != null)
+              _AccessAction(
+                'Retry Clerk connection',
+                Icons.refresh_rounded,
+                controller.retryClerkInitialization,
+                outlined: true,
+              ),
           ],
         SupplierAccessStage.noSupplier => [
             _AccessAction(
@@ -240,15 +259,17 @@ class _SupplierAccessView extends StatelessWidget {
               outlined: true,
             ),
           ],
-        SupplierAccessStage.accessDenied || SupplierAccessStage.unavailable => [
+        SupplierAccessStage.accessDenied ||
+        SupplierAccessStage.unavailable ||
+        SupplierAccessStage.misconfigured => [
             _AccessAction(
               'Retry secure verification',
               Icons.refresh_rounded,
               controller.refresh,
             ),
             _AccessAction(
-              'Sign out',
-              Icons.logout_rounded,
+              'Sign out / Back to welcome',
+              Icons.arrow_back_rounded,
               controller.signOut,
               outlined: true,
             ),
@@ -346,6 +367,15 @@ class _AccessScaffold extends StatelessWidget {
                     const Center(child: CircularProgressIndicator()),
                     const SizedBox(height: 18),
                     const BuildToSkeleton(height: 72),
+                  ],
+                  if (busy && !loading) ...[
+                    const SizedBox(height: 18),
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Connecting securely. You can retry if this fails.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                   if (actions.isNotEmpty) ...[
                     const SizedBox(height: 28),
