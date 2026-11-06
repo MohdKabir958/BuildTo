@@ -8,6 +8,7 @@ import '../providers/session_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../widgets/ui/snack.dart';
 import 'addresses_screen.dart';
+import 'customer_preview_addresses_screen.dart';
 import 'auth_screen.dart';
 import 'my_orders_screen.dart';
 import 'notifications_screen.dart';
@@ -211,7 +212,9 @@ class ProfileSettingsScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const AddressesScreen()),
+                        MaterialPageRoute(builder: (_) => kBuildtoOfflineDemo
+                              ? const ClientPreviewAddressesScreen()
+                              : const AddressesScreen()),
                       );
                     },
                   ),
