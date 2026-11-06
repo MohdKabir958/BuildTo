@@ -1,0 +1,43 @@
+name: Temporary supplier auth Dart formatting with resolved lockfile
+on:
+  push:
+    branches: [buildto/supplier-apk-test-20261106]
+    paths:
+      - '.github/workflows/temporary-format-supplier-auth.yml'
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: buildto/supplier-apk-test-20261106
+          persist-credentials: true
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve exact Dart language version from locked packages
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Format exactly the modified supplier auth files
+        working-directory: apps/vendor_app
+        run: |
+          dart format lib/v21/auth/supplier_auth_gate.dart \
+            test/v21/supplier_auth_controller_test.dart \
+            test/v21/supplier_auth_gate_test.dart
+          dart format --output=none --set-exit-if-changed lib/v21 test/v21
+      - name: Commit formatting only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/vendor_app/lib/v21/auth/supplier_auth_gate.dart \
+            apps/vendor_app/test/v21/supplier_auth_controller_test.dart \
+            apps/vendor_app/test/v21/supplier_auth_gate_test.dart
+          if ! git diff --cached --quiet; then
+            git commit -m "style(supplier): format auth files with locked Dart language version"
+            git push origin HEAD:buildto/supplier-apk-test-20261106
+          fi
