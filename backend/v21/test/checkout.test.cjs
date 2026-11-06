@@ -336,7 +336,7 @@ test('opposite cart line order uses deterministic stock locks, no PostgreSQL dea
  assert(attempts.every(result=>result.status==='fulfilled'),JSON.stringify(attempts));
  for(const result of attempts){
   assert.equal(result.value.status,201,JSON.stringify(result.value.body));
-  assert.equal(result.value.body.data.supplierOrders.length,2);
+  assert.equal(result.value.body.data.suppliers.length,2);
  }
  const balances=await db.inventoryBalance.findMany({where:{
   listingId:{in:[state.listingA.id,state.listingB.id]}
