@@ -42,7 +42,7 @@ class SupplierAuthController extends ChangeNotifier {
 
   final SupplierClerkPort _clerk;
   final SupplierV21Api _api;
-  SupplierAccessStage _stage = SupplierAccessStage.starting;
+  SupplierAccessStage _stage = SupplierAccessStage.signedOut;
   SupplierV21Identity? _account;
   SupplierV21Membership? _activeSupplier;
   String? _fingerprint;
@@ -116,19 +116,38 @@ class SupplierAuthController extends ChangeNotifier {
     _publish();
   }
 
-  /// Start the verified Clerk bridge; never runs the legacy restaurant gate.
+  /// Present the signed-out welcome screen immediately. Clerk may be waiting
+  /// on the network for up to 20 seconds: a cold start must never trap a new
+  /// supplier behind an unskippable verification or configuration screen.
+  /// A persisted signed-in session still goes through /me and /access checks.
   Future<void> start() async {
     if (_started || _disposed) return;
+    _started = true;
+    _stage = SupplierAccessStage.signedOut;
+    _publish();
+    await retryClerkInitialization(silent: true);
+  }
+
+  /// Safe to retry after the native SDK becomes reachable. A failed initial
+  /// connection is not an authorization failure and must leave both Sign in
+  /// and Create account accessible.
+  Future<void> retryClerkInitialization({bool silent = false}) async {
+    if (_disposed || _fingerprint != null || _busy && !silent) return;
+    if (!silent) {
+      _busy = true;
+      _notice = null;
+      _publish();
+    }
     try {
       await _clerk.initialize();
-      if (_disposed) return;
-      _started = true;
-      _onNativeIdentity();
+      if (!_disposed) _onNativeIdentity();
     } catch (_) {
-      if (_disposed) return;
-      _stage = SupplierAccessStage.misconfigured;
-      _notice =
-          'Native Clerk sign-in is unavailable. Check Android staging setup.';
+      if (_disposed || _fingerprint != null || silent && _busy) return;
+      _stage = SupplierAccessStage.signedOut;
+      _notice = 'Clerk could not connect. Check your internet connection, '
+          'then tap Sign in, Create account or Retry connection.';
+    } finally {
+      if (!silent) _busy = false;
       _publish();
     }
   }
@@ -345,7 +364,8 @@ class SupplierAuthController extends ChangeNotifier {
       }
     } catch (_) {
       if (!_disposed) {
-        _notice = 'Secure sign-in is unavailable. Please try again.';
+        _notice = 'Clerk sign-in could not open. Check your internet '
+            'connection and try again.';
       }
     } finally {
       _busy = false;
