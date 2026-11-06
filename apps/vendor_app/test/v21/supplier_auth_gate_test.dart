@@ -155,6 +155,8 @@ void main() {
     expect(find.text('Sign in to my account'), findsOneWidget);
     expect(find.text('Create a new account'), findsOneWidget);
     expect(find.text('Retry Clerk connection'), findsOneWidget);
+    await tester.ensureVisible(find.text('Retry Clerk connection'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Retry Clerk connection'));
     await tester.pumpAndSettle();
     expect(attempts, 2);
