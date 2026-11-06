@@ -125,27 +125,29 @@ class SupplierAuthController extends ChangeNotifier {
     _started = true;
     _stage = SupplierAccessStage.signedOut;
     _publish();
-    await retryClerkInitialization();
+    await retryClerkInitialization(silent: true);
   }
 
   /// Safe to retry after the native SDK becomes reachable. A failed initial
   /// connection is not an authorization failure and must leave both Sign in
   /// and Create account accessible.
-  Future<void> retryClerkInitialization() async {
-    if (_disposed || _fingerprint != null || _busy) return;
-    _busy = true;
-    _notice = null;
-    _publish();
+  Future<void> retryClerkInitialization({bool silent = false}) async {
+    if (_disposed || _fingerprint != null || _busy && !silent) return;
+    if (!silent) {
+      _busy = true;
+      _notice = null;
+      _publish();
+    }
     try {
       await _clerk.initialize();
       if (!_disposed) _onNativeIdentity();
     } catch (_) {
-      if (_disposed) return;
+      if (_disposed || _fingerprint != null || silent && _busy) return;
       _stage = SupplierAccessStage.signedOut;
       _notice = 'Clerk could not connect. Check your internet connection, '
           'then tap Sign in, Create account or Retry connection.';
     } finally {
-      _busy = false;
+      if (!silent) _busy = false;
       _publish();
     }
   }
