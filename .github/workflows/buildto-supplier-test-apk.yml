@@ -1,0 +1,120 @@
+name: BuildTo Supplier Android Test APKs
+on:
+  push:
+    branches:
+      - buildto/supplier-apk-test-20261106
+    paths:
+      - '.github/workflows/buildto-supplier-test-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-supplier-test-apks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CI: 'true'
+      GROZO_AUTH_MODE: clerk-test
+      GRADLE_OPTS: '-Dorg.gradle.project.disableFirebase=true'
+      STAGING_CLERK_PUBLISHABLE_KEY: ${{ secrets.BUILDTO_SUPPLIER_CLERK_PUBLISHABLE_KEY || secrets.BUILDTO_CLERK_PUBLISHABLE_KEY || secrets.CLERK_PUBLISHABLE_KEY || vars.BUILDTO_SUPPLIER_CLERK_PUBLISHABLE_KEY || vars.BUILDTO_CLERK_PUBLISHABLE_KEY || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve supplier Flutter packages from lockfile
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Verify all supplier Dart tests and source
+        working-directory: apps/vendor_app
+        run: |
+          dart format --output=none --set-exit-if-changed lib/v21 test/v21
+          flutter analyze --no-pub lib/v21 test/v21
+          flutter test --no-pub --concurrency=2 test/v21
+      - name: Apply BuildTo-specific launcher branding to test artifacts only
+        run: |
+          set -euo pipefail
+          sed -i 's#branding/assets/grozo-icon.png#branding/assets/buildto-icon.png#' apps/vendor_app/pubspec.yaml
+          cd apps/vendor_app
+          dart run flutter_launcher_icons
+      - name: Compile standalone BuildTo Supplier UI preview for ARM64 Android
+        working-directory: apps/vendor_app
+        run: |
+          set -euo pipefail
+          sed -i 's#^vendor.applicationId=.*#vendor.applicationId=in.buildto.supplier.preview#' ../../branding/android.properties
+          sed -i 's#^vendor.label=.*#vendor.label=BuildTo Supplier Preview#' ../../branding/android.properties
+          sed -i 's#Grozo Vendor#BuildTo Supplier Preview#' android/app/src/main/res/values/branding.xml
+          export CLERK_PUBLISHABLE_KEY="pk_test_$(printf 'buildto-native-ci-fixture.clerk.accounts.dev$' | base64 -w0)"
+          flutter build apk --debug --no-pub --split-per-abi --target-platform android-arm64 \
+            --dart-define=BUILDTO_SUPPLIER_V21_PREVIEW=true \
+            --dart-define=AUTH_MODE=clerk-test
+          mkdir -p ../../build/buildto-supplier-test
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk \
+            ../../build/buildto-supplier-test/BuildTo-Supplier-UI-Preview-ARM64.apk
+      - name: Compile supplier V2.1 staging APK with native Clerk bridge
+        working-directory: apps/vendor_app
+        run: |
+          set -euo pipefail
+          sed -i 's#^vendor.applicationId=.*#vendor.applicationId=in.buildto.supplier.staging#' ../../branding/android.properties
+          sed -i 's#^vendor.label=.*#vendor.label=BuildTo Supplier Staging#' ../../branding/android.properties
+          sed -i 's#BuildTo Supplier Preview#BuildTo Supplier Staging#' android/app/src/main/res/values/branding.xml
+          if [[ "$STAGING_CLERK_PUBLISHABLE_KEY" == pk_test_* ]]; then
+            export CLERK_PUBLISHABLE_KEY="$STAGING_CLERK_PUBLISHABLE_KEY"
+            printf 'REAL_STAGING_CLERK_TEST_KEY_CONFIGURED=yes\n' > ../../build/buildto-supplier-test/STAGING-CONFIG.txt
+          else
+            export CLERK_PUBLISHABLE_KEY="pk_test_$(printf 'buildto-native-ci-fixture.clerk.accounts.dev$' | base64 -w0)"
+            printf 'REAL_STAGING_CLERK_TEST_KEY_CONFIGURED=no\n' > ../../build/buildto-supplier-test/STAGING-CONFIG.txt
+          fi
+          flutter build apk --debug --no-pub --split-per-abi --target-platform android-arm64 \
+            --dart-define=BUILDTO_SUPPLIER_V21=true \
+            --dart-define=AUTH_MODE=clerk-test \
+            --dart-define=BUILDTO_V21_API_BASE_URL=https://buildto-v21-staging.onrender.com
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk \
+            ../../build/buildto-supplier-test/BuildTo-Supplier-Staging-ARM64.apk
+      - name: SHA256 checksum, provenance and installation instructions
+        run: |
+          set -euo pipefail
+          cd build/buildto-supplier-test
+          sha256sum *.apk > SHA256SUMS.txt
+          cat > README-INSTALL.txt <<'EOF'
+          BuildTo Supplier Android V2.1 - ARM64 test APKs (NOT Play Store releases)
+          Source: github.com/MohdKabir958/BuildTo
+          Code: S00-S14 fully merged into main, workflow started from main's
+            d70052b34bf989a12dd3f60d90637128d052682c
+          Flutter: 3.44.9, Android debug signatures, ARM64 only.
+          
+          1. BuildTo-Supplier-UI-Preview-ARM64.apk
+             Android package: in.buildto.supplier.preview
+             UI-only mode. Explore the BuildTo supplier look/navigation.
+             No live login, real prices, orders, data or payments.
+          
+          2. BuildTo-Supplier-Staging-ARM64.apk
+             Android package: in.buildto.supplier.staging
+             Real Flutter V2.1 screens and staged API base URL.
+             Real Clerk login is possible ONLY if STAGING-CONFIG.txt says
+             REAL_STAGING_CLERK_TEST_KEY_CONFIGURED=yes AND the Clerk app
+             supports this Android package AND the staging API/account is
+             provisioned. If it says no, native Clerk sign-in is not usable.
+             No production bank credit or real-money testing.
+          
+          Download the artifact ZIP from this GitHub Actions run, unzip, and
+          tap the selected APK on a 64-bit Android phone. Grant install-from-
+          this-source permission when Android prompts. Debug-signed for QA.
+          Check SHA256SUMS.txt if transferring or distributing the APK.
+          
+          These APKs do not require Google Play registration. Do not share
+          staging account secrets, OTPs, supplier banking or private data.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BuildTo-Supplier-Android-Test-APKs-ARM64
+          path: build/buildto-supplier-test/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
