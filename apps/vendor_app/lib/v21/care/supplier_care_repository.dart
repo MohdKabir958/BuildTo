@@ -12,10 +12,15 @@ DateTime _utc(Object? value) {
 }
 
 String _careNote(Object? value, {required int max}) {
-  if (value is! String || value.trim().isEmpty || value.length > max ||
+  if (value is! String ||
+      value.trim().isEmpty ||
+      value.length > max ||
       value.runes.any((code) =>
-          code < 9 || code == 11 || code == 12 ||
-          (code >= 14 && code < 32) || code == 127)) {
+          code < 9 ||
+          code == 11 ||
+          code == 12 ||
+          (code >= 14 && code < 32) ||
+          code == 127)) {
     throw const FormatException('Invalid care note');
   }
   return value;
