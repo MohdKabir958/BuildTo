@@ -303,3 +303,20 @@ test('database rejects mutation of posted refund, issued GST credit and its orig
  },data:{debitPaise:10n}}));
  assert.equal(await db.refundRequest.count({where:{id:state.refund.id,status:'SUCCEEDED'}}),1);
 });
+
+
+test('refund evidence selects captured payment despite a failed earlier attempt',async()=>{
+ const order=await orderWithReturn({});
+ await db.paymentAttempt.create({data:{
+  purchaseOrderId:order.purchaseOrder.id,provider:'RAZORPAY',
+  paymentMethod:'UPI',idempotencyKey:key(),status:'FAILED',amountPaise:11800n
+ }});
+ const note=await send('post',credit(order.ret),'issuer',{});
+ assert.equal(note.status,201,JSON.stringify(note.body));
+ const requested=await send('post',finance('/refunds/requests/'+order.ret.id),
+  'maker',{},key());
+ assert.equal(requested.status,201,JSON.stringify(requested.body));
+ const saved=await db.refundRequest.findUniqueOrThrow({where:{id:requested.body.data.id}});
+ assert.equal(saved.paymentAttemptId,order.payment.id,
+  'refund must link the actual captured attempt, never the failed attempt');
+});
