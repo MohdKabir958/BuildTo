@@ -112,7 +112,7 @@ async function source(tx:Tx,supplierId:string,supplierOrderId:string){
     capturedPaise:true,verifiedAt:true,providerPayRef:true}}}},
   items:{select:{id:true,listingId:true,quantity:true,allocatedShipmentQty:true,
    reservations:{select:{state:true,quantity:true,balance:{select:{warehouseId:true}}}},
-   shipmentLines:{select:{quantity:true,shipment:{select:{status:true,warehouseId:true}}}}
+   shipmentLines:{select:{quantity:true,rejectedQty:true,shipment:{select:{status:true,warehouseId:true}}}}
   }}
  }});
 }
@@ -143,7 +143,7 @@ async function supplierEvent(tx:Tx,supplierOrderId:string,
   fromStatus:from as any,toStatus:to,actorUserId:actor,reason}});
 }
 async function shipmentEvent(tx:Tx,id:string,from:string|null,to:
- 'PLANNED'|'PACKED'|'DISPATCHED'|'OUT_FOR_DELIVERY'|'DELIVERED',
+ 'PLANNED'|'PACKED'|'DISPATCHED'|'OUT_FOR_DELIVERY'|'PARTIALLY_DELIVERED'|'DELIVERED'|'CANCELLED',
  actor:string,detail?:Prisma.InputJsonObject){
  await tx.shipmentEvent.create({data:{shipmentId:id,fromStatus:from as any,
   toStatus:to,actorId:actor,...(detail?{detail}:{})}});
@@ -221,7 +221,7 @@ export async function planShipment(db:PrismaClient,userId:string,supplierId:stri
       r.balance.warehouseId===input.warehouseId).reduce((s,r)=>s.plus(r.quantity),zero());
     const already=item.shipmentLines.filter(r=>r.shipment.warehouseId===input.warehouseId&&
       active.includes(r.shipment.status as typeof active[number]))
-      .reduce((s,r)=>s.plus(r.quantity),zero());
+      .reduce((s,r)=>s.plus(r.quantity.minus(r.shipment.status==='PARTIALLY_DELIVERED'?r.rejectedQty:zero())),zero());
     if(!committed.gte(already.plus(line.quantity))||
       !item.quantity.gte(item.allocatedShipmentQty.plus(line.quantity)))
      throw new ApiError(409,'SHIPMENT_ALLOCATION_EXCEEDED','Requested shipment exceeds committed unallocated stock.');
@@ -287,6 +287,29 @@ export async function progressShipment(db:PrismaClient,userId:string,supplierId:
   return {id:shipment.id,status:step.to,replayed:false};
  });
 }
+
+/** Cancel before dispatch only. Database status trigger releases allocation. */
+export async function cancelShipment(db:PrismaClient,userId:string,
+ supplierId:string,shipmentId:string,body:unknown){
+ uuid(supplierId,'supplierId');uuid(shipmentId,'shipmentId');
+ const input=record(body,['reason']);
+ const reason=requiredText(input.reason,'reason',8,500);
+ return serializable(db,async tx=>{
+  await requireSupplierPermission(tx,userId,supplierId,'ORDERS_FULFILL');
+  const {order,shipment}=await shipmentSource(tx,supplierId,shipmentId);
+  if(shipment.status==='CANCELLED')
+   return {shipmentId,status:'CANCELLED',replayed:true};
+  if(!['PLANNED','PACKED'].includes(shipment.status))
+   throw new ApiError(409,'SHIPMENT_ALREADY_DISPATCHED',
+    'Dispatched loads require a separate carrier reconciliation.');
+  await tx.shipment.update({where:{id:shipmentId},data:{status:'CANCELLED'}});
+  await shipmentEvent(tx,shipmentId,shipment.status,'CANCELLED',userId,{reason});
+  await audit(tx,order.purchaseOrderId,userId,'SHIPMENT_CANCELLED_BEFORE_DISPATCH',
+   'SUPPLIER_FULFILLMENT');
+  return {shipmentId,status:'CANCELLED',replayed:false};
+ });
+}
+
 function otpHash(secret:string,shipmentId:string,time:Date,otp:string){
  return createHmac('sha256',secret).update('buildto:v21:delivery:'+
   shipmentId+':'+time.getTime()+':'+otp).digest('hex');
@@ -345,7 +368,7 @@ async function fullyDelivered(tx:Tx,order:Awaited<ReturnType<typeof source>>,
  const lines=await tx.supplierOrderItem.findMany({where:{supplierOrderId:order.id},
   select:{quantity:true,shipmentLines:{select:{deliveredQty:true,shipment:{select:{status:true}}}}}});
  const complete=lines.length>0&&lines.every(i=>i.shipmentLines
-  .filter(s=>s.shipment.status==='DELIVERED')
+  .filter(s=>s.shipment.status==='DELIVERED'||s.shipment.status==='PARTIALLY_DELIVERED')
   .reduce((sum,s)=>sum.plus(s.deliveredQty),zero()).eq(i.quantity));
  const newState=complete?'DELIVERED':'PARTIALLY_DELIVERED';
  if(order.status!==newState)
