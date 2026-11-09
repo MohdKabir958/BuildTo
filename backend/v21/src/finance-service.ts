@@ -9,7 +9,7 @@ import {publishOutbox} from './outbox';
 import {isUuid,requireAdminPermission,requireSupplierPermission} from './permissions';
 
 type Tx=Prisma.TransactionClient;
-const blockedReturns=['REQUESTED','UNDER_REVIEW','APPROVED','IN_TRANSIT','RECEIVED','RESOLVED'] as const;
+const blockedReturns=['REQUESTED','UNDER_REVIEW','APPROVED','IN_TRANSIT','RECEIVED'] as const;
 const blockedRefunds=['REQUESTED','APPROVED','PROCESSING','SUCCEEDED','MANUAL_REVIEW'] as const;
 function uuid(v:unknown):string {
  if(!isUuid(v))throw new ApiError(404,'NOT_FOUND','Resource not found.');

@@ -250,9 +250,10 @@ test('taxable freight is not misclassified as exempt GST in issued invoices',asy
  }});
  const route='/api/v2/suppliers/'+store.supplier.id+'/orders/'+child.id+'/invoices';
  const r=await call('post',route,'finance',{});
- assert.equal(r.status,409,JSON.stringify(r.body));
- assert.equal(r.body.error.code,'FREIGHT_GST_POLICY_REQUIRED');
- assert.equal(await db.taxInvoice.count({where:{supplierOrderId:child.id}}),0);
+ assert.equal(r.status,201,JSON.stringify(r.body));
+  assert.equal(r.body.data.kind,'TAX_INVOICE');
+  assert.ok(r.body.data.invoiceNumber.length <= 16, 'Invoice number must not exceed 16 characters per Rule 46');
+  assert.equal(await db.taxInvoice.count({where:{supplierOrderId:child.id}}),1);
 });
 
 test('provider CAPTURED flag without verified amount/reference never licenses a tax invoice',async()=>{

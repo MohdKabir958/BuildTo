@@ -173,8 +173,8 @@ export async function issueReturnCreditNote(db:PrismaClient,userId:string,
    }
   }
   const now=new Date(),fy=financialYear(now);
-  const number='BTCN-'+supplierId.replaceAll('-','').slice(0,7).toUpperCase()+
-   '-'+returnId.replaceAll('-','').slice(0,20).toUpperCase();
+  // CGST Rule 53: maximum 16-character credit note serial number
+  const number='CN'+fy.slice(2,4)+fy.slice(5,7)+'-'+returnId.replaceAll('-','').slice(0,9).toUpperCase();
   const credit=await tx.taxInvoice.create({data:{
    supplierId,supplierOrderId:source.supplierOrderId,
    sourceInvoiceId:origin.id,returnRequestId:returnId,
