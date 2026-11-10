@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
+import {LogoMark} from '../components/ui/Logo';
 import {
   ArrowRight, Building2, CircleHelp, Command, ExternalLink, LockKeyhole,
   LogOut, Menu, RefreshCw, ShieldCheck, X,
@@ -63,7 +64,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
   const sidebar=(
     <>
       <div className="flex items-center gap-3 border-b border-white/10 px-6 py-7">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-2xl font-black text-slate-950" aria-hidden="true">B</div>
+        <LogoMark size={44}/>
         <div>
           <p className="text-xl font-black leading-none tracking-tight text-white">Splyzo</p>
           <p className="mt-1 text-xs font-semibold tracking-wide text-slate-300">ADMIN CONSOLE</p>
