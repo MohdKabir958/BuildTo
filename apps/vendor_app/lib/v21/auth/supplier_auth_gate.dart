@@ -191,9 +191,8 @@ class _SupplierAccessView extends StatelessWidget {
           Icons.storefront_outlined,
         ),
       SupplierAccessStage.noSupplier => (
-          'Supplier approval required',
-          'Your Clerk account is signed in, but no approved supplier business is linked. '
-              'You can register a construction-material business or track your application below.',
+          'Your account is in review',
+          'Your registration is awaiting admin approval. Once accepted by Splyzo administration, your supplier workspace will activate immediately.',
           Icons.domain_verification_outlined,
         ),
       SupplierAccessStage.accessDenied => (
@@ -263,7 +262,7 @@ class _SupplierAccessView extends StatelessWidget {
               openApplications,
             ),
             _AccessAction(
-              'Recheck approval',
+              'Recheck admin approval',
               Icons.refresh_rounded,
               controller.refresh,
             ),

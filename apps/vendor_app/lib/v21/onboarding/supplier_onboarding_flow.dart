@@ -91,6 +91,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
         applications = records;
         details = detail;
         selectedId = detail?.summary.id;
+        showWizard = records.isEmpty;
         loading = false;
       });
     } catch (e) {
