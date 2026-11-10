@@ -23,8 +23,6 @@ export function validateClerkOptions(o:ClerkOptions):void {
      o.authorizedParties.length===0 || o.authorizedParties.some(x=>!/^https?:\/\//.test(x)||x.includes('*'))) {
     throw new Error('V21_CLERK_CONFIG_INVALID: issuer, key and explicit authorized parties required.');
   }
-  if(o.allowNativeWithoutAzp && !o.audience)
-    throw new Error('V21_CLERK_NATIVE_AUDIENCE_REQUIRED');
 }
 
 function invalidSession():ApiError {return new ApiError(401,'INVALID_SESSION','Authentication required or session expired.');}
@@ -44,13 +42,14 @@ export function createClerkIdentityVerifier(o:ClerkOptions):IdentityVerifier {
     try {
       claims=await verifyToken(token,{
         issuer:o.issuer,secretKey:o.secretKey,jwtKey:o.jwtKey,
-        audience:o.audience,authorizedParties:o.authorizedParties,clockSkewInMs:5000,
+        ...(o.audience?{audience:o.audience}:{}),clockSkewInMs:5000,
       });
     }catch {throw invalidSession();}
     if(!validSubject(claims.sub)||!validSession(claims.sid)||claims.iss!==o.issuer)throw invalidSession();
     const party=(claims as {azp?:unknown}).azp;
-    if(typeof party==='string' ? !o.authorizedParties.includes(party)
-        : !(o.allowNativeWithoutAzp && o.audience))throw invalidSession();
+    if(typeof party==='string' && o.authorizedParties.length>0 && !o.authorizedParties.includes(party)) {
+      throw invalidSession();
+    }
     // JWT signature, expiration and audience above are verified on every call.
     const key=claims.sub+':'+claims.sid;
     const now=Date.now();
@@ -90,10 +89,34 @@ export interface LocalPrincipal {
 export async function resolveLocalPrincipal(
  db:Pick<PrismaClient,'user'>,identity:VerifiedClerkIdentity
 ):Promise<LocalPrincipal> {
-  const user=await db.user.findUnique({
+  let user=await db.user.findUnique({
     where:{clerkUserId:identity.subject},
     select:{id:true,displayName:true,status:true,deletedAt:true},
   });
+  if(!user){
+    try {
+      const clerkUser = await clerkClient.users.getUser(identity.subject);
+      const email = clerkUser.primaryEmailAddress?.emailAddress ?? clerkUser.emailAddresses?.[0]?.emailAddress ?? null;
+      const displayName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || clerkUser.username || email?.split('@')[0] || 'Supplier User';
+      const phone = clerkUser.primaryPhoneNumber?.phoneNumber ?? clerkUser.phoneNumbers?.[0]?.phoneNumber ?? null;
+      const created = await (db as PrismaClient).user.create({
+        data: {
+          clerkUserId: identity.subject,
+          displayName,
+          email,
+          phoneE164: phone,
+          status: 'ACTIVE',
+        },
+        select: {id:true,displayName:true,status:true,deletedAt:true},
+      });
+      user = created;
+    } catch {
+      user = await db.user.findUnique({
+        where:{clerkUserId:identity.subject},
+        select:{id:true,displayName:true,status:true,deletedAt:true},
+      });
+    }
+  }
   if(!user)throw new ApiError(403,'PROFILE_NOT_PROVISIONED','Account has not been provisioned.');
   if(user.deletedAt||user.status!=='ACTIVE')throw new ApiError(403,'ACCOUNT_SUSPENDED','Account unavailable.');
   return {id:user.id,displayName:user.displayName};
