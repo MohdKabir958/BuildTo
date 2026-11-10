@@ -703,10 +703,10 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
                         onPressed: () => unawaited(history(w)),
                         child: const Text('Movements'),
                       ),
-                      if (widget.canWrite && !w.active)
+                      if (widget.canWrite)
                         TextButton(
-                          onPressed: () => unawaited(_activateWarehouse(w)),
-                          child: const Text('Activate'),
+                          onPressed: () => unawaited(_toggleWarehouseActive(w)),
+                          child: Text(w.active ? 'Deactivate' : 'Activate'),
                         ),
                     ],
                   ),
