@@ -97,7 +97,7 @@ class GrozoClerkBridge(private val activity: Activity, messenger: BinaryMessenge
                 }
             } catch (_: TimeoutCancellationException) { result.error("CLERK_TIMEOUT","Secure sign-in timed out. Check your connection and retry.",null) }
             catch(cancel: CancellationException) {throw cancel}
-            catch (_: Exception) { pending=null;result.error("CLERK_UNAVAILABLE","Secure sign-in is unavailable or not configured. Contact Grozo support.",null) }
+            catch (_: Exception) { pending=null;result.error("CLERK_UNAVAILABLE","Secure sign-in is unavailable or not configured. Contact Splyzo support.",null) }
         }
     }
     fun onActivityResult(requestCode: Int,resultCode: Int): Boolean {

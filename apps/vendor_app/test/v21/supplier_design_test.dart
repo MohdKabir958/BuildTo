@@ -24,8 +24,9 @@ void main() {
       (tester) async {
     await pumpPhone(tester, const Size(393, 852));
     expect(find.bySemanticsLabel('Splyzo'), findsOneWidget);
-    expect(find.text('Building Made Easy.'), findsOneWidget);
+    expect(find.text('Construction materials, managed with confidence.'), findsOneWidget);
     expect(find.text('Your supplier workspace'), findsOneWidget);
+    expect(find.text('SPLYZO SUPPLIER'), findsOneWidget);
     for (final name in ['Home', 'Orders', 'Catalog', 'Stock', 'More']) {
       expect(find.text(name), findsWidgets);
     }

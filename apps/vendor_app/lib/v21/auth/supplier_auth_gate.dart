@@ -247,8 +247,7 @@ class _SupplierAccessView extends StatelessWidget {
               () => controller.authenticate(mode: 'signUp'),
               outlined: true,
             ),
-            if (controller.notice != null)
-              _AccessAction(
+            _AccessAction(
                 'Retry Clerk connection',
                 Icons.refresh_rounded,
                 controller.retryClerkInitialization,

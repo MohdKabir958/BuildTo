@@ -424,7 +424,7 @@ class _HomeTab extends StatelessWidget {
                     SizedBox(width: 9),
                     Flexible(
                       child: Text(
-                        'BUILDTO SUPPLIER',
+                        'SPLYZO SUPPLIER',
                         style: TextStyle(
                           color: BuildToPalette.white,
                           letterSpacing: 1.4,
