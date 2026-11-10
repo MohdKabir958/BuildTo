@@ -4,6 +4,7 @@ import {ApiError} from './errors';
 import {serializable} from './transaction';
 import {publishOutbox} from './outbox';
 import {commitOrderItemStock} from './inventory-reservations';
+import {cancelUnpaid} from './order-service';
 import type {PaymentGateway} from './payment-gateway';
 
 type Tx=Prisma.TransactionClient;
@@ -224,7 +225,7 @@ export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGateway
   const order=await tx.purchaseOrder.findUniqueOrThrow({where:{id:found.purchaseOrderId},
    select:{id:true,customerId:true,status:true,totalPaise:true,currency:true,
     supplierOrders:{select:{items:{select:{
-     listingId:true,quantity:true,reservations:{select:{id:true,quantity:true,state:true,expiresAt:true}}
+     listingId:true,quantity:true,reservations:{select:{id:true,quantity:true,state:true,expiresAt:true,orderItemId:true,balanceId:true}}
     }}}}}});
   if(payment.amount!==attempt.amountPaise||payment.amount!==order.totalPaise||
    payment.currency!=='INR'||order.currency!=='INR'||attempt.providerOrderRef!==payment.orderId){
@@ -235,6 +236,9 @@ export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGateway
   // A failure may describe only one failed checkout try within the same
   // Razorpay Order. It is NOT proof the entire order has permanently failed.
   if(event.name==='payment.failed'){
+   // One Razorpay attempt can fail while the same gateway Order stays open.
+   // Record evidence; only provider reconciliation can end the session.
+   await audit(tx,order.id,null,'RAZORPAY_PAYMENT_TRY_FAILED');
    await finish(null);return {duplicate:false,retry:false};
   }
   if(event.name==='payment.authorized'){
@@ -265,18 +269,133 @@ export async function receiveRazorpayEvent(db:PrismaClient,event:VerifiedGateway
    !i.reservations.filter(r=>r.state==='HELD')
     .reduce((sum,r)=>sum.plus(r.quantity),new Prisma.Decimal(0)).eq(i.quantity))||
    holds.some(r=>!r.expiresAt||r.expiresAt.getTime()<=Date.now());
-  if(other||order.status!=='PLACED'||invalidStock){
+  if(other||['CANCELLED','FAILED'].includes(attempt.status)||order.status!=='PLACED'||invalidStock){
    // Money has arrived but fulfillment is NOT authorized. Finance must
    // reconcile/refund; never turn stale or cancelled stock into a sale.
    await audit(tx,order.id,null,'PAYMENT_CAPTURED_REQUIRES_REVIEW');
    await finish('MANUAL_REVIEW');
    return {duplicate:false,retry:false};
   }
-  for(const hold of holds.sort((a,b)=>a.id.localeCompare(b.id)))
+  for(const hold of holds.sort((a,b)=>a.balanceId.localeCompare(b.balanceId)||a.orderItemId.localeCompare(b.orderItemId)||a.id.localeCompare(b.id)))
    await commitOrderItemStock(tx,hold.id);
   await tx.purchaseOrder.update({where:{id:order.id},data:{status:'CONFIRMED'}});
   await audit(tx,order.id,null,'PAYMENT_CAPTURED_ORDER_CONFIRMED');
   await finish(null);
   return {duplicate:false,retry:false};
  });
+}
+
+
+/**
+ * End an abandoned payment session only with read-only Razorpay proof.
+ * The customer may then retry using a NEW idempotency key or choose COD.
+ * A late provider capture is recorded as captured + MANUAL_REVIEW by the
+ * signed webhook, never silently treated as an unpaid order.
+ */
+export async function cancelPaymentSession(
+ db:PrismaClient,userId:string,orderId:string,attemptId:string,
+ gateway:PaymentGateway,expiredOnly=false
+){
+ if(!validUuid(orderId)||!validUuid(attemptId))
+  throw new ApiError(400,'INVALID_PAYMENT_ID','Invalid order or payment ID.');
+ const order=await db.purchaseOrder.findFirst({where:{id:orderId,customerId:userId},
+  select:{id:true,status:true,totalPaise:true}});
+ if(!order)throw new ApiError(404,'NOT_FOUND','Order not found.');
+ const attempt=await db.paymentAttempt.findFirst({where:{id:attemptId,purchaseOrderId:orderId},
+  select:{id:true,status:true,providerOrderRef:true,amountPaise:true,
+   createdAt:true,provider:true}});
+ if(!attempt||attempt.provider!=='RAZORPAY')
+  throw new ApiError(404,'NOT_FOUND','Payment attempt not found.');
+ if(['CANCELLED','FAILED'].includes(attempt.status))
+  return {paymentId:attempt.id,status:attempt.status,replayed:true,orderCancelled:order.status==='CANCELLED'};
+ if(order.status!=='PLACED'||attempt.status==='CAPTURED'||attempt.status==='AUTHORIZED')
+  throw new ApiError(409,'PAYMENT_RECONCILIATION_REQUIRED','Payment is not safe to cancel without finance reconciliation.');
+ if(expiredOnly){
+  const stale=await db.inventoryReservation.findFirst({where:{
+   orderItem:{supplierOrder:{purchaseOrderId:orderId}},state:'HELD',
+   expiresAt:{lte:new Date()}
+  },select:{id:true}});
+  if(!stale)throw new ApiError(409,'PAYMENT_NOT_EXPIRED','Stock hold is still active.');
+ }
+ let providerOrderRef=attempt.providerOrderRef;
+ if(!providerOrderRef){
+  if(!gateway.lookupOrderByReceipt)
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_UNAVAILABLE','Gateway receipt lookup required.');
+  // Avoid racing an in-flight createOrder call that has not stored its result.
+  if(Date.now()-attempt.createdAt.getTime()<15000)
+   throw new ApiError(409,'PAYMENT_INITIALIZING','Payment initialization is still in progress.');
+  const found=await gateway.lookupOrderByReceipt('BT'+attempt.id.replaceAll('-',''));
+  if(found){
+   if(found.amount!==attempt.amountPaise||found.currency!=='INR')
+    throw new ApiError(503,'PAYMENT_PROVIDER_MISMATCH','Gateway order evidence mismatch.');
+   providerOrderRef=found.id;
+  }
+ }
+ if(providerOrderRef){
+  if(!gateway.inspectOrderPayments)
+   throw new ApiError(503,'PAYMENT_RECONCILIATION_UNAVAILABLE','Provider payment evidence required.');
+  const inspection=await gateway.inspectOrderPayments(providerOrderRef);
+  if(inspection.status!=='NO_ACTIVE_PAYMENT')
+   throw new ApiError(409,'PAYMENT_RECONCILIATION_REQUIRED',
+    'An authorized, captured or incomplete payment cannot be cancelled.');
+ }
+ return serializable(db,async tx=>{
+  await lockOrder(tx,orderId);
+  const owned=await tx.purchaseOrder.findFirst({where:{id:orderId,customerId:userId},
+   select:{id:true,status:true}});
+  if(!owned||owned.status!=='PLACED')
+   throw new ApiError(409,'ORDER_NOT_PAYABLE','Order has changed during reconciliation.');
+  const latest=await tx.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}});
+  if(latest.provider!=='RAZORPAY'||latest.purchaseOrderId!==orderId||
+     !['CREATED','PENDING'].includes(latest.status)||
+     (latest.providerOrderRef!==attempt.providerOrderRef))
+   throw new ApiError(409,'PAYMENT_RECONCILIATION_CHANGED','Refresh payment state and retry.');
+  if(await tx.paymentAttempt.count({where:{purchaseOrderId:orderId,
+   id:{not:attemptId},status:{in:['CREATED','PENDING','AUTHORIZED','CAPTURED']}}}))
+   throw new ApiError(409,'PAYMENT_RECONCILIATION_REQUIRED','Other active payment requires review.');
+  await tx.paymentAttempt.update({where:{id:attemptId},data:{status:'CANCELLED',
+   ...(providerOrderRef&&!latest.providerOrderRef?{providerOrderRef}:{} )}});
+  await audit(tx,orderId,userId,'CUSTOMER_PAYMENT_SESSION_CANCELLED_AFTER_GATEWAY_CHECK');
+  // Expired held stock must be reclaimed within this same transaction.
+  const holds=await tx.inventoryReservation.findMany({where:{
+   orderItem:{supplierOrder:{purchaseOrderId:orderId}},state:'HELD'
+  },select:{id:true,expiresAt:true}});
+  const expired=holds.length>0&&holds.every(h=>!!h.expiresAt&&h.expiresAt.getTime()<=Date.now());
+  if(expired)await cancelUnpaid(tx,orderId,userId,true);
+  return {paymentId:attemptId,status:'CANCELLED',replayed:false,orderCancelled:expired};
+ });
+}
+
+/**
+ * Bounded one-instance recovery. No provider calls inside SQL transactions.
+ * Active/authorized gateway payments remain held for reconciliation, never
+ * automatically cancelled or re-sold after a guessed timeout.
+ */
+export async function recoverExpiredPaymentSessions(
+ db:PrismaClient,gateway:PaymentGateway,limit=10
+){
+ if(!Number.isInteger(limit)||limit<1||limit>25)throw new Error('INVALID_PAYMENT_RECOVERY_LIMIT');
+ const candidates=await db.$queryRaw<{orderId:string;customerId:string;attemptId:string}[]>(Prisma.sql`
+  SELECT DISTINCT ON (po.id) po.id AS "orderId",po."customerId" AS "customerId",
+   payment.id AS "attemptId"
+  FROM "PurchaseOrder" po
+   JOIN "PaymentAttempt" payment ON payment."purchaseOrderId"=po.id
+   JOIN "SupplierOrder" so ON so."purchaseOrderId"=po.id
+   JOIN "SupplierOrderItem" item ON item."supplierOrderId"=so.id
+   JOIN "InventoryReservation" res ON res."orderItemId"=item.id
+  WHERE po.status='PLACED' AND res.state='HELD' AND res."expiresAt"<=NOW()
+   AND payment.status IN ('CREATED','PENDING')
+   AND NOT EXISTS (SELECT 1 FROM "PaymentAttempt" other
+     WHERE other."purchaseOrderId"=po.id AND other.status IN ('AUTHORIZED','CAPTURED'))
+  ORDER BY po.id,payment."createdAt" DESC LIMIT ${limit}
+ `);
+ let cancelled=0,skipped=0;
+ for(const c of candidates){
+  try{
+   const result=await cancelPaymentSession(db,c.customerId,c.orderId,c.attemptId,gateway,true);
+   if(result.status==='CANCELLED')cancelled++;
+   else skipped++;
+  }catch{skipped++;}
+ }
+ return {cancelled,skipped};
 }

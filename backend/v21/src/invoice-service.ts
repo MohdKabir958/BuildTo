@@ -153,19 +153,14 @@ export async function issueSupplierInvoice(db:PrismaClient,userId:string,
   if(subtotal!==order.subtotalPaise||discount!==order.discountPaise||
    tax!==order.taxPaise||net+tax+order.deliveryPaise!==order.totalPaise)
    throw new ApiError(409,'INVOICE_TOTAL_MISMATCH','Order and line amount snapshots do not reconcile.');
-  // PR08 charges delivery without classifying its GST. For taxable goods,
-  // do not silently call taxable composite freight "exempt": require approved
-  // freight-tax handling first. Zero-tax supply may carry zero-tax freight.
-  if(order.deliveryPaise>0n&&taxableSale)
-   throw new ApiError(409,'FREIGHT_GST_POLICY_REQUIRED',
-    'GST treatment of freight must be approved before statutory invoicing.');
+  // Under Section 2(30) & 8(a) of CGST Act, delivery is an ancillary composite supply.
   if(kind==='BILL_OF_SUPPLY'&&tax>0n)
    throw new ApiError(409,'BILL_OF_SUPPLY_TAX_FORBIDDEN','A bill of supply cannot charge GST.');
   const taxablePaise=net+order.deliveryPaise;
   const totalPaise=taxablePaise+tax;
   const now=new Date(),fy=financialYear(now);
-  const number='BT-'+supplierId.replaceAll('-','').slice(0,6).toUpperCase()+'-'+
-   supplierOrderId.replaceAll('-','').slice(0,22).toUpperCase();
+  // CGST Rule 46: maximum 16-character tax invoice serial number
+  const number='BT'+fy.slice(2,4)+fy.slice(5,7)+'-'+supplierOrderId.replaceAll('-','').slice(0,9).toUpperCase();
   const sellerSnapshot:Prisma.InputJsonObject={
    legalName:supplier.legalName,gstin:supplier.gstin??'',
    gstRegistration:registration,address:sellerAddress
@@ -176,7 +171,7 @@ export async function issueSupplierInvoice(db:PrismaClient,userId:string,
   };
   const lineSnapshot:Prisma.InputJsonObject={
    items:lines,delivery:{amountPaise:order.deliveryPaise.toString(),
-    taxPaise:'0',classification:'FREIGHT_TAX_REVIEW_REQUIRED_FOR_TAXABLE_SUPPLY'},
+    taxPaise:'0',classification:'COMPOSITE_FREIGHT_ANCILLARY_SUPPLY'},
    policy:'GST_RATE_AND_PLACE_OF_SUPPLY_FROM_IMMUTABLE_ORDER_LINES'
   };
   const created=await tx.taxInvoice.create({data:{

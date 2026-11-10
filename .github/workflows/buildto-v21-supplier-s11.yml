@@ -1,0 +1,41 @@
+name: BuildTo Supplier S11 returns and reviews
+on:
+  pull_request:
+    paths:
+      - 'apps/vendor_app/lib/v21/**'
+      - 'apps/vendor_app/test/v21/**'
+      - 'apps/vendor_app/docs/v21/S11-RETURNS-REVIEWS.md'
+      - '.github/workflows/buildto-v21-supplier-s11.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  care-flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve pinned dependencies
+        working-directory: apps/vendor_app
+        run: flutter pub get --enforce-lockfile
+      - name: Enforce formatting
+        working-directory: apps/vendor_app
+        run: dart format --output=none --set-exit-if-changed lib/v21 test/v21
+      - name: Static analysis
+        working-directory: apps/vendor_app
+        run: flutter analyze --no-pub lib/v21 test/v21
+      - name: All supplier V2.1 regressions
+        working-directory: apps/vendor_app
+        run: flutter test --no-pub --concurrency=2 test/v21
+      - name: Staging Flutter bundle
+        working-directory: apps/vendor_app
+        run: |
+          flutter build bundle --debug --no-pub \
+            --dart-define=BUILDTO_SUPPLIER_V21=true \
+            --dart-define=AUTH_MODE=clerk-test \
+            --dart-define=BUILDTO_V21_API_BASE_URL=https://buildto-v21-staging.onrender.com

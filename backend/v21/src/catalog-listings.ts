@@ -202,8 +202,8 @@ export async function reviewListing(db:PrismaClient,actor:string,id:string,paylo
   if(row.version!==version)throw new ApiError(409,'LISTING_VERSION_CONFLICT','Refresh listing before review.');
   if(decision==='SUSPEND' && row.status!=='APPROVED')
    throw new ApiError(409,'INVALID_LISTING_STATE','Only approved listings may be suspended.');
-  if(decision!=='SUSPEND'&&row.status!=='PENDING')
-   throw new ApiError(409,'INVALID_LISTING_STATE','Only pending listings may be approved or rejected.');
+  if(decision!=='SUSPEND'&&row.status!=='PENDING'&&row.status!=='SUSPENDED')
+   throw new ApiError(409,'INVALID_LISTING_STATE','Only pending or suspended listings may be approved or rejected.');
   if(decision==='APPROVE'){
    const supplier=await tx.supplier.findUnique({where:{id:row.supplierId},select:{approval:true,suspendedAt:true}});
    if(supplier?.approval!=='APPROVED'||supplier.suspendedAt)

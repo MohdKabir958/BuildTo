@@ -19,6 +19,10 @@ test('supported Union Territories without legislatures get UTGST',()=>{
  assert.equal(x.cgstPaise,100n);
  assert.equal(x.utgstPaise,100n);
  assert.equal(x.sgstPaise+x.igstPaise,0n);
+ const xDh=splitOrderGst(200n,gst('26ABCDE1234F1Z1'),'DH');
+ assert.equal(xDh.cgstPaise,100n);
+ assert.equal(xDh.utgstPaise,100n);
+ assert.equal(xDh.sgstPaise+xDh.igstPaise,0n);
 });
 test('taxable order requires a verified regular-GST supplier',()=>{
  assert.throws(()=>splitOrderGst(100n,{gstin:null,gstRegistration:'UNVERIFIED',verifiedAt:null},'TG'),

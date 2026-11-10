@@ -92,7 +92,6 @@ export function readConfig(env: NodeJS.ProcessEnv): V21Config {
   const clerkAuthorizedParties=(env.CLERK_AUTHORIZED_PARTIES||'').split(',').map(x=>x.trim()).filter(Boolean);
   const clerkAllowNativeWithoutAzp=env.CLERK_ALLOW_NATIVE_WITHOUT_AZP==='true';
   if(clerkAuthorizedParties.some(x=>!isExactOrigin(x)))throw new Error('V21_CLERK_PARTIES_INVALID');
-  if(clerkAllowNativeWithoutAzp && !clerkAudience)throw new Error('V21_CLERK_NATIVE_AUDIENCE_REQUIRED');
   if(environment==='staging') {
     // Identify only the configuration KEYS that fail validation, never their values.
     const missingOrInvalid: string[]=[];

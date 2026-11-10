@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "purpose": "S00 supplier Flutter-to-V2.1 API contract audit; planned integrations only, not implemented client calls",
+  "reference": "backend/v21/openapi.json",
+  "baselineOpenApiVersion": "0.24.0",
+  "groups": [
+    {
+      "id": "identity",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/me"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/access"
+        }
+      ]
+    },
+    {
+      "id": "onboarding",
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/api/v2/supplier-applications"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/me/supplier-applications"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/me/supplier-applications/{supplierId}"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/supplier-applications/{supplierId}/documents"
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/catalog/categories"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/catalog/brands"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/catalog/units"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/catalog/products"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/catalog/listings"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/listings"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/listings"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v2/suppliers/{supplierId}/listings/{listingId}"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/listings/{listingId}/submit"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v2/suppliers/{supplierId}/listings/{listingId}/price-tiers"
+        }
+      ]
+    },
+    {
+      "id": "inventory",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/warehouses"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/warehouses"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/warehouses/{warehouseId}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/balances"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/warehouses/{warehouseId}/movements"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/adjustments"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/inventory/transfers"
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/delivery"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v2/suppliers/{supplierId}/delivery/areas/{areaId}"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v2/suppliers/{supplierId}/delivery/areas/{areaId}/flat-rate"
+        }
+      ]
+    },
+    {
+      "id": "rfqs",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/rfqs"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/rfqs/{rfqId}/quotes"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/rfqs/{rfqId}/quotes"
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/orders"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/accept"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/reject"
+        }
+      ]
+    },
+    {
+      "id": "fulfillment",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/shipments"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/shipments"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/shipments/{shipmentId}/pack"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/shipments/{shipmentId}/dispatch"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/shipments/{shipmentId}/out-for-delivery"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/shipments/{shipmentId}/handover"
+        }
+      ]
+    },
+    {
+      "id": "care",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/returns"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/returns/{returnId}/receive"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/reviews"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/reviews/manage"
+        }
+      ]
+    },
+    {
+      "id": "finance",
+      "operations": [
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/finance/statement"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/finance/beneficiaries"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/finance/payouts"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/invoices"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/invoices"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/cod"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/orders/{supplierOrderId}/cod"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v2/suppliers/{supplierId}/returns/{returnId}/credit-note"
+        }
+      ]
+    }
+  ]
+}

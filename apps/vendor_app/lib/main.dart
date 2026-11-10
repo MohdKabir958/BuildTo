@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'v21/screens/supplier_shell.dart';
+import 'v21/auth/supplier_auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:kraveo_ui/kraveo_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -25,6 +27,19 @@ import 'session/session_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Explicit V2.1 staging mode. The native Clerk SDK and database memberships
+  // are required; no legacy session, restaurant push, kitchen queue or socket
+  // starts in this mode. Missing configuration fails closed inside the gate.
+  if (const bool.fromEnvironment('BUILDTO_SUPPLIER_V21', defaultValue: false)) {
+    runApp(const BuildToSupplierV21App());
+    return;
+  }
+  // Explicit isolated S01 preview only. No legacy restaurant auth, socket, push
+  // or production supplier claims. The authenticated V2.1 entry is S02.
+  if (const bool.fromEnvironment('BUILDTO_SUPPLIER_V21_PREVIEW', defaultValue: false)) {
+    runApp(const BuildToSupplierPreviewApp());
+    return;
+  }
   // Push is an addition: Firebase starts inside the controller (defensively), after the first frame is on its way.
   final push = PushController(
     messaging: FirebasePushMessaging(),

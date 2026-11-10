@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {serializable} from './transaction';
+import {verifiedCapturedPayment} from './payment-funding';
 import {executeIdempotently} from './idempotency';
 import {publishOutbox} from './outbox';
 import {isUuid,requireAdminPermission} from './permissions';
@@ -85,18 +86,14 @@ export async function refundEvidence(tx:Tx,returnId:string):Promise<RefundEviden
   throw new ApiError(409,'REFUND_EVIDENCE_INCOMPLETE',
    'Verified full return, issued statutory credit note and unsettled seller required.');
  const order=r.supplierOrder.purchaseOrder;
- if(order.currency!=='INR'||order.payments.length!==1)
-  throw new ApiError(409,'REFUND_VERIFIED_CAPTURE_REQUIRED','One exact capture is required.');
- const payment=order.payments[0];
- if(payment.provider!=='RAZORPAY'||payment.status!=='CAPTURED'||
-   !payment.verifiedAt||!payment.providerPayRef||
-   payment.amountPaise!==order.totalPaise||payment.capturedPaise!==order.totalPaise)
+ const payment=verifiedCapturedPayment(order.payments,order.totalPaise);
+ if(order.currency!=='INR'||!payment)
   throw new ApiError(409,'REFUND_VERIFIED_CAPTURE_REQUIRED',
-   'Supplier-held COD and unverified Razorpay attempts are not online refunds.');
+   'One exact captured payment required; previous failed attempts do not count.');
  return {returnId:r.id,supplierId:r.supplierOrder.supplierId,
   purchaseOrderId:r.supplierOrder.purchaseOrderId,
   amountPaise:r.supplierOrder.totalPaise,paymentId:payment.id,
-  providerPayRef:payment.providerPayRef,creditNoteId:r.creditNote.id,
+  providerPayRef:payment.providerPayRef!,creditNoteId:r.creditNote.id,
   sourceInvoiceId:r.creditNote.sourceInvoiceId!};
 }
 export async function requestFullRefund(db:PrismaClient,userId:string,

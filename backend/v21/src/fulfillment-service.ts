@@ -6,6 +6,7 @@ import {serializable} from './transaction';
 import {executeIdempotently} from './idempotency';
 import {publishOutbox} from './outbox';
 import {releaseOrderItemStock} from './inventory-reservations';
+import {verifiedFulfillmentPayment} from './payment-funding';
 import {isUuid,requireAdminPermission,requireSupplierPermission} from './permissions';
 
 type Tx=Prisma.TransactionClient;
@@ -111,20 +112,15 @@ async function source(tx:Tx,supplierId:string,supplierOrderId:string){
     capturedPaise:true,verifiedAt:true,providerPayRef:true}}}},
   items:{select:{id:true,listingId:true,quantity:true,allocatedShipmentQty:true,
    reservations:{select:{state:true,quantity:true,balance:{select:{warehouseId:true}}}},
-   shipmentLines:{select:{quantity:true,shipment:{select:{status:true,warehouseId:true}}}}
+   shipmentLines:{select:{quantity:true,rejectedQty:true,shipment:{select:{status:true,warehouseId:true}}}}
   }}
  }});
 }
 function paymentReady(order:Awaited<ReturnType<typeof source>>){
  const parent=order.purchaseOrder;
  if(!['CONFIRMED','PARTIALLY_FULFILLED','FULFILLED'].includes(parent.status)||
-   parent.currency!=='INR'||parent.payments.length!==1)
-  throw new ApiError(409,'FULFILLMENT_PAYMENT_REQUIRED','Order has no reconciled payment or selected COD.');
- const p=parent.payments[0];
- if(p.amountPaise!==parent.totalPaise||
-   !(p.provider==='MANUAL'&&p.paymentMethod==='COD'&&p.status==='PENDING'&&p.capturedPaise===0n||
-     p.provider==='RAZORPAY'&&p.status==='CAPTURED'&&
-     p.capturedPaise===parent.totalPaise&&p.verifiedAt&&p.providerPayRef))
+   parent.currency!=='INR'||
+   !verifiedFulfillmentPayment(parent.payments,parent.totalPaise))
   throw new ApiError(409,'FULFILLMENT_PAYMENT_REQUIRED','Order has no reconciled payment or selected COD.');
  if(!order.items.length||order.items.some(item=>
   !item.listingId || !item.reservations.filter(r=>r.state==='COMMITTED')
@@ -147,7 +143,7 @@ async function supplierEvent(tx:Tx,supplierOrderId:string,
   fromStatus:from as any,toStatus:to,actorUserId:actor,reason}});
 }
 async function shipmentEvent(tx:Tx,id:string,from:string|null,to:
- 'PLANNED'|'PACKED'|'DISPATCHED'|'OUT_FOR_DELIVERY'|'DELIVERED',
+ 'PLANNED'|'PACKED'|'DISPATCHED'|'OUT_FOR_DELIVERY'|'PARTIALLY_DELIVERED'|'DELIVERED'|'CANCELLED',
  actor:string,detail?:Prisma.InputJsonObject){
  await tx.shipmentEvent.create({data:{shipmentId:id,fromStatus:from as any,
   toStatus:to,actorId:actor,...(detail?{detail}:{})}});
@@ -225,7 +221,7 @@ export async function planShipment(db:PrismaClient,userId:string,supplierId:stri
       r.balance.warehouseId===input.warehouseId).reduce((s,r)=>s.plus(r.quantity),zero());
     const already=item.shipmentLines.filter(r=>r.shipment.warehouseId===input.warehouseId&&
       active.includes(r.shipment.status as typeof active[number]))
-      .reduce((s,r)=>s.plus(r.quantity),zero());
+      .reduce((s,r)=>s.plus(r.quantity.minus(r.shipment.status==='PARTIALLY_DELIVERED'?r.rejectedQty:zero())),zero());
     if(!committed.gte(already.plus(line.quantity))||
       !item.quantity.gte(item.allocatedShipmentQty.plus(line.quantity)))
      throw new ApiError(409,'SHIPMENT_ALLOCATION_EXCEEDED','Requested shipment exceeds committed unallocated stock.');
@@ -291,6 +287,29 @@ export async function progressShipment(db:PrismaClient,userId:string,supplierId:
   return {id:shipment.id,status:step.to,replayed:false};
  });
 }
+
+/** Cancel before dispatch only. Database status trigger releases allocation. */
+export async function cancelShipment(db:PrismaClient,userId:string,
+ supplierId:string,shipmentId:string,body:unknown){
+ uuid(supplierId,'supplierId');uuid(shipmentId,'shipmentId');
+ const input=record(body,['reason']);
+ const reason=requiredText(input.reason,'reason',8,500);
+ return serializable(db,async tx=>{
+  await requireSupplierPermission(tx,userId,supplierId,'ORDERS_FULFILL');
+  const {order,shipment}=await shipmentSource(tx,supplierId,shipmentId);
+  if(shipment.status==='CANCELLED')
+   return {shipmentId,status:'CANCELLED',replayed:true};
+  if(!['PLANNED','PACKED'].includes(shipment.status))
+   throw new ApiError(409,'SHIPMENT_ALREADY_DISPATCHED',
+    'Dispatched loads require a separate carrier reconciliation.');
+  await tx.shipment.update({where:{id:shipmentId},data:{status:'CANCELLED'}});
+  await shipmentEvent(tx,shipmentId,shipment.status,'CANCELLED',userId,{reason});
+  await audit(tx,order.purchaseOrderId,userId,'SHIPMENT_CANCELLED_BEFORE_DISPATCH',
+   'SUPPLIER_FULFILLMENT');
+  return {shipmentId,status:'CANCELLED',replayed:false};
+ });
+}
+
 function otpHash(secret:string,shipmentId:string,time:Date,otp:string){
  return createHmac('sha256',secret).update('buildto:v21:delivery:'+
   shipmentId+':'+time.getTime()+':'+otp).digest('hex');
@@ -329,39 +348,84 @@ export async function issueCustomerHandoverOtp(db:PrismaClient,customerId:string
   return {shipmentId,otp,expiresAt:expiresAt.toISOString()};
  });
 }
+type HandoverLine={orderItemId:string;deliveredQty:Prisma.Decimal;rejectedQty:Prisma.Decimal};
+function handoverLines(value:unknown):HandoverLine[]|null{
+ if(value===undefined)return null; // backward-compatible full delivery
+ if(!Array.isArray(value)||!value.length||value.length>40)
+  throw new ApiError(400,'INVALID_HANDOVER_LINES','Provide 1-40 shipment lines.');
+ const seen=new Set<string>();
+ const number=(value:unknown)=>{
+  if(typeof value!=='string'||!/^(?:0|[1-9][0-9]{0,13}(?:\\.[0-9]{1,3})?)$/.test(value))
+   throw new ApiError(400,'INVALID_HANDOVER_QUANTITY','Quantities must be nonnegative exact decimal strings.');
+  return new Prisma.Decimal(value);
+ };
+ return value.map(raw=>{
+  const row=record(raw,['orderItemId','deliveredQty','rejectedQty']);
+  const orderItemId=uuid(row.orderItemId,'orderItemId');
+  if(seen.has(orderItemId))
+   throw new ApiError(400,'DUPLICATE_SHIPMENT_LINE','Handover lines must be unique.');
+  seen.add(orderItemId);
+  return {orderItemId,deliveredQty:number(row.deliveredQty),rejectedQty:number(row.rejectedQty)};
+ }).sort((a,b)=>a.orderItemId.localeCompare(b.orderItemId));
+}
 async function fullyDelivered(tx:Tx,order:Awaited<ReturnType<typeof source>>,
  shipmentId:string,actor:string,method:'OTP'|'APPROVED_EXCEPTION',data:{
- otpVerifiedAt?:Date}){
+ otpVerifiedAt?:Date},submitted:HandoverLine[]|null){
  const ship=await tx.shipment.findUniqueOrThrow({where:{id:shipmentId},select:{
-  status:true,items:{select:{id:true,quantity:true,deliveredQty:true,rejectedQty:true}}
+  status:true,items:{select:{id:true,supplierOrderItemId:true,quantity:true,deliveredQty:true,rejectedQty:true}}
  }});
  if(!ship.items.length||ship.items.some(i=>i.deliveredQty.gt(0)||i.rejectedQty.gt(0)))
-  throw new ApiError(409,'SHIPMENT_QUANTITY_CONFLICT','Handover requires fully unconfirmed shipment lines.');
- for(const line of ship.items)
-  await tx.shipmentItem.update({where:{id:line.id},data:{deliveredQty:line.quantity}});
+  throw new ApiError(409,'SHIPMENT_QUANTITY_CONFLICT','Shipment already reconciled.');
+ const byId=new Map((submitted??[]).map(l=>[l.orderItemId,l]));
+ if(submitted&&submitted.length!==ship.items.length)
+  throw new ApiError(409,'SHIPMENT_QUANTITY_CONFLICT','Every shipment item needs a quantity reconciliation.');
+ let delivered=zero(),rejected=zero();
+ const effective=ship.items.map(i=>{
+  const line=submitted?byId.get(i.supplierOrderItemId):null;
+  if(submitted&&!line)throw new ApiError(409,'SHIPMENT_QUANTITY_CONFLICT','Unknown shipment item.');
+  const received=line?.deliveredQty??i.quantity,damaged=line?.rejectedQty??zero();
+  if(!received.plus(damaged).eq(i.quantity))
+   throw new ApiError(409,'SHIPMENT_QUANTITY_CONFLICT','Accepted plus rejected must equal shipped.');
+  delivered=delivered.plus(received);rejected=rejected.plus(damaged);
+  return {id:i.id,deliveredQty:received,rejectedQty:damaged};
+ });
+ if(rejected.gt(0)&&delivered.lte(0))
+  throw new ApiError(422,'PARTIAL_DELIVERY_REQUIRED','All-rejected shipments require carrier failure handling.');
+ const target=rejected.gt(0)?'PARTIALLY_DELIVERED':'DELIVERED';
+ // Apply accepted/rejected quantities before the status transition. The SQL
+ // trigger deallocates rejected quantities only when status changes.
+ for(const line of effective)
+  await tx.shipmentItem.update({where:{id:line.id},data:{
+   deliveredQty:line.deliveredQty,rejectedQty:line.rejectedQty
+  }});
  const now=new Date();
  await tx.shipment.update({where:{id:shipmentId},data:{
-  status:'DELIVERED',deliveredAt:now,handoverMethod:method,...data
+  status:target,deliveredAt:now,handoverMethod:method,...data
  }});
- await shipmentEvent(tx,shipmentId,ship.status,'DELIVERED',actor,
-  {method,kind:'COMPLETE_SHIPMENT_HANDOVER'});
- // All purchased quantities must be delivered to mark the child delivered.
+ await shipmentEvent(tx,shipmentId,ship.status,target,actor,{
+  method,kind:target==='DELIVERED'?'COMPLETE_SHIPMENT_HANDOVER':'PARTIAL_SHIPMENT_HANDOVER',
+  deliveredQty:delivered.toString(),rejectedQty:rejected.toString()
+ });
+ // Accepted quantities on partial shipments count toward final fulfillment.
  const lines=await tx.supplierOrderItem.findMany({where:{supplierOrderId:order.id},
   select:{quantity:true,shipmentLines:{select:{deliveredQty:true,shipment:{select:{status:true}}}}}});
  const complete=lines.length>0&&lines.every(i=>i.shipmentLines
-  .filter(s=>s.shipment.status==='DELIVERED')
+  .filter(s=>s.shipment.status==='DELIVERED'||s.shipment.status==='PARTIALLY_DELIVERED')
   .reduce((sum,s)=>sum.plus(s.deliveredQty),zero()).eq(i.quantity));
- const newState=complete?'DELIVERED':'PARTIALLY_DELIVERED';
- if(order.status!==newState)
-  await supplierEvent(tx,order.id,order.status,newState,actor);
- await audit(tx,order.purchaseOrderId,actor,'SHIPMENT_DELIVERED_'+method,'SUPPLIER_FULFILLMENT');
- return {id:shipmentId,status:'DELIVERED' as const,
-  supplierOrderStatus:newState,handoverMethod:method,replayed:false};
+ const next=complete?'DELIVERED':'PARTIALLY_DELIVERED';
+ if(order.status!==next)await supplierEvent(tx,order.id,order.status,next,actor);
+ await audit(tx,order.purchaseOrderId,actor,
+  (target==='DELIVERED'?'SHIPMENT_DELIVERED_':'SHIPMENT_PARTIAL_DELIVERY_')+method,
+  'SUPPLIER_FULFILLMENT');
+ return {id:shipmentId,status:target,supplierOrderStatus:next,
+  handoverMethod:method,deliveredQty:delivered.toString(),
+  rejectedQty:rejected.toString(),replayed:false};
 }
 export async function confirmShipmentHandover(db:PrismaClient,userId:string,
  supplierId:string,shipmentId:string,body:unknown,secret:string|undefined){
  uuid(supplierId,'supplierId');uuid(shipmentId,'shipmentId');
- const input=record(body,['method','otp','mediaId','receivedBy']);
+ const input=record(body,['method','otp','mediaId','receivedBy','lines']);
+ const submitted=handoverLines(input.lines);
  if(input.method!=='OTP'&&input.method!=='EXCEPTION')
   throw new ApiError(400,'INVALID_HANDOVER_METHOD','Use OTP or EXCEPTION.');
  const receivedBy=input.receivedBy===undefined?null:requiredText(input.receivedBy,'receivedBy',2,160);
@@ -376,8 +440,15 @@ export async function confirmShipmentHandover(db:PrismaClient,userId:string,
   await requireSupplierPermission(tx,userId,supplierId,'ORDERS_FULFILL');
   const {order,shipment}=await shipmentSource(tx,supplierId,shipmentId);
   paymentReady(order);
-  if(shipment.status==='DELIVERED')
-   return {kind:'success' as const,result:{id:shipmentId,status:'DELIVERED',replayed:true}};
+  if(shipment.status==='DELIVERED'||shipment.status==='PARTIALLY_DELIVERED'){
+   if(shipment.status==='PARTIALLY_DELIVERED'&&
+     (!submitted||submitted.length!==shipment.items.length||
+      !submitted.every(l=>shipment.items.some(i=>i.supplierOrderItemId===l.orderItemId&&
+        i.deliveredQty.eq(l.deliveredQty)&&i.rejectedQty.eq(l.rejectedQty)))))
+    throw new ApiError(409,'SHIPMENT_ALREADY_RECONCILED','Recorded partial delivery cannot be modified.');
+   return {kind:'success' as const,result:{
+    id:shipmentId,status:shipment.status,replayed:true}};
+  }
   if(shipment.status!=='OUT_FOR_DELIVERY')
    throw new ApiError(409,'SHIPMENT_STATE_CONFLICT','Shipment is not awaiting handover.');
   if(mediaId){
@@ -403,14 +474,14 @@ export async function confirmShipmentHandover(db:PrismaClient,userId:string,
     await audit(tx,order.purchaseOrderId,userId,'SHIPMENT_OTP_ATTEMPT_FAILED','SUPPLIER_FULFILLMENT');
     return {kind:'bad' as const,locked:Boolean(lockedUntil)};
    }
-   const done=await fullyDelivered(tx,order,shipmentId,userId,'OTP',{otpVerifiedAt:now});
+   const done=await fullyDelivered(tx,order,shipmentId,userId,'OTP',{otpVerifiedAt:now},submitted);
    if(mediaId)await tx.deliveryProof.create({data:{shipmentId,mediaId,
     type:'HANDOVER_PHOTO',receivedBy}});
    return {kind:'success' as const,result:done};
   }
   if(!shipment.exceptionApprovedAt||!shipment.exceptionApprovedById)
    throw new ApiError(409,'EXCEPTION_APPROVAL_REQUIRED','Independent exception approval is required.');
-  const done=await fullyDelivered(tx,order,shipmentId,userId,'APPROVED_EXCEPTION',{});
+  const done=await fullyDelivered(tx,order,shipmentId,userId,'APPROVED_EXCEPTION',{},submitted);
   if(mediaId)await tx.deliveryProof.create({data:{shipmentId,mediaId,
    type:'HANDOVER_PHOTO',receivedBy}});
   return {kind:'success' as const,result:done};

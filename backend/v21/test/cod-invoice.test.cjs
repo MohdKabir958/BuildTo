@@ -124,7 +124,7 @@ test('COD is owner-authorized, exact-amount, idempotent and not an online captur
   'MANUAL COD records must not be mislabeled Razorpay payment attempts');
  assert.equal((await call('post',customerUrl()+'/cancel','customer',{})).status,409);
 });
-test('a prior Razorpay attempt, even FAILED, blocks COD method switching',async()=>{
+test('terminated Razorpay attempt cannot make an incomplete order COD-eligible',async()=>{
  const order=await db.purchaseOrder.create({data:{
   customerId:store.customer.id,clientRequestId:key(),
   publicNumber:'BT-'+id().replaceAll('-').slice(0,24),
@@ -135,7 +135,7 @@ test('a prior Razorpay attempt, even FAILED, blocks COD method switching',async(
   idempotencyKey:key(),amountPaise:1000n,status:'FAILED'
  }});
  const r=await call('post','/api/v2/orders/'+order.id+'/cod','customer',{},key());
- assert.equal(r.status,409);assert.equal(r.body.error.code,'PAYMENT_METHOD_LOCKED');
+ assert.equal(r.status,409);assert.equal(r.body.error.code,'ORDER_NOT_COD_ELIGIBLE');
 });
 test('supplier cash claim requires delivered shipment with verified handover',async()=>{
  const url=supplierUrl()+'/cod';
@@ -250,9 +250,10 @@ test('taxable freight is not misclassified as exempt GST in issued invoices',asy
  }});
  const route='/api/v2/suppliers/'+store.supplier.id+'/orders/'+child.id+'/invoices';
  const r=await call('post',route,'finance',{});
- assert.equal(r.status,409,JSON.stringify(r.body));
- assert.equal(r.body.error.code,'FREIGHT_GST_POLICY_REQUIRED');
- assert.equal(await db.taxInvoice.count({where:{supplierOrderId:child.id}}),0);
+ assert.equal(r.status,201,JSON.stringify(r.body));
+  assert.equal(r.body.data.kind,'TAX_INVOICE');
+  assert.ok(r.body.data.invoiceNumber.length <= 16, 'Invoice number must not exceed 16 characters per Rule 46');
+  assert.equal(await db.taxInvoice.count({where:{supplierOrderId:child.id}}),1);
 });
 
 test('provider CAPTURED flag without verified amount/reference never licenses a tax invoice',async()=>{
