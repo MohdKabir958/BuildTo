@@ -98,7 +98,7 @@ export async function createProduct(db:PrismaClient,actor:string,input:unknown) 
    description:o.description===undefined||o.description===null?null:requiredString(o.description,'description',4000),
    hsnCode:o.hsnCode===undefined?null:hsn(o.hsnCode),
    specification:o.specification===undefined?{}:specification(o.specification),
-   active:false,
+   active:o.active===false?false:true,
  };
  return serial(db,async tx=>{
    await admin(tx,actor);
