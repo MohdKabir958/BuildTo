@@ -77,7 +77,7 @@ class _KraveoDriverAppState extends State<KraveoDriverApp> {
           title: BrandConfig.driverName,
           debugShowCheckedModeBanner: false,
           theme: KraveoTheme.driver(),
-          home: GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? const ClerkEntryScreen(appName: 'Grozo Delivery',preview:true) : AuthGate(session: _session, riderServices: widget.riderServices, payoutApi: widget.payoutApi),
+          home: GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? ClerkEntryScreen(appName: BrandConfig.driverName,preview:true) : AuthGate(session: _session, riderServices: widget.riderServices, payoutApi: widget.payoutApi),
         ),
       ),
     );
@@ -237,7 +237,7 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-/// A saved login exists but Grozo cannot be reached. The token is kept, so a dropped network
+/// A saved login exists but Splyzo cannot be reached. The token is kept, so a dropped network
 /// never logs a rider out mid-shift.
 class _SessionUnreachable extends StatefulWidget {
   const _SessionUnreachable({required this.onRetry});

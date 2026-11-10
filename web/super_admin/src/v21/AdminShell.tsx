@@ -65,7 +65,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
       <div className="flex items-center gap-3 border-b border-white/10 px-6 py-7">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-2xl font-black text-slate-950" aria-hidden="true">B</div>
         <div>
-          <p className="text-xl font-black leading-none tracking-tight text-white">BuildTo</p>
+          <p className="text-xl font-black leading-none tracking-tight text-white">Splyzo</p>
           <p className="mt-1 text-xs font-semibold tracking-wide text-slate-300">ADMIN CONSOLE</p>
         </div>
       </div>
@@ -117,7 +117,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
           <div className="flex items-center gap-4">
             <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 lg:hidden" aria-label="Open navigation" onClick={()=>setMobileOpen(true)}><Menu size={21}/></button>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">BuildTo / Administration</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Splyzo / Administration</p>
               <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{current.label}</h1>
             </div>
           </div>
@@ -156,7 +156,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             : <ModulePlaceholder section={current} />}
         </main>
         <footer className="mx-auto flex max-w-[1250px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
-          <span>BuildTo V2.1 · Administrator workspace</span>
+          <span>Splyzo V2.1 · Administrator workspace</span>
           <span>{administrator?'Clerk identity verified; server permissions remain authoritative.':'Public preview only. No administrator data is loaded.'}</span>
         </footer>
       </div>
@@ -169,7 +169,7 @@ function Overview({onNavigate,connection,administrator}:{onNavigate:(id:SectionI
     <section className="relative overflow-hidden rounded-[26px] bg-[#102B4D] px-6 py-9 text-white shadow-lg sm:px-10 sm:py-11">
       <div className="pointer-events-none absolute -right-14 -top-24 h-64 w-64 rounded-full border-[40px] border-white/5" aria-hidden="true"/>
       <div className="relative max-w-2xl">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-200"><ShieldCheck size={15}/> BuildTo V2.1</div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-200"><ShieldCheck size={15}/> Splyzo V2.1</div>
         <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl">Built for better marketplace operations.</h2>
         <p className="mt-4 max-w-xl text-sm leading-7 text-slate-200">{administrator?'Your Clerk session and admin role are verified by the V2.1 API. Modules will appear as they pass business-workflow tests—without mock totals or unauthorized actions.':'Your construction-materials operations workspace is being connected to the V2.1 backend. Modules appear as they pass role and integration testing—without mock transactions or invented totals.'}</p>
       </div>

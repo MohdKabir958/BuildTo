@@ -104,7 +104,7 @@ class _SupplierOrdersViewState extends State<SupplierOrdersView> {
       builder: (dialog) => AlertDialog(
         title: const Text('Accept supplier order?'),
         content: const Text(
-            'BuildTo will verify the captured payment or selected COD and all committed warehouse stock. This action confirms supplier fulfillment.'),
+            'Splyzo will verify the captured payment or selected COD and all committed warehouse stock. This action confirms supplier fulfillment.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialog, false),

@@ -41,7 +41,7 @@ class RiderServices {
   final Duration pollInterval;
   final Duration locationInterval;
 
-  /// A streamed position is posted to Grozo at most this often (battery and data). A little
+  /// A streamed position is posted to Splyzo at most this often (battery and data). A little
   /// under [locationInterval] so the phone's own 10 s cadence is not halved by timing jitter.
   final Duration minPostGap;
   final DateTime Function() now;
@@ -143,7 +143,7 @@ class RiderController extends ChangeNotifier {
   bool _actionBusy = false;
   String? _actionError;
 
-  /// Orders whose delivery verification code Grozo locked (5 wrong codes). The value is the `updatedAt` of the first copy of the
+  /// Orders whose delivery verification code Splyzo locked (5 wrong codes). The value is the `updatedAt` of the first copy of the
   /// order seen after the lock (null until that copy arrives); a copy newer than that means someone (an admin
   /// resetting the lock) changed the order, so the lock is lifted. The 5th wrong code itself also bumps
   /// `updatedAt`, which is why the baseline is the post-lock copy and not the copy that was on screen.
@@ -450,8 +450,8 @@ class RiderController extends ChangeNotifier {
     if (_active == null) await refreshOffers();
   }
 
-  /// Mirrors the duty Grozo holds for this rider (`driver.dutyStatus` of the login / `GET /partner/me`
-  /// answer, read at [asOf]). The server is the truth unless this phone has a change of its own that Grozo
+  /// Mirrors the duty Splyzo holds for this rider (`driver.dutyStatus` of the login / `GET /partner/me`
+  /// answer, read at [asOf]). The server is the truth unless this phone has a change of its own that Splyzo
   /// has not seen yet (a switch in flight, an "I went off duty" still waiting to be sent, or a switch made
   /// after [asOf]). A missing or unknown value changes nothing (older server).
   Future<void> reconcileDuty(String? serverStatus, {DateTime? asOf}) async {
@@ -476,7 +476,7 @@ class RiderController extends ChangeNotifier {
     }
   }
 
-  /// A delivery is in hand but the duty switch is off (the app was restarted, or Grozo assigned the order):
+  /// A delivery is in hand but the duty switch is off (the app was restarted, or Splyzo assigned the order):
   /// keep the customer's live map alive.
   void _resumeSharingForActive() {
     if (_disposed || _active == null) return;
@@ -639,7 +639,7 @@ class RiderController extends ChangeNotifier {
 
   /// One GPS reading (polling, the first reading after going on duty, and the "fix" buttons).
   /// A real fix is posted; anything else is shown as a problem and nothing is sent. There is
-  /// no fallback position: Grozo would rather show "location unavailable" than a made-up
+  /// no fallback position: Splyzo would rather show "location unavailable" than a made-up
   /// point on the map.
   Future<void> _locationTick() async {
     if (!sharingLocation || _locBusy || _disposed) return;
@@ -809,7 +809,7 @@ class RiderController extends ChangeNotifier {
             _say('You already have an active delivery. Finish it first.');
             await refreshActive();
           case 'RIDER_OFFLINE':
-            // Grozo has this rider off duty (e.g. logged out elsewhere): show the truth, stop offers and GPS.
+            // Splyzo has this rider off duty (e.g. logged out elsewhere): show the truth, stop offers and GPS.
             _goOffLocally();
             _say(
                 '${BrandConfig.name} has you off duty. Go on duty again to accept orders.');
@@ -837,7 +837,7 @@ class RiderController extends ChangeNotifier {
         _say('Too many tries. Wait a few seconds.');
       case ApiFailure.offline:
       case ApiFailure.timeout:
-        // The request may have reached Grozo. Ask before saying anything.
+        // The request may have reached Splyzo. Ask before saying anything.
         await refreshActive();
         if (_active?.id == offer.id) {
           _say(_active!.isGroup
@@ -1145,7 +1145,7 @@ class RiderController extends ChangeNotifier {
       case ApiFailure.timeout:
         _actionError = 'No internet. This step was not saved – try again.';
         _notify();
-        await _refreshOne(id); // it may have reached Grozo after all
+        await _refreshOne(id); // it may have reached Splyzo after all
         if (_statusNow(target, id) == target) _actionError = null;
       case ApiFailure.conflict:
       case ApiFailure.badRequest:
@@ -1176,7 +1176,7 @@ class RiderController extends ChangeNotifier {
     _notify();
   }
 
-  /// Checks the code the customer reads out. The app never knows the right code; only Grozo does.
+  /// Checks the code the customer reads out. The app never knows the right code; only Splyzo does.
   Future<OtpOutcome> verifyOtp(String code) async {
     final cur = _active;
     if (cur == null) {
@@ -1195,7 +1195,7 @@ class RiderController extends ChangeNotifier {
         _apply(o);
       } else {
         await _refreshOne(cur.id);
-        // Grozo answered 2xx for the code: the delivery is done even if the copy is not.
+        // Splyzo answered 2xx for the code: the delivery is done even if the copy is not.
         if (_active?.id == cur.id) {
           _finish(cur.isGroup ? cur : (o ?? cur), NoticeKind.delivered);
         }
@@ -1204,7 +1204,7 @@ class RiderController extends ChangeNotifier {
     }
     switch (r.failure) {
       case ApiFailure.locked:
-        // Free for the rider: Grozo answers a locked order before it counts an attempt.
+        // Free for the rider: Splyzo answers a locked order before it counts an attempt.
         _lockedAt.putIfAbsent(cur.id, () => null);
         _notify();
         return const OtpOutcome(OtpOutcomeKind.locked);
@@ -1214,7 +1214,7 @@ class RiderController extends ChangeNotifier {
           _notify();
           return const OtpOutcome(OtpOutcomeKind.locked);
         }
-        // Grozo is counting attempts again, so it is not locked (an admin reset it).
+        // Splyzo is counting attempts again, so it is not locked (an admin reset it).
         if (_lockedAt.containsKey(cur.id)) {
           _lockedAt.remove(cur.id);
           _notify();
@@ -1242,7 +1242,7 @@ class RiderController extends ChangeNotifier {
             });
       case ApiFailure.offline:
       case ApiFailure.timeout:
-        // The code may have been accepted just before the connection dropped. Ask Grozo.
+        // The code may have been accepted just before the connection dropped. Ask Splyzo.
         await _refreshOne(cur.id);
         if (_active == null &&
             _notice?.kind == NoticeKind.delivered &&

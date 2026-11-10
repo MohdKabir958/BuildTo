@@ -71,7 +71,7 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Submit for BuildTo review?'),
+        title: const Text('Submit for Splyzo review?'),
         content: const Text('This sends your listing to the admin moderation '
             'queue. Submitting does not approve or publish it.'),
         actions: [
@@ -218,7 +218,7 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
         if (listing.status == CatalogListingStatus.pending)
           const BuildToStatePanel(
               title: 'Awaiting independent review',
-              message: 'This listing is not published. A BuildTo catalog '
+              message: 'This listing is not published. A Splyzo catalog '
                   'administrator must approve the submitted version.',
               icon: Icons.fact_check_outlined),
         if (listing.status == CatalogListingStatus.approved)

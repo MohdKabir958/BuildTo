@@ -203,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      // Buildto Brand Logo & Tagline
+                      // Splyzo Brand Logo & Tagline
                       Row(
                         children: [
                           Container(

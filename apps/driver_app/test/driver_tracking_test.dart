@@ -302,7 +302,7 @@ void main() {
       expect(n.setOngoing, isTrue);
       expect(n.enableWakeLock, isFalse);
       expect(n.enableWifiLock, isFalse);
-      expect(n.notificationIcon.name, 'ic_stat_grozo');
+      expect(n.notificationIcon.name, 'ic_stat_splyzo');
     });
 
     test('other platforms: no foreground service, the app polls instead', () {

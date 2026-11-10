@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
-/// BuildTo supplier design tokens, grounded in the 16-screen approved PDF.
+/// Splyzo supplier design tokens, grounded in the 16-screen approved PDF.
 /// Primary and accent exactly match branding/brand.json; supporting tokens
 /// are centralized pending stakeholder visual sign-off on raster mock fidelity.
 abstract final class BuildToPalette {
-  static const navy = Color(0xFF002B5B);
-  static const navyDeep = Color(0xFF031A40);
-  static const blue = Color(0xFF1076C5);
+  static const navy = Color(0xFF0B2D67);
+  static const navyDeep = Color(0xFF061B3B);
+  static const blue = Color(0xFF168CD4);
   static const sky = Color(0xFFEAF6FF);
-  static const orange = Color(0xFFF59E0B);
-  static const canvas = Color(0xFFF7FAFE);
+  static const orange = Color(0xFFF15A24);
+  static const canvas = Color(0xFFF5F8FC);
   static const white = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF082448);
-  static const muted = Color(0xFF516580);
-  static const outline = Color(0xFFD9E6F2);
+  static const ink = Color(0xFF0C2240);
+  static const muted = Color(0xFF4C5E78);
+  static const outline = Color(0xFFDCE5F0);
   static const success = Color(0xFF087945);
   static const successTint = Color(0xFFE7F7EE);
   static const warning = Color(0xFF9A5800);

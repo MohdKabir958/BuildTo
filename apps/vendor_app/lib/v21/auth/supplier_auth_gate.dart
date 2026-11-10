@@ -45,7 +45,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
         _ownsController = true;
       } catch (_) {
         _setupFailure = 'Secure supplier sign-in is not configured. '
-            'Check the BuildTo API origin and Android Clerk settings.';
+            'Check the Splyzo API origin and Android Clerk settings.';
       }
     }
     if (_controller != null) unawaited(_controller!.start());
@@ -81,7 +81,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'BuildTo Supplier',
+        title: 'Splyzo Supplier',
         debugShowCheckedModeBanner: false,
         theme: BuildToTheme.light(),
         home: _setupFailure == null
@@ -168,7 +168,7 @@ class _SupplierAccessView extends StatelessWidget {
       return _AccessScaffold(
         title: 'Verifying your supplier account',
         subtitle:
-            'Checking your Clerk session and current BuildTo permissions.',
+            'Checking your Clerk session and current Splyzo permissions.',
         icon: Icons.shield_outlined,
         loading: true,
         actions: [
@@ -185,7 +185,7 @@ class _SupplierAccessView extends StatelessWidget {
 
     final (title, description, icon) = switch (stage) {
       SupplierAccessStage.signedOut || SupplierAccessStage.starting => (
-          'Welcome to BuildTo Supplier',
+          'Welcome to Splyzo Supplier',
           'Already have an account? Sign in. New supplier? Create an '
               'account to register your business and track approval.',
           Icons.storefront_outlined,
@@ -416,7 +416,7 @@ class _AccessScaffold extends StatelessWidget {
                   ],
                   const SizedBox(height: 20),
                   Text(
-                    'BuildTo • Secure supplier workspace',
+                    'Splyzo • Secure supplier workspace',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

@@ -106,7 +106,7 @@ class SessionProvider with ChangeNotifier {
   /// Checkout uses [deliveryPoint] and forces an explicit choice instead.
   String get selectedHostel => deliveryPoint ?? 'Choose delivery address';
 
-  /// Display name and formatted address for Buildto customer screens
+  /// Display name and formatted address for Splyzo customer screens
   String get customerName => _user?.name ?? _user?.displayName ?? '';
   String get addressText => _address?.formatted ?? deliveryPoint ?? '';
   Future<void> logOut() => logout();
@@ -130,7 +130,7 @@ class SessionProvider with ChangeNotifier {
   /// Validates the saved token at app start.
   Future<void> restore() async {
     if (_status != SessionStatus.checking) {
-      // A retry from the "can't reach Grozo" screen. (The first call starts as `checking`,
+      // A retry from the "can't reach Splyzo" screen. (The first call starts as `checking`,
       // and notifying from initState would rebuild the tree mid-build.)
       _status = SessionStatus.checking;
       notifyListeners();
@@ -144,7 +144,7 @@ class SessionProvider with ChangeNotifier {
     }
     if (!result.success || result.user == null) {
       // Only an answer that says "this token / account is no good" ends the session. Anything else
-      // (429, 5xx, an HTML error page from a proxy, an unparseable body) means Grozo is having
+      // (429, 5xx, an HTML error page from a proxy, an unparseable body) means Splyzo is having
       // trouble, not that the student is signed out: keep the token and offer a retry.
       final code = result.statusCode;
       if (code != 401 && code != 403 && code != 404) {
@@ -169,7 +169,7 @@ class SessionProvider with ChangeNotifier {
     if (GrozoAuthConfig.usesClerk) {
       if (!await ClerkSessions.instance.authenticate()) return const SignInOutcome.cancelled();
       await restore();
-      return _user == null ? const SignInOutcome.failed("Grozo could not verify this account.") : const SignInOutcome.ok();
+      return _user == null ? const SignInOutcome.failed("Splyzo could not verify this account.") : const SignInOutcome.ok();
     }
     if (_signingIn) return const SignInOutcome.cancelled();
     _signingIn = true;

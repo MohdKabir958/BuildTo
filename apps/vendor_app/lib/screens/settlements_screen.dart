@@ -19,7 +19,7 @@ ValueKey<String> settlementCardKey(String id) =>
 String formatSigned(double amount) =>
     amount > 0 ? '+${formatRupees(amount)}' : formatRupees(amount);
 
-/// "My settlements": read-only list of what Grozo pays this restaurant. Only restaurant-side amounts are shown
+/// "My settlements": read-only list of what Splyzo pays this restaurant. Only restaurant-side amounts are shown
 /// (what the restaurant earned, adjustments, what it receives); never customer prices, fees or commission.
 class SettlementsScreen extends StatefulWidget {
   const SettlementsScreen(

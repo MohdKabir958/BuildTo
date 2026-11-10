@@ -142,7 +142,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
       context,
       title: 'Cancel this order?',
       message:
-          '$whole${order.isPaid ? '${order.isGroup ? 'None of the stores has accepted yet. ' : 'The store has not accepted it yet. '}Your ${rupee(order.totalAmount)} will be refunded to your account.' : 'You have not completed a payment for this order, so nothing is charged. If your bank did take money, Buildto refunds it automatically.'}',
+          '$whole${order.isPaid ? '${order.isGroup ? 'None of the stores has accepted yet. ' : 'The store has not accepted it yet. '}Your ${rupee(order.totalAmount)} will be refunded to your account.' : 'You have not completed a payment for this order, so nothing is charged. If your bank did take money, Splyzo refunds it automatically.'}',
       confirmLabel: 'Cancel order',
       cancelLabel: 'Keep it',
       danger: true,
@@ -928,7 +928,7 @@ class _CancelledCard extends StatelessWidget {
         Text(_why, style: KraveoType.body.copyWith(color: k.ink)),
         const SizedBox(height: 6),
         Text(_money, style: KraveoType.body.copyWith(color: k.inkMuted)),
-        // A paid order that is not refunded yet (or whose refund failed), or one Grozo cancelled:
+        // A paid order that is not refunded yet (or whose refund failed), or one Splyzo cancelled:
         // tell the student how to reach a person.
         if (order.isPaid ||
             order.refundStatus == RefundStatus.failed ||

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 class BuildtoColors {
   BuildtoColors._();
 
-  // Primary palette matching the 16 reference screens
-  static const Color primaryNavy = Color(0xFF002B5B);
-  static const Color accentAmber = Color(0xFFF59E0B);
+  // Splyzo navy and orange brand palette
+  static const Color primaryNavy = Color(0xFF0B2D67);
+  static const Color accentAmber = Color(0xFFF15A24);
   static const Color bgWhite = Color(0xFFFFFFFF);
   static const Color surfaceLight = Color(0xFFF8FAFC);
   static const Color cardBorder = Color(0xFFE2E8F0);

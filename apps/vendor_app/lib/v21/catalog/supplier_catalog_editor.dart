@@ -80,7 +80,7 @@ class _CatalogProductPickerState extends State<CatalogProductPicker> {
             const BuildToSectionHeading(
               title: 'Choose construction material',
               subtitle:
-                  'Products come from the approved BuildTo master catalog.',
+                  'Products come from the approved Splyzo master catalog.',
             ),
             const SizedBox(height: 12),
             TextField(
@@ -376,7 +376,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                 title: const Text('Change an approved listing?'),
                 content: const Text(
                     'Editing an approved listing removes it from the '
-                    'published catalog until BuildTo admin reviews the update.'),
+                    'published catalog until Splyzo admin reviews the update.'),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -442,7 +442,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     ? 'Create supplier listing'
                     : 'Edit listing',
                 subtitle: widget.original == null
-                    ? 'Select a BuildTo material, then configure a draft.'
+                    ? 'Select a Splyzo material, then configure a draft.'
                     : 'Changes use optimistic version checks and admin moderation.',
               ),
               const SizedBox(height: 18),

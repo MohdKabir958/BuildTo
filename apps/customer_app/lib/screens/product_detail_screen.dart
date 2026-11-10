@@ -435,7 +435,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     child: Column(
                       children: [
-                        _buildSpecRow('Brand / Manufacturer', product.brand.isNotEmpty ? product.brand : 'Buildto Standard'),
+                        _buildSpecRow('Brand / Manufacturer', product.brand.isNotEmpty ? product.brand : 'Splyzo Standard'),
                         const Divider(height: 1, color: BuildtoColors.cardBorder),
                         _buildSpecRow('Material Type / Grade', product.materialType.isNotEmpty ? product.materialType : 'Industrial Grade'),
                         const Divider(height: 1, color: BuildtoColors.cardBorder),

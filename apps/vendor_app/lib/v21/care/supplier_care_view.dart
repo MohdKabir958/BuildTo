@@ -201,7 +201,7 @@ class _SupplierCareViewState extends State<SupplierCareView> {
                         fontWeight: FontWeight.w800)),
                 SizedBox(height: 5),
                 Text(
-                    'Only BuildTo support approves claims. Returning goods never automatically restores stock or credits a customer.',
+                    'Only Splyzo support approves claims. Returning goods never automatically restores stock or credits a customer.',
                     style: TextStyle(color: Color(0xFFDDECF9))),
               ],
             ),
@@ -299,7 +299,7 @@ class _SupplierCareViewState extends State<SupplierCareView> {
           ] else ...[
             const BuildToSectionHeading(
                 title: 'Customer feedback',
-                subtitle: 'Moderation belongs to independent BuildTo support.'),
+                subtitle: 'Moderation belongs to independent Splyzo support.'),
             const SizedBox(height: 12),
             if (reviews.isEmpty)
               const BuildToStatePanel(

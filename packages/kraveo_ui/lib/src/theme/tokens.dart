@@ -37,7 +37,7 @@ class KraveoTokens extends ThemeExtension<KraveoTokens> {
   Color get error => isDark ? const Color(0xFFFFA6AC) : const Color(0xFFB42332);
   Color get info => isDark ? const Color(0xFFA6CDFF) : const Color(0xFF245CA2);
 
-  /// Customer: fresh neutral surfaces, forest green actions.
+  /// Customer: fresh neutral surfaces, Splyzo navy actions.
   static const customer = KraveoTokens(
     isDark: false,
     bg: KraveoPalette.cream,
@@ -55,16 +55,16 @@ class KraveoTokens extends ThemeExtension<KraveoTokens> {
     shadowTint: KraveoPalette.g900,
   );
 
-  /// Vendor: operational surfaces with generous action targets.
+  /// Supplier: operational surfaces with generous action targets.
   static const vendor = KraveoTokens(
     isDark: false,
-    bg: Color(0xFFF6F8F6),
+    bg: KraveoPalette.cream,
     surface: KraveoPalette.paper,
-    surfaceAlt: Color(0xFFEEF3EF),
-    line: Color(0xFFDDE5DF),
-    ink: Color(0xFF0B140F),
-    inkMuted: Color(0xFF39453D),
-    inkFaint: Color(0xFF66716A),
+    surfaceAlt: KraveoPalette.sand,
+    line: KraveoPalette.line,
+    ink: KraveoPalette.ink,
+    inkMuted: KraveoPalette.ink2,
+    inkFaint: KraveoPalette.ink3,
     brand: KraveoPalette.g800,
     onBrand: Colors.white,
     brandSoft: KraveoPalette.g50,
@@ -75,7 +75,7 @@ class KraveoTokens extends ThemeExtension<KraveoTokens> {
     textScale: 1.0,
   );
 
-  /// Driver: high contrast dark surfaces with persistent action labels.
+  /// Delivery: high contrast dark surfaces with persistent action labels.
   static const driver = KraveoTokens(
     isDark: true,
     bg: KraveoPalette.nightBg,
@@ -87,7 +87,7 @@ class KraveoTokens extends ThemeExtension<KraveoTokens> {
     inkFaint: KraveoPalette.nightInk3,
     brand: KraveoPalette.g400,
     onBrand: KraveoPalette.g950,
-    brandSoft: Color(0xFF12281A),
+    brandSoft: Color(0xFF12233F),
     accent: KraveoPalette.y400,
     onAccent: KraveoPalette.g950,
     shadowTint: Colors.black,

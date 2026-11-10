@@ -360,7 +360,7 @@ class CustomerApiService {
     return headers;
   }
 
-  /// Exchanges a Google ID token for a Grozo session. On success the JWT is persisted
+  /// Exchanges a Google ID token for a Splyzo session. On success the JWT is persisted
   /// before returning.
   static Future<GoogleLoginResult> googleSignIn(String idToken) async {
     try {

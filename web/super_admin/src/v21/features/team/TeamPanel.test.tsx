@@ -31,10 +31,10 @@ describe('A04 team management UI',()=>{
  it('grants only a verified existing Clerk user and records an audit reason',async()=>{
    const {api}=setup();await screen.findByText('Catalog Operator');
    fireEvent.change(screen.getByLabelText('Verified Clerk email'),{target:{value:'new@example.test'}});
-   fireEvent.change(screen.getByLabelText('Reason for grant'),{target:{value:'Verified catalog operator for BuildTo'}});
+   fireEvent.change(screen.getByLabelText('Reason for grant'),{target:{value:'Verified catalog operator for Splyzo'}});
    fireEvent.click(screen.getByRole('button',{name:'Grant access'}));
    await waitFor(()=>expect(api.write).toHaveBeenCalledWith('POST','/api/v2/admin/team',{
-     email:'new@example.test',role:'CATALOG',reason:'Verified catalog operator for BuildTo',
+     email:'new@example.test',role:'CATALOG',reason:'Verified catalog operator for Splyzo',
    }));
  });
  it('requires reason before revoking and allows cancellation',async()=>{

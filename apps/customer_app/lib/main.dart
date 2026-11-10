@@ -64,7 +64,7 @@ class KraveoCustomerApp extends StatelessWidget {
         title: BrandConfig.customerName,
         debugShowCheckedModeBanner: false,
         theme: KraveoTheme.customer(),
-        home: kBuildtoOfflineDemo ? const HomeScreen() : (GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? const ClerkEntryScreen(appName: 'Buildto Customer',preview:true) : const AuthGate()),
+        home: kBuildtoOfflineDemo ? const HomeScreen() : (GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? ClerkEntryScreen(appName: BrandConfig.customerName,preview:true) : const AuthGate()),
       ),
     );
   }
@@ -243,7 +243,7 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-/// Shown when a saved session exists but Grozo cannot be reached. We keep the token so the
+/// Shown when a saved session exists but Splyzo cannot be reached. We keep the token so the
 /// student is not logged out just because the network dropped.
 class _SessionUnreachable extends StatefulWidget {
   const _SessionUnreachable({required this.onRetry, required this.onUseAnotherAccount});

@@ -118,7 +118,7 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
     if (cities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No serviceable cities available. Contact BuildTo admin.'),
+          content: Text('No serviceable cities available. Contact Splyzo admin.'),
         ),
       );
       return;
@@ -148,7 +148,7 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                     style: Theme.of(sheet).textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 const Text(
-                    'Only cities and PIN areas approved by BuildTo admins appear.'),
+                    'Only cities and PIN areas approved by Splyzo admins appear.'),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: cityId,
@@ -184,7 +184,7 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                     final areas = snapshot.data!;
                     if (areas.isEmpty) {
                       return const Text(
-                          'No active BuildTo areas in this city.');
+                          'No active Splyzo areas in this city.');
                     }
                     return DropdownButtonFormField<String>(
                       key: ValueKey(cityId),

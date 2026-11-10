@@ -70,7 +70,7 @@ class _PrivateEvidenceLinkSheetState extends State<PrivateEvidenceLinkSheet> {
                         child: Text(
                       'Your file must already exist as a private, SHA256-verified '
                       'MediaAsset owned by your Clerk account. Request the reference '
-                      'through the approved BuildTo operations process.',
+                      'through the approved Splyzo operations process.',
                     )),
                   ],
                 )),

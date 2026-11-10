@@ -87,7 +87,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
           SupplierV21Exception(problem: SupplierV21Problem.notFound) =>
             'Supplier permission changed. Recheck your active membership.',
           SupplierV21Exception(problem: SupplierV21Problem.network) =>
-            'Cannot reach BuildTo. Previous listing data has been hidden.',
+            'Cannot reach Splyzo. Previous listing data has been hidden.',
           _ =>
             'Unable to verify the current catalog. No stale data is displayed.',
         };
@@ -322,7 +322,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                     ? 'No supplier listings yet'
                     : 'No matching listings',
                 message: listings.isEmpty
-                    ? 'Choose an approved BuildTo material to start a draft.'
+                    ? 'Choose an approved Splyzo material to start a draft.'
                     : 'Try another SKU or approval-status filter.',
                 icon: Icons.category_outlined)
           else

@@ -59,13 +59,13 @@ describe('Clerk admin trust boundary (explicit fixtures)',()=>{
   });
   it('Clerk login cannot grant admin when backend returns 403',async()=>{
     fixture.validate.mockRejectedValue(new ApiError(403,'Not an administrator'));render(<ClerkAdminRoot/>);
-    await screen.findByText('This account has not been approved as a Grozo administrator.');expect(screen.queryByTestId('protected-admin')).toBeNull();
+    await screen.findByText('This account has not been approved as a Splyzo administrator.');expect(screen.queryByTestId('protected-admin')).toBeNull();
     fireEvent.click(screen.getByText('Sign out'));expect(fixture.state.signOut).toHaveBeenCalled();
   });
   it('distinguishes a backend session rejection from missing administrator approval',async()=>{
     fixture.validate.mockRejectedValue(new ApiError(401,'Invalid session'));render(<ClerkAdminRoot/>);
-    await screen.findByText(/Grozo could not authenticate this Clerk session \(401\)/);
-    expect(screen.queryByText('This account has not been approved as a Grozo administrator.')).toBeNull();
+    await screen.findByText(/Splyzo could not authenticate this Clerk session \(401\)/);
+    expect(screen.queryByText('This account has not been approved as a Splyzo administrator.')).toBeNull();
     expect(screen.queryByTestId('protected-admin')).toBeNull();
     expect(fixture.state.signOut).not.toHaveBeenCalled();
   });

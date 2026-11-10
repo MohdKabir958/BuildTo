@@ -315,7 +315,7 @@ const PasswordDrawer: React.FC<{ app: Application | null; onClose: () => void; o
     } finally { setSaving(false); }
   };
 
-  const text = app ? `Grozo ${app.kind === 'VENDOR' ? 'Store Partner' : 'Delivery Partner'} login\nPhone: ${(app.phone ?? '').replace(/\D/g, '').slice(-10)}\nNew password: ${password}` : '';
+  const text = app ? `Splyzo ${app.kind === 'VENDOR' ? 'Store Partner' : 'Delivery Partner'} login\nPhone: ${(app.phone ?? '').replace(/\D/g, '').slice(-10)}\nNew password: ${password}` : '';
 
   return (
     <Drawer

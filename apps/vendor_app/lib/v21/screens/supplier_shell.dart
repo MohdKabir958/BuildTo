@@ -27,7 +27,7 @@ class BuildToSupplierPreviewApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'BuildTo Supplier',
+        title: 'Splyzo Supplier',
         debugShowCheckedModeBanner: false,
         theme: BuildToTheme.light(),
         home: const BuildToSupplierShell(),
@@ -478,7 +478,7 @@ class _HomeTab extends StatelessWidget {
                         child: Text(
                           verifiedSupplier == null
                               ? 'Secure account access coming in S02'
-                              : 'Supplier identity verified by BuildTo',
+                              : 'Supplier identity verified by Splyzo',
                           style: const TextStyle(
                             color: BuildToPalette.white,
                             fontSize: 12,
@@ -548,7 +548,7 @@ class _HomeTab extends StatelessWidget {
                 : 'Supplier access verified',
             message: verifiedSupplier == null
                 ? 'This is the S01 design foundation. Clerk sign-in and your live supplier dashboard will be enabled in the next PR. No sample business figures are displayed.'
-                : 'Your active supplier membership was checked with the BuildTo backend. '
+                : 'Your active supplier membership was checked with the Splyzo backend. '
                     'Catalog, order, inventory and finance screens activate in their dedicated PRs; '
                     'no sample business figures are shown.',
           ),

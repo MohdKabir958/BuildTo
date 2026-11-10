@@ -187,7 +187,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
                         children: [
                           const BuildToSectionHeading(
-                            title: 'Grow with BuildTo',
+                            title: 'Grow with Splyzo',
                             subtitle:
                                 'Register your construction-material business and follow independent verification.',
                           ),
@@ -242,7 +242,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                                   title: 'No application yet',
                                   message:
                                       'Start with your verified business and GST information. '
-                                      'Only BuildTo operations can approve a supplier.',
+                                      'Only Splyzo operations can approve a supplier.',
                                   icon: Icons.storefront_outlined),
                             for (final app in applications) ...[
                               BuildToCard(
@@ -370,7 +370,7 @@ class _ReviewDetail extends StatelessWidget {
             'Application received', 'Your registration was submitted.', true),
         _StepStatus(
             'Business evidence review',
-            'BuildTo verifies your documents.',
+            'Splyzo verifies your documents.',
             application.approval == SupplierApplicationStatus.underReview ||
                 application.approval == SupplierApplicationStatus.approved),
         _StepStatus(

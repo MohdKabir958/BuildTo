@@ -285,7 +285,7 @@ export const apiService = {
     const response = await request<{ token: string; admin: AdminProfile }>('/api/auth/admin-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passcode: passcode.trim(), username: username?.trim() || 'Grozo Administrator' }),
+      body: JSON.stringify({ passcode: passcode.trim(), username: username?.trim() || 'Splyzo Administrator' }),
     });
     if (!response?.token || response.admin?.role !== 'ADMIN') throw new ApiError(401, 'The server did not return a valid admin session.');
     setAuthToken(response.token, response.admin);

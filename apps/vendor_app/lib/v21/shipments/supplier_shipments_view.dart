@@ -164,7 +164,7 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
                       style: Theme.of(sheet).textTheme.headlineSmall),
                   const SizedBox(height: 8),
                   const Text(
-                      'Choose committed warehouse stock and exact order quantities. Allocation is rechecked by BuildTo.'),
+                      'Choose committed warehouse stock and exact order quantities. Allocation is rechecked by Splyzo.'),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: chosenWarehouse,
@@ -300,7 +300,7 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text('$expected shipment?'),
-        content: Text('Only BuildTo can confirm the next shipment status. '
+        content: Text('Only Splyzo can confirm the next shipment status. '
             'Shipment: ${shipment.shipmentNumber}'),
         actions: [
           TextButton(

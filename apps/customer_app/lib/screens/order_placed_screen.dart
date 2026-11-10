@@ -94,7 +94,7 @@ class OrderPlacedScreen extends StatelessWidget {
 
                 // Description
                 const Text(
-                  'Thank you for ordering with Buildto!\nYour construction materials are being prepared for dispatch.',
+                  'Thank you for ordering with Splyzo!\nYour construction materials are being prepared for dispatch.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,

@@ -187,7 +187,7 @@ class ApiPartnerAuthService implements PartnerAuthService {
         if(token==null) return const LoginResult.failure(LoginFailure.invalidCredentials,message:'Sign in with Clerk first.');
         final result=await fetchProfile(token);
         if(result.outcome==ProfileOutcome.valid && result.session!=null) return LoginResult.success(token:token,session:result.session!);
-        return const LoginResult.failure(LoginFailure.wrongRole,message:'Grozo partner access could not be verified. Apply for approval, check the connection or change account.');
+        return const LoginResult.failure(LoginFailure.wrongRole,message:'Splyzo partner access could not be verified. Apply for approval, check the connection or change account.');
       } catch (_) { return const LoginResult.failure(LoginFailure.offline); }
     }
 
