@@ -1,4 +1,4 @@
-import {createHash} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import {readFileSync,readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 import type {PrismaClient} from '../../generated/buildto-v21';
