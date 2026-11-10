@@ -43,6 +43,19 @@ jobs:
         run: |
           set -euo pipefail
           dart format lib/v21 test/v21
+          # Export the canonical formatter output so formatting-only changes can be committed
+          # back to the feature branch instead of being silently modified only in CI.
+          for file in \
+            lib/v21/auth/supplier_auth_gate.dart \
+            lib/v21/delivery/supplier_delivery_view.dart \
+            lib/v21/inventory/supplier_inventory_view.dart \
+            lib/v21/shipments/supplier_shipments_repository.dart \
+            lib/v21/shipments/supplier_shipments_view.dart; do
+            echo "SPLIZO_FORMAT_BEGIN:$file"
+            base64 -w0 "$file"
+            echo
+            echo "SPLIZO_FORMAT_END:$file"
+          done
           flutter analyze --no-pub --no-fatal-infos lib/v21 test/v21
           flutter test --no-pub --concurrency=2 test/v21
       - name: Generate Splyzo launcher artwork
