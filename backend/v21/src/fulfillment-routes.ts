@@ -2,7 +2,7 @@ import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {supplierOrders,acceptSupplierOrder,rejectUnpaidSupplierOrder,
- planShipment,progressShipment,issueCustomerHandoverOtp,confirmShipmentHandover,
+ planShipment,progressShipment,cancelShipment,issueCustomerHandoverOtp,confirmShipmentHandover,
  approveDeliveryException,supplierShipments,customerShipments} from './fulfillment-service';
 
 function actor(res:Response){
@@ -40,6 +40,8 @@ export function registerFulfillment(app:Express,db:PrismaClient,auth:RequestHand
  for(const stage of ['pack','dispatch','out-for-delivery'] as const)
   app.post(base+'/shipments/:shipmentId/'+stage,auth,handle((req,res)=>
    progressShipment(db,actor(res),req.params.supplierId,req.params.shipmentId,stage)));
+ app.post(base+'/shipments/:shipmentId/cancel',auth,handle((req,res)=>
+  cancelShipment(db,actor(res),req.params.supplierId,req.params.shipmentId,req.body)));
  app.post(base+'/shipments/:shipmentId/handover',auth,handle((req,res)=>
   confirmShipmentHandover(db,actor(res),req.params.supplierId,req.params.shipmentId,
    req.body,otpSecret)));

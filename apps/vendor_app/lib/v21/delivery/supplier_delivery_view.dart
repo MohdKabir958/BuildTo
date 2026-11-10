@@ -114,7 +114,15 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
   }
 
   Future<void> chooseArea() async {
-    if (!widget.canWrite || cities.isEmpty) return;
+    if (!widget.canWrite) return;
+    if (cities.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No serviceable cities available. Contact BuildTo admin.'),
+        ),
+      );
+      return;
+    }
     String cityId = cities.first.id;
     String? selected;
     Future<List<SupplierArea>> future = widget.repository.areas(cityId);

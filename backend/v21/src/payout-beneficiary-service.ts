@@ -70,7 +70,7 @@ export async function registerBeneficiary(db:PrismaClient,userId:string,
      'RazorpayX bank details differ from the stored beneficiary identity.');
    return {beneficiary:dto(existing),replayed:true};
   }
-  if(await tx.supplierPayoutAccount.count({where:{supplierId}}))
+  if(await tx.supplierPayoutAccount.count({where:{supplierId,active:true}}))
    throw new ApiError(409,'PAYOUT_BENEFICIARY_REPLACEMENT_GATED',
     'Bank destination replacement requires an audited financial migration.');
   const created=await tx.supplierPayoutAccount.create({data:{

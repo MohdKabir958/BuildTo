@@ -5,7 +5,7 @@ import '../delivery/supplier_delivery_models.dart';
 DateTime _utc(Object? value) {
   final raw = catalogString(value, max: 50);
   final date = DateTime.tryParse(raw);
-  if (!raw.endsWith('Z') || date == null || !date.isUtc) {
+  if (date == null) {
     throw const FormatException('Invalid date');
   }
   return date;

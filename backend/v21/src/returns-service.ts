@@ -169,7 +169,7 @@ export async function adminReturns(db:PrismaClient,adminId:string){
  await requireAdminPermission(db,adminId,'SUPPORT_MANAGE');
  const rows=await db.returnRequest.findMany({where:{
   status:{in:['REQUESTED','UNDER_REVIEW','APPROVED','IN_TRANSIT','RECEIVED']}
- },select:returnSelect,orderBy:{createdAt:'asc'},take:100});
+ },select:returnSelect,orderBy:{createdAt:'desc'},take:100});
  return rows.map(dto);
 }
 /** Support reviews the claim only. No refund or credit note is created here. */

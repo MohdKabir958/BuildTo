@@ -253,7 +253,7 @@ export async function acceptCustomerQuote(db:PrismaClient,userId:string,rfqId:st
  uuid(rfqId,'rfqId');uuid(quoteId,'quoteId');
  return serializable(db,async tx=>{
   const r=await lockedRfq(tx,rfqId,userId);
-  isOpen(r);
+  if(r.status!=='OPEN')throw new ApiError(409,'RFQ_NOT_OPEN','RFQ is not open for award.');
   const quote=await tx.supplierQuote.findFirst({where:{id:quoteId,rfqId,status:'SUBMITTED'},
    select:{id:true,supplierId:true,validUntil:true}});
   if(!quote)throw new ApiError(404,'NOT_FOUND','Submitted quote not found.');

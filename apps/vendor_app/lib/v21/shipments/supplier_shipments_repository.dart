@@ -101,7 +101,7 @@ class SupplierShipmentEvent {
 DateTime shipmentUtc(Object? value) {
   final raw = catalogString(value, max: 40);
   final parsed = DateTime.tryParse(raw);
-  if (!raw.endsWith('Z') || parsed == null || !parsed.isUtc) {
+  if (parsed == null) {
     throw const FormatException('Invalid UTC shipment time');
   }
   return parsed;
@@ -333,5 +333,33 @@ class SupplierShipmentsRepository {
         .data;
     return SupplierShipmentDecision.parse(data,
         shipmentId: shipment.id, expected: SupplierShipmentStatus.delivered);
+  }
+
+  Future<SupplierShipmentDecision> cancel({
+    required String supplierId,
+    required SupplierShipment shipment,
+    required String reason,
+  }) async {
+    if (shipment.supplierId != supplierId ||
+        (shipment.status != SupplierShipmentStatus.planned &&
+            shipment.status != SupplierShipmentStatus.packed)) {
+      throw StateError('Only planned or packed shipments can be cancelled');
+    }
+    final trimmed = reason.trim();
+    if (trimmed.length < 8 || trimmed.length > 500) {
+      throw const FormatException('Reason must be between 8 and 500 characters');
+    }
+    final data = (await client.request(
+      'POST',
+      '${_base(supplierId)}/shipments/${catalogId(shipment.id)}/cancel',
+      body: {'reason': trimmed},
+    )).data;
+    final row = catalogObject(data);
+    final status = SupplierShipmentStatus.parse(row['status']);
+    return SupplierShipmentDecision(
+      id: shipment.id,
+      status: status,
+      replayed: row['replayed'] as bool? ?? false,
+    );
   }
 }

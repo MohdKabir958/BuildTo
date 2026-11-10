@@ -6,10 +6,10 @@ const GST_STATE:Readonly<Record<string,string>>={
  JK:'01',HP:'02',PB:'03',CH:'04',UK:'05',UT:'05',HR:'06',DL:'07',RJ:'08',
  UP:'09',BR:'10',SK:'11',AR:'12',NL:'13',MN:'14',MZ:'15',TR:'16',ML:'17',
  AS:'18',WB:'19',JH:'20',OD:'21',CG:'22',CT:'22',MP:'23',GJ:'24',
- DN:'26',DD:'26',MH:'27',KA:'29',GA:'30',LD:'31',KL:'32',TN:'33',
+ DN:'26',DD:'26',DH:'26',MH:'27',KA:'29',GA:'30',LD:'31',KL:'32',TN:'33',
  PY:'34',AN:'35',TG:'36',TS:'36',AP:'37',LA:'38'
 };
-const UNION_WITHOUT_LEGISLATURE=new Set(['AN','CH','DN','DD','LD','LA']);
+const UNION_WITHOUT_LEGISLATURE=new Set(['AN','CH','DN','DD','DH','LD','LA']);
 export interface GstSplit {cgstPaise:bigint;sgstPaise:bigint;utgstPaise:bigint;igstPaise:bigint;cessPaise:bigint}
 export function splitOrderGst(taxPaise:bigint,registered:{
  gstin:string|null;gstRegistration:string;verifiedAt:Date|null

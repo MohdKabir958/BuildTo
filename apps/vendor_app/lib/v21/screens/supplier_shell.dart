@@ -240,8 +240,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                     else
                       _HomeTab(verifiedSupplier: widget.verifiedSupplier),
                     if (widget.verifiedSupplier != null &&
-                        widget.ordersRepository != null &&
-                        selected == BuildToSupplierTab.orders)
+                        widget.ordersRepository != null)
                       SupplierOrdersView(
                         key: ValueKey(widget.verifiedSupplier!.supplierId),
                         supplierId: widget.verifiedSupplier!.supplierId,
@@ -255,9 +254,6 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         onOpenShipments: (order) =>
                             unawaited(_openShipments(order)),
                       )
-                    else if (widget.verifiedSupplier != null &&
-                        widget.ordersRepository != null)
-                      const SizedBox.shrink()
                     else
                       _RestrictedTab(
                         verifiedSupplier: widget.verifiedSupplier,
@@ -267,8 +263,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         icon: Icons.receipt_long_outlined,
                       ),
                     if (widget.verifiedSupplier != null &&
-                        widget.catalogRepository != null &&
-                        selected == BuildToSupplierTab.catalog)
+                        widget.catalogRepository != null)
                       SupplierCatalogView(
                         key: ValueKey(widget.verifiedSupplier!.supplierId),
                         supplierId: widget.verifiedSupplier!.supplierId,
@@ -280,9 +275,6 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         }.contains(widget.verifiedSupplier!.role),
                         onRecheckAccess: widget.onRefresh,
                       )
-                    else if (widget.verifiedSupplier != null &&
-                        widget.catalogRepository != null)
-                      const SizedBox.shrink()
                     else
                       _RestrictedTab(
                         verifiedSupplier: widget.verifiedSupplier,
@@ -293,8 +285,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                       ),
                     if (widget.verifiedSupplier != null &&
                         widget.inventoryRepository != null &&
-                        widget.catalogRepository != null &&
-                        selected == BuildToSupplierTab.stock)
+                        widget.catalogRepository != null)
                       SupplierInventoryView(
                         key: ValueKey(widget.verifiedSupplier!.supplierId),
                         supplierId: widget.verifiedSupplier!.supplierId,
@@ -307,9 +298,6 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         }.contains(widget.verifiedSupplier!.role),
                         onRecheckAccess: widget.onRefresh,
                       )
-                    else if (widget.verifiedSupplier != null &&
-                        widget.inventoryRepository != null)
-                      const SizedBox.shrink()
                     else
                       _RestrictedTab(
                         verifiedSupplier: widget.verifiedSupplier,
@@ -324,8 +312,7 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         widget.ordersRepository != null &&
                         widget.careRepository != null &&
                         widget.financeRepository != null &&
-                        widget.shipmentsRepository != null &&
-                        selected == BuildToSupplierTab.more)
+                        widget.shipmentsRepository != null)
                       SupplierBusinessView(
                         key: ValueKey(widget.verifiedSupplier!.supplierId),
                         supplierId: widget.verifiedSupplier!.supplierId,
@@ -338,14 +325,6 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         shipments: widget.shipmentsRepository!,
                         onRecheckAccess: widget.onRefresh,
                       )
-                    else if (widget.verifiedSupplier != null &&
-                        widget.deliveryRepository != null &&
-                        widget.rfqRepository != null &&
-                        widget.ordersRepository != null &&
-                        widget.careRepository != null &&
-                        widget.financeRepository != null &&
-                        widget.shipmentsRepository != null)
-                      const SizedBox.shrink()
                     else
                       _RestrictedTab(
                         verifiedSupplier: widget.verifiedSupplier,

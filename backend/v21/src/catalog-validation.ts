@@ -63,9 +63,9 @@ export function specification(x:unknown):Prisma.InputJsonObject {
   // required keys must be agreed before accepting rich/free-form nested schemas.
   const o=x as PlainRecord;
   if(Object.keys(o).length>24)throw new ApiError(400,'SPECIFICATION_LIMIT','Too many specification fields.');
-  const clean:Record<string,string|boolean>={};
+  const clean:Record<string,string|boolean|number>={};
   for(const [k,v] of Object.entries(o)){
-    if(!/^[a-z][A-Za-z0-9_]{0,39}$/.test(k)||!(typeof v==='boolean'||typeof v==='string')||
+    if(!/^[a-z][A-Za-z0-9_]{0,39}$/.test(k)||!(typeof v==='boolean'||typeof v==='string'||(typeof v==='number'&&Number.isFinite(v)))||
        (typeof v==='string'&&(v.length>240||/[\x00-\x1f\x7f]/.test(v))))
       throw new ApiError(400,'INVALID_SPECIFICATION','Invalid specification field.');
     clean[k]=v;

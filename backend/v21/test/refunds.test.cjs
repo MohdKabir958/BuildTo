@@ -82,7 +82,7 @@ async function orderWithReturn({received=true,returnedQty=2,method='RAZORPAY'}={
   supplierId:state.supplier.id,supplierOrderId:child.id,
   invoiceNumber:'RFT-'+id().replaceAll('-').slice(0,22),
   financialYear:'2026-27',status:'ISSUED',kind:'TAX_INVOICE',
-  sellerSnapshot:{legalName:'Tax Materials Pvt Ltd',gstin:'36AAAAA0000A1Z5'},
+  sellerSnapshot:{legalName:'Tax Materials Pvt Ltd',gstin:'36AAAAA'+String(Math.floor(1000+Math.random()*9000))+'A1Z'+String(Math.floor(Math.random()*10))},
   buyerSnapshot:{recipientName:'Return buyer',stateCode:'TS'},
   lineSnapshot:{items:[{sku,name:'Return test cement',hsn:'2523',
    unitCode:'BAG',quantity:'2',unitPrice:'50',taxRateBps:1800,
@@ -302,4 +302,21 @@ test('database rejects mutation of posted refund, issued GST credit and its orig
   journalId_lineNumber:{journalId:j.id,lineNumber:1}
  },data:{debitPaise:10n}}));
  assert.equal(await db.refundRequest.count({where:{id:state.refund.id,status:'SUCCEEDED'}}),1);
+});
+
+
+test('refund evidence selects captured payment despite a failed earlier attempt',async()=>{
+ const order=await orderWithReturn({});
+ await db.paymentAttempt.create({data:{
+  purchaseOrderId:order.purchaseOrder.id,provider:'RAZORPAY',
+  paymentMethod:'UPI',idempotencyKey:key(),status:'FAILED',amountPaise:11800n
+ }});
+ const note=await send('post',credit(order.ret),'issuer',{});
+ assert.equal(note.status,201,JSON.stringify(note.body));
+ const requested=await send('post',finance('/refunds/requests/'+order.ret.id),
+  'maker',{},key());
+ assert.equal(requested.status,201,JSON.stringify(requested.body));
+ const saved=await db.refundRequest.findUniqueOrThrow({where:{id:requested.body.data.id}});
+ assert.equal(saved.paymentAttemptId,order.payment.id,
+  'refund must link the actual captured attempt, never the failed attempt');
 });

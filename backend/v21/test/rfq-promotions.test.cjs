@@ -197,7 +197,7 @@ test('accepted listing-backed RFQ converts its negotiated price into one unpaid 
   onHandQty:new Prisma.Decimal('10.000')
  }});
  await db.supplier.update({where:{id:store.first.id},data:{
-  gstin:'36BCDEF4321G1Z2',gstRegistration:'REGULAR',verifiedAt:new Date()
+  gstin:'36BCDEF'+String(Math.floor(1000+Math.random()*9000))+'G1Z'+String(Math.floor(Math.random()*10)),gstRegistration:'REGULAR',verifiedAt:new Date()
  }});
  const path=rfqURL()+'/quotes/'+store.revisedId+'/order';
  const body={clientRequestId:'rfqorder_'+id(),addressId:address.id};

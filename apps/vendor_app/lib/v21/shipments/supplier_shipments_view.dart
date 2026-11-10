@@ -125,7 +125,14 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
   Future<void> plan() async {
     if (!widget.canFulfill) return;
     final available = warehouses.where((w) => w.active).toList();
-    if (available.isEmpty) return;
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No active warehouse found. Please activate a warehouse in the Stock tab first.'),
+        ),
+      );
+      return;
+    }
     final selected = <String>{};
     final quantity = {
       for (final line in widget.order.items)
@@ -403,6 +410,68 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
     }
   }
 
+  Future<void> cancel(SupplierShipment shipment) async {
+    if (!widget.canFulfill ||
+        (shipment.status != SupplierShipmentStatus.planned &&
+            shipment.status != SupplierShipmentStatus.packed)) {
+      return;
+    }
+    final reasonController = TextEditingController();
+    String? reason;
+    try {
+      reason = await showDialog<String>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          title: const Text('Cancel shipment?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Cancelling releases the allocated warehouse stock back to inventory. '
+                'Only shipments before dispatch can be cancelled.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 200,
+                decoration: const InputDecoration(
+                  labelText: 'Cancellation reason (min 8 characters)',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog),
+              child: const Text('Back'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(dialog, reasonController.text.trim()),
+              child: const Text('Confirm cancel'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      reasonController.dispose();
+    }
+    if (reason == null || reason.length < 8 || !mounted) return;
+    try {
+      await widget.repository.cancel(
+        supplierId: widget.supplierId,
+        shipment: shipment,
+        reason: reason,
+      );
+      if (mounted) await refresh();
+    } catch (e) {
+      report(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -528,6 +597,19 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
                         'dispatch' => 'Confirm dispatch',
                         _ => 'Out for delivery',
                       }),
+                    ),
+                  if (widget.canFulfill &&
+                      (shipment.status == SupplierShipmentStatus.planned ||
+                          shipment.status == SupplierShipmentStatus.packed))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: OutlinedButton.icon(
+                        onPressed: () => unawaited(cancel(shipment)),
+                        icon: const Icon(Icons.cancel_outlined,
+                            color: BuildToPalette.danger),
+                        label: const Text('Cancel shipment',
+                            style: TextStyle(color: BuildToPalette.danger)),
+                      ),
                     ),
                   if (widget.canFulfill &&
                       shipment.status == SupplierShipmentStatus.outForDelivery)

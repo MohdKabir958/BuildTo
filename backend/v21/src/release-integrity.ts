@@ -8,7 +8,8 @@ import type {PrismaClient} from '../../generated/buildto-v21';
 export const REVIEWED_V21_MIGRATIONS=[
  '20261103_buildto_v21_initial',
  '20261104_return_refund_credit_note_link',
- '20261104_payout_beneficiary_reconciliation'
+ '20261104_payout_beneficiary_reconciliation',
+ '20261107_step1_partial_shipment_allocation'
 ] as const;
 
 type MigrationRecord={

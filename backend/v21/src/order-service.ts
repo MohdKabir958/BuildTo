@@ -196,7 +196,7 @@ export async function placeCheckoutOrder(db:PrismaClient,userId:string,quoteId:s
    // All split supplier orders, line snapshots, and warehouse holds commit
    // together. Failure for one supplier rolls back the ENTIRE customer order.
    const expiresAt=new Date(Date.now()+20*60000);
-   for(const supplier of priced.suppliers){
+   for(const supplier of [...priced.suppliers].sort((a,b)=>a.supplierId.localeCompare(b.supplierId))){
     const child=await tx.supplierOrder.create({data:{
      purchaseOrderId:order.id,supplierId:supplier.supplierId,
      status:'PENDING_ACCEPTANCE',subtotalPaise:BigInt(supplier.subtotalPaise),
@@ -236,7 +236,7 @@ export async function placeCheckoutOrder(db:PrismaClient,userId:string,quoteId:s
 }
 // Cancellation and expiration are safe only before a payment integration owns
 // the order. PR 09 must lock the same PurchaseOrder row for gateway transitions.
-async function cancelUnpaid(tx:Tx,id:string,userId:string|null,expired:boolean){
+export async function cancelUnpaid(tx:Tx,id:string,userId:string|null,expired:boolean){
  const ids=await tx.$queryRaw<{id:string}[]>(Prisma.sql`
   SELECT id FROM "PurchaseOrder" WHERE id=${id}::uuid
     ${userId?Prisma.sql`AND "customerId"=${userId}::uuid`:Prisma.empty}
@@ -247,7 +247,7 @@ async function cancelUnpaid(tx:Tx,id:string,userId:string|null,expired:boolean){
   id:true,customerId:true,status:true,placedAt:true,
   payments:{select:{status:true}},
   supplierOrders:{select:{id:true,items:{select:{reservations:{
-   where:{state:'HELD'},select:{id:true,expiresAt:true}
+   where:{state:'HELD'},select:{id:true,expiresAt:true,orderItemId:true,balanceId:true}
   }}}}}
  }});
  if(order.status==='CANCELLED')return {id,state:'CANCELLED',replayed:true};
@@ -257,7 +257,7 @@ async function cancelUnpaid(tx:Tx,id:string,userId:string|null,expired:boolean){
  const holds=order.supplierOrders.flatMap(s=>s.items.flatMap(i=>i.reservations));
  if(expired&&holds.some(h=>h.expiresAt&&h.expiresAt.getTime()>Date.now()))
   throw new ApiError(409,'ORDER_NOT_EXPIRED','Order has active stock reservations.');
- for(const hold of holds.sort((a,b)=>a.id.localeCompare(b.id)))
+ for(const hold of holds.sort((a,b)=>a.balanceId.localeCompare(b.balanceId)||a.orderItemId.localeCompare(b.orderItemId)||a.id.localeCompare(b.id)))
   await releaseOrderItemStock(tx,hold.id,expired?'EXPIRED':'RELEASED');
  await tx.supplierOrder.updateMany({where:{purchaseOrderId:id},
   data:{status:'CANCELLED',cancelledAt:new Date()}});

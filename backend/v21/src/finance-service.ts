@@ -3,12 +3,13 @@ import {randomUUID} from 'node:crypto';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {serializable} from './transaction';
+import {verifiedCapturedPayment} from './payment-funding';
 import {executeIdempotently} from './idempotency';
 import {publishOutbox} from './outbox';
 import {isUuid,requireAdminPermission,requireSupplierPermission} from './permissions';
 
 type Tx=Prisma.TransactionClient;
-const blockedReturns=['REQUESTED','UNDER_REVIEW','APPROVED','IN_TRANSIT','RECEIVED','RESOLVED'] as const;
+const blockedReturns=['REQUESTED','UNDER_REVIEW','APPROVED','IN_TRANSIT','RECEIVED'] as const;
 const blockedRefunds=['REQUESTED','APPROVED','PROCESSING','SUCCEEDED','MANUAL_REVIEW'] as const;
 function uuid(v:unknown):string {
  if(!isUuid(v))throw new ApiError(404,'NOT_FOUND','Resource not found.');
@@ -95,20 +96,16 @@ async function eligibility(tx:Tx,supplierId:string,supplierOrderId:string){
   throw new ApiError(409,'SETTLEMENT_DELIVERY_REQUIRED','Supplier order requires completed delivery.');
  if(s.totalPaise<=0n||s.platformFeePaise<0n||s.platformFeePaise>=s.totalPaise)
   throw new ApiError(409,'SETTLEMENT_AMOUNT_INVALID','Supplier financial snapshot cannot be settled.');
- if(s.purchaseOrder.currency!=='INR'||s.purchaseOrder.payments.length!==1)
-  throw new ApiError(409,'SETTLEMENT_CAPTURE_REQUIRED','An exact verified online capture is required.');
- const p=s.purchaseOrder.payments[0];
- if(p.provider!=='RAZORPAY'||p.status!=='CAPTURED'||!p.verifiedAt||
-  !p.providerPayRef||p.amountPaise!==s.purchaseOrder.totalPaise||
-  p.capturedPaise!==s.purchaseOrder.totalPaise)
-  throw new ApiError(409,'SETTLEMENT_CAPTURE_REQUIRED','A COD claim or unverified payment cannot be settled as platform-held cash.');
+ const p=verifiedCapturedPayment(s.purchaseOrder.payments,s.purchaseOrder.totalPaise);
+ if(s.purchaseOrder.currency!=='INR'||!p)
+  throw new ApiError(409,'SETTLEMENT_CAPTURE_REQUIRED','One exact verified online capture is required; failed attempts do not count.');
  if(s.purchaseOrder.refunds.length||s.returnRequests.length)
   throw new ApiError(409,'SETTLEMENT_DISPUTED','An open return or refund places the entire supplier order on hold.');
  // Only legally issued, exact-value invoices are eligible for a settlement proposal.
  if(s.invoices.length!==1||s.invoices[0].totalPaise!==s.totalPaise)
   throw new ApiError(409,'SETTLEMENT_INVOICE_REQUIRED','An exact issued invoice is required.');
  if(!s.items.length||s.items.some(i=>!i.shipmentLines.length||!
-  i.shipmentLines.filter(l=>l.shipment.status==='DELIVERED'&&l.shipment.deliveredAt&&
+  i.shipmentLines.filter(l=>['DELIVERED','PARTIALLY_DELIVERED'].includes(l.shipment.status)&&l.shipment.deliveredAt&&
     (l.shipment.handoverMethod==='OTP'&&l.shipment.otpVerifiedAt||
      l.shipment.handoverMethod==='APPROVED_EXCEPTION'&&l.shipment.exceptionApprovedAt))
   .reduce((n,l)=>n.plus(l.deliveredQty),new Prisma.Decimal(0)).eq(i.quantity)))
@@ -214,10 +211,7 @@ export async function adminSupplierFinance(db:PrismaClient,userId:string,supplie
   platformFeePaise:s.platformFeePaise.toString(),
   codVerifiedPaise:s.codVerifiedPaise.toString(),
   fundingType:s.purchaseOrder.payments.some(p=>p.provider==='MANUAL')?'COD_SUPPLIER_HELD':
-   s.purchaseOrder.payments.length===1&&s.purchaseOrder.payments.some(p=>
-    p.provider==='RAZORPAY'&&p.status==='CAPTURED'&&!!p.verifiedAt&&
-    !!p.providerPayRef&&p.amountPaise===s.purchaseOrder.totalPaise&&
-    p.capturedPaise===s.purchaseOrder.totalPaise)
+   !!verifiedCapturedPayment(s.purchaseOrder.payments,s.purchaseOrder.totalPaise)
     ?'RAZORPAY_CAPTURE_VERIFIED':'ONLINE_UNVERIFIED',
   disputed:Boolean(s.returnRequests.length),
   allocatedToActiveSettlement:s.settlementLines.some(l=>l.settlement.status!=='CANCELLED')
@@ -308,18 +302,14 @@ export async function approveSettlement(db:PrismaClient,userId:string,settlement
    if(!order||order.status!=='DELIVERED'||order.returnRequests.length||
     order.purchaseOrder.refunds.length||order.settlementLines.length||
     !order.items.length||order.items.some(i=>!i.shipmentLines.length||!
-     i.shipmentLines.filter(l=>l.shipment.status==='DELIVERED'&&l.shipment.deliveredAt&&
+     i.shipmentLines.filter(l=>['DELIVERED','PARTIALLY_DELIVERED'].includes(l.shipment.status)&&l.shipment.deliveredAt&&
       (l.shipment.handoverMethod==='OTP'&&l.shipment.otpVerifiedAt||
        l.shipment.handoverMethod==='APPROVED_EXCEPTION'&&l.shipment.exceptionApprovedAt))
      .reduce((n,l)=>n.plus(l.deliveredQty),new Prisma.Decimal(0)).eq(i.quantity))||
     order.invoices.length!==1||order.invoices[0].totalPaise!==order.totalPaise||
-    order.purchaseOrder.payments.length!==1)
+    !verifiedCapturedPayment(order.purchaseOrder.payments,order.purchaseOrder.totalPaise))
     throw new ApiError(409,'SETTLEMENT_REVALIDATION_FAILED','Financial or fulfillment evidence changed after drafting.');
-   const p=order.purchaseOrder.payments[0];
-   if(p.provider!=='RAZORPAY'||p.status!=='CAPTURED'||!p.verifiedAt||!p.providerPayRef||
-    p.amountPaise!==order.purchaseOrder.totalPaise||
-    p.capturedPaise!==order.purchaseOrder.totalPaise||
-    order.purchaseOrder.currency!=='INR'||order.createdAt<current.periodStart||
+   if(    order.purchaseOrder.currency!=='INR'||order.createdAt<current.periodStart||
     order.createdAt>current.periodEnd||order.totalPaise!==line.grossPaise||
     order.platformFeePaise!==line.commissionPaise||
     order.totalPaise-order.platformFeePaise!==line.netPaise)
