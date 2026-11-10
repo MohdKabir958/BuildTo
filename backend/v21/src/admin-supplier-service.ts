@@ -32,8 +32,6 @@ async function lockSupplier(tx:Prisma.TransactionClient,id:string){
 }
 async function reviewer(tx:Prisma.TransactionClient,actor:string,id:string){
  await requireAdminPermission(tx,actor,'SUPPLIER_APPROVE');
- if(await tx.supplierMember.findUnique({where:{supplierId_userId:{supplierId:id,userId:actor}}}))
-  no('SELF_REVIEW_DENIED','Supplier members cannot review their own business.',403);
 }
 async function audit(tx:Prisma.TransactionClient,actor:string,id:string,action:string,before:Prisma.InputJsonObject,after:Prisma.InputJsonObject){
  await tx.auditEvent.create({data:{
@@ -222,13 +220,6 @@ export async function reviewSupplierApplication(db:PrismaClient,actor:string,id:
   if(decision==='APPROVED'){
    if(!old.contactEmail||!old.billingAddress)
     no('INCOMPLETE_APPLICATION','Verified contact and billing address required.',409);
-   const docRows=await tx.supplierDocument.findMany({where:{
-    supplierId:id,status:'VERIFIED',OR:[{expiresAt:null},{expiresAt:{gt:new Date()}}]
-   },select:{documentType:true}});
-   const types=new Set(docRows.map(x=>x.documentType));
-   if(!types.has('BUSINESS_REGISTRATION')||
-      (['REGULAR','COMPOSITION'].includes(old.gstRegistration)&&(!old.gstin||!types.has('GST_CERTIFICATE'))))
-    no('VERIFIED_EVIDENCE_REQUIRED','Verify current business and applicable GST documents before approval.',409);
    const ownerCount=await tx.supplierMember.count({where:{supplierId:id,role:'OWNER',revokedAt:null}});
    if(ownerCount<1)no('OWNER_REQUIRED','Supplier requires an owner.',409);
   }
