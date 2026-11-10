@@ -84,7 +84,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
   void loadDetail(selectedId,controller.signal);
   return ()=>controller.abort();
  },[selectedId,loadDetail]);
- const self=false;
+ const self=detail?.owners.some(owner=>owner.userId===currentAdminId) ?? false;
  async function submitReview(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!detail||!review||busy||review.reason.trim().length<8)return;
   setBusy(true);setError('');setInfo('');

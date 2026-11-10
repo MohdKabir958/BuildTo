@@ -20,10 +20,10 @@ Future<void> pumpPhone(WidgetTester tester, Size size,
 }
 
 void main() {
-  testWidgets('BuildTo navigation presents the approved five supplier tabs',
+  testWidgets('Splyzo navigation presents the approved five supplier tabs',
       (tester) async {
     await pumpPhone(tester, const Size(393, 852));
-    expect(find.text('BuildTo'), findsOneWidget);
+    expect(find.bySemanticsLabel('Splyzo'), findsOneWidget);
     expect(find.text('Building Made Easy.'), findsOneWidget);
     expect(find.text('Your supplier workspace'), findsOneWidget);
     for (final name in ['Home', 'Orders', 'Catalog', 'Stock', 'More']) {
@@ -76,7 +76,7 @@ void main() {
       ))),
     ));
     expect(find.text('Approval pending'), findsOneWidget);
-    expect(BuildToPalette.navy, const Color(0xFF002B5B));
+    expect(BuildToPalette.navy, const Color(0xFF0B2D67));
     expect(tester.takeException(), isNull);
   });
 

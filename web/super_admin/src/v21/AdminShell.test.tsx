@@ -14,7 +14,7 @@ describe('Splyzo A01 admin shell',()=>{
     expect(screen.getByRole('heading',{name:'Built for better marketplace operations.'})).toBeTruthy();
     expect(screen.getByText('API origin not configured')).toBeTruthy();
     expect(screen.getByRole('button',{name:'Suppliers'})).toBeTruthy();
-    expect(screen.queryByText(/restaurant|rider|splyzo|₹[0-9]/i)).toBeNull();
+    expect(screen.queryByText(/restaurant|rider|₹[0-9]/i)).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button',{name:'Catalog'}));
     expect(screen.getByText(/This module is not connected yet/)).toBeTruthy();

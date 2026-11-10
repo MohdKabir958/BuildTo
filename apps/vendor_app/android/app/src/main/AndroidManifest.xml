@@ -22,7 +22,7 @@
 
         <meta-data android:name="in.grozo.AUTH_MODE" android:value="${GROZO_AUTH_MODE}"/>
         <meta-data android:name="in.grozo.CLERK_PUBLISHABLE_KEY" android:value="${CLERK_PUBLISHABLE_KEY}"/>
-        <!-- Only this supplier app receives the BuildTo-branded native Clerk UI. -->
+        <!-- Only this supplier app receives the Splyzo-branded native Clerk UI. -->
         <meta-data android:name="in.grozo.BUILDTO_SUPPLIER_AUTH_UI" android:value="true"/>
         <activity android:name="com.grozo.clerk.GrozoClerkAuthActivity" android:exported="false" android:theme="@android:style/Theme.Material.Light.NoActionBar"/>
         <activity
