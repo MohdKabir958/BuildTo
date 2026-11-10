@@ -42,7 +42,7 @@ test('fixture: two suppliers, delivery zones, customer address, priced listings 
  }
  const supplierA=await db.supplier.create({data:{
   slug:'cart-a-'+id(),legalName:'Build Materials A',displayName:'Supplier A',approval:'APPROVED',
-  gstin:'36ABCDE1234F1Z1',gstRegistration:'REGULAR',verifiedAt:new Date()
+  gstin:'36ABCDE'+String(Math.floor(1000+Math.random()*9000))+'F1Z'+String(Math.floor(Math.random()*10)),gstRegistration:'REGULAR',verifiedAt:new Date()
  }});
  const supplierB=await db.supplier.create({data:{
   slug:'cart-b-'+id(),legalName:'Build Materials B',displayName:'Supplier B',approval:'APPROVED'

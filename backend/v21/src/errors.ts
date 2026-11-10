@@ -22,6 +22,7 @@ export function normalizeError(error:unknown):ApiError {
   return new ApiError(500,'INTERNAL_ERROR','An unexpected server error occurred.');
 }
 export const errorHandler:ErrorRequestHandler=(error,req,res,_next)=>{
+  if (process.env.NODE_ENV !== 'production') console.error('[API ERROR]', error);
   const mapped=normalizeError(error);
   const requestId=typeof res.locals.requestId==='string'?res.locals.requestId:'unknown';
   if (res.headersSent) return;
