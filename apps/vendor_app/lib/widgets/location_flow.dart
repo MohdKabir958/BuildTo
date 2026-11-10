@@ -21,7 +21,7 @@ Future<String?> _saveThroughSession(
   return result.ok ? null : locationSaveFailureText(result);
 }
 
-/// The capture sheet wired to Grozo: detect, show the result, save to the signed-in restaurant.
+/// The capture sheet wired to Splyzo: detect, show the result, save to the signed-in restaurant.
 /// [update] = the restaurant already has a pin, so saving asks "are you sure" first (it changes where riders go).
 /// Returns true when the new pin was saved.
 Future<bool> runRestaurantLocationFlow(BuildContext context,

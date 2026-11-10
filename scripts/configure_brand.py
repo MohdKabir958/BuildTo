@@ -47,7 +47,7 @@ for role, key in [('customer', 'customerName'), ('vendor', 'vendorName'), ('driv
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n'
         '  <item android:drawable="@android:color/white"/>\n'
-        '  <item android:gravity="center" android:width="240dp" android:height="144dp" android:drawable="@drawable/brand_logo"/>\n'
+        '  <item android:gravity="center" android:width="144dp" android:height="144dp" android:drawable="@drawable/brand_logo"/>\n'
         '</layer-list>\n')
     for qualifier in ('drawable', 'drawable-v21'):
         generated[f'apps/{role}_app/android/app/src/main/res/{qualifier}/launch_background.xml'] = splash

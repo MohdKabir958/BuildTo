@@ -123,12 +123,10 @@ void main() {
         const Size(393, 852));
     await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
-    expect(find.text('Supplier approval required'), findsOneWidget);
+    expect(find.text('Your account is in review'), findsOneWidget);
     await tester.tap(find.text('Open supplier applications'));
     await tester.pumpAndSettle();
-    expect(find.text('Grow with BuildTo'), findsOneWidget);
-    await tester.tap(find.text('Start supplier application'));
-    await tester.pumpAndSettle();
+    expect(find.text('Grow with Splyzo'), findsOneWidget);
     expect(find.text('Your business'), findsOneWidget);
     Finder field(String label) =>
         find.byKey(ValueKey('supplier-registration-$label'));
@@ -199,7 +197,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open supplier applications'));
     await tester.pumpAndSettle();
-    expect(find.text('No application yet'), findsOneWidget);
+    expect(find.text('Your business'), findsOneWidget);
     expect(find.text('Approved'), findsNothing);
     expect(tester.takeException(), isNull);
   });

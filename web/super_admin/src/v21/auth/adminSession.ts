@@ -25,7 +25,7 @@ export async function fetchAdminSession(baseUrl:string,token:string,signal?:Abor
       });
     }catch{
       if(signal?.aborted)throw new AdminAccessError(503,'Authorization check interrupted');
-      throw new AdminAccessError(503,'Cannot reach the BuildTo staging API');
+      throw new AdminAccessError(503,'Cannot reach the Splyzo staging API');
     }
     if(response.status===401)throw new AdminAccessError(401,'Your Clerk session was rejected');
     if(response.status===403)throw new AdminAccessError(403,'Administrator access has not been granted');

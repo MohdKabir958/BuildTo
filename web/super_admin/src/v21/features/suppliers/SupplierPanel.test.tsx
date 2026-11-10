@@ -47,7 +47,7 @@ describe('A06 supplier approval UI',()=>{
   await screen.findByText('Example Cement');
   fireEvent.click(screen.getByRole('button',{name:'View details'}));
   await screen.findByText('Evidence checklist');
-  expect(screen.getByText(/Independent review is required/)).toBeTruthy();
+  expect(screen.getByText('You are a member of this supplier. Independent review is required.')).toBeTruthy();
   expect(screen.queryByRole('button',{name:'Verify'})).toBeNull();
   expect(screen.queryByRole('button',{name:'APPROVED'})).toBeNull();
  });

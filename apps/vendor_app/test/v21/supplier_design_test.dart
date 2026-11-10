@@ -4,8 +4,11 @@ import 'package:vendor_app/v21/screens/supplier_shell.dart';
 import 'package:vendor_app/v21/design/buildto_components.dart';
 import 'package:vendor_app/v21/design/buildto_theme.dart';
 
-Future<void> pumpPhone(WidgetTester tester, Size size,
-    {double scale = 1}) async {
+Future<void> pumpPhone(
+  WidgetTester tester,
+  Size size, {
+  double scale = 1,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(() {
@@ -20,12 +23,13 @@ Future<void> pumpPhone(WidgetTester tester, Size size,
 }
 
 void main() {
-  testWidgets('BuildTo navigation presents the approved five supplier tabs',
+  testWidgets('Splyzo navigation presents the approved five supplier tabs',
       (tester) async {
     await pumpPhone(tester, const Size(393, 852));
-    expect(find.text('BuildTo'), findsOneWidget);
-    expect(find.text('Building Made Easy.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Splyzo'), findsOneWidget);
+    expect(find.text('Construction materials, managed with confidence.'), findsOneWidget);
     expect(find.text('Your supplier workspace'), findsOneWidget);
+    expect(find.text('SPLYZO SUPPLIER'), findsOneWidget);
     for (final name in ['Home', 'Orders', 'Catalog', 'Stock', 'More']) {
       expect(find.text(name), findsWidgets);
     }
@@ -76,7 +80,7 @@ void main() {
       ))),
     ));
     expect(find.text('Approval pending'), findsOneWidget);
-    expect(BuildToPalette.navy, const Color(0xFF002B5B));
+    expect(BuildToPalette.navy, const Color(0xFF0B2D67));
     expect(tester.takeException(), isNull);
   });
 

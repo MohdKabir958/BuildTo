@@ -14,7 +14,7 @@
     <application
         android:label="@string/app_name"
         android:name="com.grozo.clerk.GrozoClerkApplication"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/splyzo_launcher"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules">
 
@@ -28,7 +28,7 @@
         <!-- Push notifications: icon + fallback channel for pushes that arrive before the app created its channels. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_stat_grozo"/>
+            android:resource="@drawable/ic_stat_splyzo"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="order_updates"/>

@@ -82,7 +82,7 @@ class PushController extends ChangeNotifier {
 
   PushPermission get permission => _permission;
 
-  /// True once this signed-in, approved rider's device is known to Grozo.
+  /// True once this signed-in, approved rider's device is known to Splyzo.
   bool get registered => _registeredToken != null;
 
   bool get eligible => _eligible;

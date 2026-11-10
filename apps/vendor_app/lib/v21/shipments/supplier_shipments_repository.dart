@@ -347,13 +347,15 @@ class SupplierShipmentsRepository {
     }
     final trimmed = reason.trim();
     if (trimmed.length < 8 || trimmed.length > 500) {
-      throw const FormatException('Reason must be between 8 and 500 characters');
+      throw const FormatException(
+          'Reason must be between 8 and 500 characters');
     }
     final data = (await client.request(
       'POST',
       '${_base(supplierId)}/shipments/${catalogId(shipment.id)}/cancel',
       body: {'reason': trimmed},
-    )).data;
+    ))
+        .data;
     final row = catalogObject(data);
     final status = SupplierShipmentStatus.parse(row['status']);
     return SupplierShipmentDecision(

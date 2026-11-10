@@ -27,7 +27,7 @@ export class V21ApiClient {
  async request<T>(path:string,{method='GET',body,idempotencyKey,signal,timeoutMs=15000}:RequestOptions={}):Promise<V21Response<T>>{
    // Only exact V2.1 API paths; never permit user-controlled cross-origin tokens.
    if(!path.startsWith('/api/v2/')||path.startsWith('//')||path.includes('#'))
-     throw new V21ApiError(0,'INVALID_API_PATH','Only BuildTo V2.1 API paths are allowed');
+     throw new V21ApiError(0,'INVALID_API_PATH','Only Splyzo V2.1 API paths are allowed');
    const url=new URL(path,this.origin);
    if(url.origin!==this.origin)throw new V21ApiError(0,'INVALID_API_PATH','Cross-origin requests are not allowed');
    if(!['GET','POST','PUT','PATCH','DELETE'].includes(method))
@@ -63,7 +63,7 @@ export class V21ApiClient {
      }catch{
        if(timedOut)throw new V21ApiError(0,'TIMEOUT','The API request timed out');
        if(signal?.aborted)throw new V21ApiError(0,'ABORTED','The request was cancelled');
-       throw new V21ApiError(0,'NETWORK','Cannot reach the BuildTo API');
+       throw new V21ApiError(0,'NETWORK','Cannot reach the Splyzo API');
      }
      let raw:unknown;
      try{raw=await response.json();}catch{

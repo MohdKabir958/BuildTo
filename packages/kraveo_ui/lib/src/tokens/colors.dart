@@ -1,58 +1,58 @@
 import 'package:flutter/material.dart';
 import '../brand_config.dart';
 
-/// Raw brand palette. Uses the Grozo forest-green wordmark and leaf-green accent.
+/// Raw brand palette. Uses the Splyzo navy-blue mark and orange location accent.
 /// Screens should NOT use these directly - read semantic roles via `context.k`.
 class KraveoPalette {
   KraveoPalette._();
 
-  // Forest green ramp (brand = 800)
-  static const g50 = Color(0xFFEEF8EF);
-  static const g100 = Color(0xFFD5EFD8);
-  static const g200 = Color(0xFFA9DEB0);
-  static const g300 = Color(0xFF74C880);
-  static const g400 = Color(0xFF43AE55);
-  static const g500 = Color(0xFF23913A);
-  static const g600 = Color(0xFF147A2C);
-  static const g700 = Color(0xFF0C6423);
+  // Splyzo navy and blue ramp (brand = 800)
+  static const g50 = Color(0xFFEFF5FF);
+  static const g100 = Color(0xFFDCE9FF);
+  static const g200 = Color(0xFFB8D2FF);
+  static const g300 = Color(0xFF82B5F9);
+  static const g400 = Color(0xFF4A8EDC);
+  static const g500 = Color(0xFF216BC2);
+  static const g600 = Color(0xFF1555A6);
+  static const g700 = Color(0xFF103F83);
   static const g800 = Color(BrandConfig.primary);
-  static const g900 = Color(0xFF063D14);
-  static const g950 = Color(0xFF032309);
+  static const g900 = Color(0xFF082451);
+  static const g950 = Color(0xFF041633);
 
-  // Accent ramp (brand = 400 is configured from the Grozo artwork)
-  static const y100 = Color(0xFFFFF6C2);
-  static const y200 = Color(0xFFFFEC85);
-  static const y300 = Color(0xFFFFE24D);
+  // Accent ramp (brand = 400 is configured from the Splyzo artwork)
+  static const y100 = Color(0xFFFFF1E8);
+  static const y200 = Color(0xFFFFD7C2);
+  static const y300 = Color(0xFFFFB38A);
   static const y400 = Color(BrandConfig.accent);
-  static const y500 = Color(0xFFE6BE00);
-  static const y700 = Color(0xFF8A6D00);
+  static const y500 = Color(0xFFDD4719);
+  static const y700 = Color(0xFF9B2E12);
 
-  // Warm neutrals (light)
-  static const cream = Color(0xFFF6F8F6);
+  // Cool neutrals (light)
+  static const cream = Color(0xFFF5F8FC);
   static const paper = Color(0xFFFFFFFF);
-  static const sand = Color(0xFFEEF3EF);
-  static const line = Color(0xFFDDE5DF);
-  static const ink = Color(0xFF14201A);
-  static const ink2 = Color(0xFF46534B);
-  static const ink3 = Color(0xFF58675E);
+  static const sand = Color(0xFFEDF2F8);
+  static const line = Color(0xFFDCE5F0);
+  static const ink = Color(0xFF14243B);
+  static const ink2 = Color(0xFF46566F);
+  static const ink3 = Color(0xFF64748B);
 
-  // Green-black neutrals (dark)
-  static const nightBg = Color(0xFF080D09);
-  static const nightSurface = Color(0xFF111812);
-  static const nightSurface2 = Color(0xFF1A241C);
-  static const nightLine = Color(0xFF26322A);
-  static const nightInk = Color(0xFFF4F7F2);
-  static const nightInk2 = Color(0xFFB4BFB6);
-  static const nightInk3 = Color(0xFFA3B2A7);
+  // Navy neutrals (dark)
+  static const nightBg = Color(0xFF070F1D);
+  static const nightSurface = Color(0xFF101C2D);
+  static const nightSurface2 = Color(0xFF182841);
+  static const nightLine = Color(0xFF263B56);
+  static const nightInk = Color(0xFFF3F7FD);
+  static const nightInk2 = Color(0xFFB8C5D6);
+  static const nightInk3 = Color(0xFF9FB0C5);
 
   // Semantic
   static const success = g500;
-  static const warning = Color(0xFFF59E0B);
+  static const warning = Color(0xFFF15A24);
   static const danger = Color(0xFFE5484D);
   static const info = Color(0xFF3B82F6);
 }
 
-/// One status colour language shared by every Grozo surface (apps + dashboard).
+/// One status colour language shared by every Splyzo surface (apps + dashboard).
 enum KStatus { placed, accepted, preparing, ready, pickedUp, atGate, delivered, cancelled }
 
 extension KStatusX on KStatus {

@@ -113,7 +113,7 @@ export function TeamPanel({currentAdminId}:{currentAdminId:string}){
    </section>}
 
    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-     <div className="flex items-center gap-3"><ShieldCheck size={22} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Grant administrator access</h2><p className="mt-1 text-sm text-slate-500">The person must have a verified primary email in the current Clerk instance and an active BuildTo user profile.</p></div></div>
+     <div className="flex items-center gap-3"><ShieldCheck size={22} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Grant administrator access</h2><p className="mt-1 text-sm text-slate-500">The person must have a verified primary email in the current Clerk instance and an active Splyzo user profile.</p></div></div>
      <form onSubmit={e=>{void grant(e);}} className="mt-5 grid gap-4 md:grid-cols-2">
        <label className="text-sm font-semibold">Verified Clerk email<input type="email" required maxLength={320} value={email} onChange={e=>setEmail(e.target.value)} placeholder="operator@example.com" className="mt-2 block w-full rounded-lg border border-slate-300 p-3"/></label>
        <label className="text-sm font-semibold">Admin role<select value={role} onChange={e=>setRole(e.target.value as AdminRole)} className="mt-2 block w-full rounded-lg border border-slate-300 bg-white p-3">{ADMIN_ROLES.map(value=><option key={value} value={value}>{value}</option>)}</select></label>

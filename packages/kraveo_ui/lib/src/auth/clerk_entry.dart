@@ -56,7 +56,7 @@ class _ClerkEntryScreenState extends State<ClerkEntryScreen> {
     } catch (_) {
       if (mounted)
         setState(() => message =
-            'Grozo could not verify access. Check the connection and your account permissions, then retry.');
+            'Splyzo could not verify access. Check the connection and your account permissions, then retry.');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -84,12 +84,12 @@ class _ClerkEntryScreenState extends State<ClerkEntryScreen> {
               Text(
                   widget.preview
                       ? 'Clerk test authentication preview'
-                      : 'Secure Grozo account',
+                      : 'Secure Splyzo account',
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
               Text(widget.preview
                   ? 'Test sign-in on this phone. A staging backend is not configured, so shopping, store operations and deliveries are unavailable in this preview.'
-                  : 'Sign in or create an account. Store and delivery access require separate Grozo approval.'),
+                  : 'Sign in or create an account. Store and delivery access require separate Splyzo approval.'),
               if (widget.preview)
                 const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -131,7 +131,7 @@ class _ClerkEntryScreenState extends State<ClerkEntryScreen> {
                                   onPressed: busy
                                       ? null
                                       : () => _run(widget.onContinue!),
-                                  child: const Text('Verify Grozo access')),
+                                  child: const Text('Verify Splyzo access')),
                             if (state.signedIn && widget.onApply != null)
                               OutlinedButton(
                                   onPressed: busy ? null : widget.onApply,

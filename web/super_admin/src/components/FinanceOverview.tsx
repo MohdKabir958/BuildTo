@@ -30,7 +30,7 @@ const SummaryCards: React.FC<{ s: FinanceSummary }> = ({ s }) => (
     <Stat label="Store amount" value={rupees(s.vendorAmount)} note="What the stores earn" />
     <Stat label="Commission" value={rupees(s.commission)} />
     <Stat label="Fees collected" value={rupees(s.feesCollected)} note="Delivery and service fee" />
-    <Stat label="Discounts" value={rupees(s.discounts)} note="Coupons paid by Grozo" />
+    <Stat label="Discounts" value={rupees(s.discounts)} note="Coupons paid by Splyzo" />
     <Stat label="Platform revenue" value={rupeesSigned(s.platformRevenue)} note="Commission + fees - discounts" tone={s.platformRevenue < 0 ? 'bad' : 'good'} />
     <Stat label="Refunds" value={rupees(s.refunds.amount)} note={`${s.refunds.count} ${s.refunds.count === 1 ? 'order' : 'orders'}`} />
     <Stat label="Settled" value={rupees(s.settledAmount)} note="In a settlement" />

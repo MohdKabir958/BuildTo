@@ -9,7 +9,7 @@
     <application
         android:label="@string/app_name"
         android:name="com.grozo.clerk.GrozoClerkApplication"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/splyzo_launcher"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules">
 
@@ -47,7 +47,7 @@
             android:value="order_updates"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_stat_buildto"/>
+            android:resource="@drawable/ic_stat_splyzo"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/kraveo_notification_color"/>

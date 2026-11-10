@@ -3,7 +3,7 @@ import '../theme/tokens.dart';
 import '../tokens/colors.dart';
 import '../brand_config.dart';
 
-/// The shared Grozo wordmark. A light badge keeps it readable on dark surfaces.
+/// The shared Splyzo logo. A light badge keeps it readable on dark surfaces.
 class KBrandMark extends StatelessWidget {
   const KBrandMark({super.key, this.height = 56});
   final double height;

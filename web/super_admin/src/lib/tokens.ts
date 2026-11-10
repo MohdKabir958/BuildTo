@@ -2,17 +2,17 @@
 // Mirrors tailwind.config.js and packages/kraveo_ui (KraveoPalette, KStatus).
 
 export const palette = {
-  g400: '#43AE55',
-  g500: '#23913A',
-  g800: '#005A26',
-  yellow: '#85D900',
-  night: '#F6F8F6',
+  g400: '#4A8EDC',
+  g500: '#216BC2',
+  g800: '#0B2D67',
+  yellow: '#F15A24',
+  night: '#F5F8FC',
   surface: '#FFFFFF',
-  surface2: '#EEF3EF',
-  line: '#DDE5DF',
-  ink: '#14201A',
-  ink2: '#46534B',
-  ink3: '#58675E',
+  surface2: '#EDF2F8',
+  line: '#DCE5F0',
+  ink: '#14243B',
+  ink2: '#46566F',
+  ink3: '#64748B',
   danger: '#B42332',
 } as const;
 

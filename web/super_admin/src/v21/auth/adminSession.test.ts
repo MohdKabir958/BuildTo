@@ -9,11 +9,11 @@ afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();localStorage.clear();}
 describe('A02: Clerk token and server-authoritative role gate',()=>{
   it('checks me and admin access using an in-memory bearer token, never persistent storage',async()=>{
     const fetch=vi.fn(async (url:string,_init?:RequestInit)=>url.endsWith('/me')
-      ?response({id:userId,displayName:'BuildTo Operator',adminRole:'CATALOG',suppliers:[]})
+      ?response({id:userId,displayName:'Splyzo Operator',adminRole:'CATALOG',suppliers:[]})
       :response({role:'CATALOG'}));
     vi.stubGlobal('fetch',fetch);
     const session=await fetchAdminSession('https://buildto-v21-staging.onrender.com','valid-session-token');
-    expect(session).toEqual({id:userId,displayName:'BuildTo Operator',role:'CATALOG'});
+    expect(session).toEqual({id:userId,displayName:'Splyzo Operator',role:'CATALOG'});
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch.mock.calls.map(x=>x[0])).toEqual([
       'https://buildto-v21-staging.onrender.com/api/v2/me',

@@ -1,5 +1,5 @@
 name: customer_app
-description: "Buildto customer construction materials shopping app"
+description: "Splyzo customer construction materials shopping app"
 publish_to: 'none'
 version: 1.9.0+15
 
@@ -42,4 +42,4 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: ../../branding/assets/buildto-icon.png
+  image_path: ../../branding/assets/splyzo-icon.png

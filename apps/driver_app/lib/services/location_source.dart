@@ -61,7 +61,7 @@ LocationSettings? dutyLocationSettings({TargetPlatform? platform}) {
       notificationTitle: kDutyNotificationTitle,
       notificationText: kDutyNotificationText,
       notificationChannelName: kDutyNotificationChannelName,
-      notificationIcon: AndroidResource(name: 'ic_stat_grozo', defType: 'drawable'),
+      notificationIcon: AndroidResource(name: 'ic_stat_splyzo', defType: 'drawable'),
       setOngoing: true,
       enableWakeLock: false,
       enableWifiLock: false,

@@ -4,7 +4,7 @@ import '../design/buildto_theme.dart';
 import 'supplier_application_models.dart';
 
 /// Four-step supplier application with the same navy, amber and card language
-/// as the approved BuildTo customer design reference.
+/// as the approved Splyzo customer design reference.
 class SupplierRegistrationWizard extends StatefulWidget {
   const SupplierRegistrationWizard({
     super.key,
@@ -293,7 +293,7 @@ class _SupplierRegistrationWizardState
                       icon: Icons.fact_check_outlined,
                       message:
                           'Submission creates a PENDING supplier application, not an approved business. '
-                          'BuildTo operations will independently verify your documents.',
+                          'Splyzo operations will independently verify your documents.',
                     ),
                   ],
                 ],

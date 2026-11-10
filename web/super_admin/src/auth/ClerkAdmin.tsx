@@ -14,8 +14,8 @@ function SignInUnavailable({blockedResource = ''}: {blockedResource?: string}) {
     <h1 className="text-3xl">Secure sign-in could not load</h1>
     <p>Check your connection and browser privacy settings, then reload this page.</p>
     {blockedResource && <p>{blockedResource}</p>}
-    <p>If this continues, share the first red browser console error with the Grozo operator. Do not share session tokens.</p>
-    <button className="rounded-lg bg-green-800 px-6 py-3 text-white" onClick={() => window.location.reload()}>Reload sign-in</button>
+    <p>If this continues, share the first red browser console error with the Splyzo operator. Do not share session tokens.</p>
+    <button className="rounded-lg bg-kraveo-g800 px-6 py-3 text-white" onClick={() => window.location.reload()}>Reload sign-in</button>
   </section></AdminWelcome>;
 }
 
@@ -29,7 +29,7 @@ function SignInLoading() {
       let origin: string;
       try { origin = new URL(event.blockedURI).origin; } catch { return; }
       if (!['script-src', 'script-src-elem', 'connect-src', 'frame-src'].includes(event.effectiveDirective)) return;
-      setBlockedResource(`The browser blocked ${origin} (${event.effectiveDirective}). Contact the Grozo operator to review the site's security policy.`);
+      setBlockedResource(`The browser blocked ${origin} (${event.effectiveDirective}). Contact the Splyzo operator to review the site's security policy.`);
     };
     document.addEventListener('securitypolicyviolation', onPolicyViolation);
     return () => { window.clearTimeout(timer); document.removeEventListener('securitypolicyviolation', onPolicyViolation); };
@@ -52,22 +52,22 @@ function AdminSession() {
     installClerkTokenGetter(force => getToken({skipCache:force}));
     apiService.validateSession().then(profile => { if (active) {setAdmin(profile);setVerifiedFor(`${userId}:${sessionId}`);} })
       .catch(reason => { if (active) setError(reason instanceof ApiError && reason.status === 403
-        ? 'This account has not been approved as a Grozo administrator.'
+        ? 'This account has not been approved as a Splyzo administrator.'
         : reason instanceof ApiError && reason.status === 401
-        ? 'Grozo could not authenticate this Clerk session (401). Sign out and retry. If this continues, ask the operator to check the Clerk instance and allowed website origin.'
-        : 'Grozo could not verify administrator access. Check the connection and retry.'); });
+        ? 'Splyzo could not authenticate this Clerk session (401). Sign out and retry. If this continues, ask the operator to check the Clerk instance and allowed website origin.'
+        : 'Splyzo could not verify administrator access. Check the connection and retry.'); });
     return () => { active = false; installClerkTokenGetter(null); };
   }, [isLoaded,isSignedIn,userId,sessionId,getToken,retry]);
   if (!isLoaded) return <main className="p-8" role="status">Loading secure sign-in…</main>;
-  if (!isSignedIn) return <AdminWelcome><div className="mb-6"><p className="k-label">Team sign-in</p><h2 className="mt-3 text-3xl font-bold tracking-tight">Welcome to your workspace</h2><p className="mt-3 text-sm leading-relaxed text-kraveo-ink2">Sign in with the email your owner has approved. New team members can create an account and verify that same email.</p></div><SignIn routing="hash" appearance={{variables:{colorPrimary:'#086331',colorForeground:'#17231d',colorMutedForeground:'#5e7066',colorBackground:'#ffffff',borderRadius:'12px',fontFamily:'inherit'},elements:{rootBox:'w-full',cardBox:'w-full shadow-none',card:'border border-kraveo-line shadow-none',headerTitle:'text-lg',headerSubtitle:'text-sm',formButtonPrimary:'bg-kraveo-g800'}}}/></AdminWelcome>;
-  if (!admin || verifiedFor !== `${userId}:${sessionId}`) return <AdminWelcome><section className="k-panel space-y-5" aria-live="polite"><ShieldCheck className="h-9 w-9 text-kraveo-g700"/><div><p className="k-label">Workspace access</p><h2 className="mt-2 text-2xl font-bold">{error?'Your sign-in is complete':'Checking your access'}</h2></div><p className="text-sm leading-relaxed text-kraveo-ink2">{error || 'Checking server permissions…'}</p>{error?.includes('not been approved')&&<p className="rounded-k-md bg-kraveo-surface2 p-4 text-sm">Ask a Grozo owner to add your verified email in <strong>Team & access</strong>. You do not need a shared passcode.</p>}<div className="flex flex-wrap gap-3">{error&&<button className="k-btn-primary" onClick={()=>setRetry(v=>v+1)}>Retry</button>}<button className="k-btn-ghost" onClick={()=>void signOut()}>Sign out</button></div></section></AdminWelcome>;
-  return <><div className="fixed bottom-4 right-4 z-50" aria-label="Clerk account"><UserButton /></div><App clerkAdmin={admin} onClerkSignOut={() => void signOut()} onClerkDenied={() => {setAdmin(undefined);setError('Your administrator session could not be authorized. Sign in again or contact Grozo support.');}} /></>;
+  if (!isSignedIn) return <AdminWelcome><div className="mb-6"><p className="k-label">Team sign-in</p><h2 className="mt-3 text-3xl font-bold tracking-tight">Welcome to your workspace</h2><p className="mt-3 text-sm leading-relaxed text-kraveo-ink2">Sign in with the email your owner has approved. New team members can create an account and verify that same email.</p></div><SignIn routing="hash" appearance={{variables:{colorPrimary:'#0B2D67',colorForeground:'#17231d',colorMutedForeground:'#5e7066',colorBackground:'#ffffff',borderRadius:'12px',fontFamily:'inherit'},elements:{rootBox:'w-full',cardBox:'w-full shadow-none',card:'border border-kraveo-line shadow-none',headerTitle:'text-lg',headerSubtitle:'text-sm',formButtonPrimary:'bg-kraveo-g800'}}}/></AdminWelcome>;
+  if (!admin || verifiedFor !== `${userId}:${sessionId}`) return <AdminWelcome><section className="k-panel space-y-5" aria-live="polite"><ShieldCheck className="h-9 w-9 text-kraveo-g700"/><div><p className="k-label">Workspace access</p><h2 className="mt-2 text-2xl font-bold">{error?'Your sign-in is complete':'Checking your access'}</h2></div><p className="text-sm leading-relaxed text-kraveo-ink2">{error || 'Checking server permissions…'}</p>{error?.includes('not been approved')&&<p className="rounded-k-md bg-kraveo-surface2 p-4 text-sm">Ask a Splyzo owner to add your verified email in <strong>Team & access</strong>. You do not need a shared passcode.</p>}<div className="flex flex-wrap gap-3">{error&&<button className="k-btn-primary" onClick={()=>setRetry(v=>v+1)}>Retry</button>}<button className="k-btn-ghost" onClick={()=>void signOut()}>Sign out</button></div></section></AdminWelcome>;
+  return <><div className="fixed bottom-4 right-4 z-50" aria-label="Clerk account"><UserButton /></div><App clerkAdmin={admin} onClerkSignOut={() => void signOut()} onClerkDenied={() => {setAdmin(undefined);setError('Your administrator session could not be authorized. Sign in again or contact Splyzo support.');}} /></>;
 }
 export function ClerkAdminRoot() {
   const mode = import.meta.env.VITE_AUTH_MODE;
   const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
   if (!['clerk-test','clerk'].includes(mode || '') || !key.startsWith(mode === 'clerk-test' ? 'pk_test_' : 'pk_live_')) {
-    return <main role="alert" className="p-8">Clerk configuration is missing or does not match this environment. Contact the Grozo operator.</main>;
+    return <main role="alert" className="p-8">Clerk configuration is missing or does not match this environment. Contact the Splyzo operator.</main>;
   }
   return <ClerkProvider publishableKey={key} afterSignOutUrl="/">
     <ClerkLoading><SignInLoading /></ClerkLoading>

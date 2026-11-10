@@ -108,7 +108,7 @@ class PaymentSession {
       required this.amountPaise,
       this.currency = 'INR'});
 
-  /// Grozo order id.
+  /// Splyzo order id.
   final String orderId;
   final String keyId;
   final String razorpayOrderId;

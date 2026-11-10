@@ -9,7 +9,7 @@ class StockCard extends StatelessWidget {
   final VoidCallback onToggleStock;
   final Function(double newPrice) onUpdatePrice;
 
-  /// Sends a rejected dish to Grozo again with this price. Without it, a rejected dish uses [onUpdatePrice].
+  /// Sends a rejected dish to Splyzo again with this price. Without it, a rejected dish uses [onUpdatePrice].
   final Function(double price)? onResubmit;
 
   const StockCard({
@@ -177,7 +177,7 @@ class StockCard extends StatelessWidget {
   }
 }
 
-/// What is happening with this dish at Grozo: waiting, a price change waiting (old price stays live), or the
+/// What is happening with this dish at Splyzo: waiting, a price change waiting (old price stays live), or the
 /// rejection reason with a button to send it again.
 class _ApprovalNote extends StatelessWidget {
   const _ApprovalNote({required this.dish, required this.onResubmit});
@@ -434,7 +434,7 @@ class _PriceEditSheetState extends State<_PriceEditSheet> {
 
   bool get _rejected => widget.dish.status == DishStatus.rejected;
 
-  /// A live dish's price is a request: Grozo approves it, and the old price stays live until then.
+  /// A live dish's price is a request: Splyzo approves it, and the old price stays live until then.
   bool get _asksApproval => widget.dish.statusKnown && widget.dish.isLive;
 
   String _helperText() {

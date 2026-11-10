@@ -43,7 +43,7 @@ class MenuItemModel {
     this.imageUrls = const [],
     this.isVeg = true,
     this.customizationGroups = const [],
-    this.brand = 'Buildto Verified',
+    this.brand = 'Splyzo Verified',
     this.materialType = 'Standard Grade',
     this.weight = '',
     this.minOrder = 1,
@@ -140,7 +140,7 @@ class MenuItemModel {
                   CustomizationGroup.fromJson(cg as Map<String, dynamic>))
               .toList() ??
           [],
-      brand: json['brand'] ?? 'Buildto Verified',
+      brand: json['brand'] ?? 'Splyzo Verified',
       materialType: json['type'] ?? json['materialType'] ?? 'Standard Grade',
       weight: json['weight'] ?? '',
       minOrder: json['minOrder'] is num ? (json['minOrder'] as num).toInt() : 1,

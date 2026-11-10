@@ -13,7 +13,7 @@ enum SessionStatus {
   checking,
   signedOut,
 
-  /// A token is stored but Grozo could not be reached to validate it.
+  /// A token is stored but Splyzo could not be reached to validate it.
   unreachable,
   signedIn,
 }
@@ -39,7 +39,7 @@ class SessionController extends ChangeNotifier {
   bool _expiring = false;
   String? _signOutNotice;
 
-  /// The duty Grozo reported at the last successful login / profile read, and when that request was sent.
+  /// The duty Splyzo reported at the last successful login / profile read, and when that request was sent.
   /// A separate notifier so the work screen can mirror it without rebuilding the whole app on every poll.
   final ValueNotifier<DutyReading?> dutyReading = ValueNotifier<DutyReading?>(null);
 
@@ -83,7 +83,7 @@ class SessionController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(sessionPrefKey);
-      // "On duty" belongs to the rider who chose it, not to the phone: the next login starts from what Grozo says.
+      // "On duty" belongs to the rider who chose it, not to the phone: the next login starts from what Splyzo says.
       await prefs.remove(RiderController.dutyPrefKey);
     } catch (_) {}
   }
@@ -177,7 +177,7 @@ class SessionController extends ChangeNotifier {
         await _persist(merged);
         _set(SessionStatus.signedIn, merged);
       } else {
-        // Grozo accepted it (200) without sending the account back: read the new state ourselves.
+        // Splyzo accepted it (200) without sending the account back: read the new state ourselves.
         await refreshApproval();
       }
     } else if (result.failure == SignupFailure.unauthorized) {
@@ -186,7 +186,7 @@ class SessionController extends ChangeNotifier {
     return result;
   }
 
-  /// Asks Grozo where the application stands. Returns true when something changed. Safe to call
+  /// Asks Splyzo where the application stands. Returns true when something changed. Safe to call
   /// from a timer: a network problem keeps the current state.
   Future<bool> refreshApproval() async {
     if (_status != SessionStatus.signedIn) return false;
@@ -258,7 +258,7 @@ class SessionController extends ChangeNotifier {
   }
 }
 
-/// What Grozo said about the rider's duty ([status]: `ONLINE`, `IN_TRANSIT`, `OFFLINE` or null when it did not
+/// What Splyzo said about the rider's duty ([status]: `ONLINE`, `IN_TRANSIT`, `OFFLINE` or null when it did not
 /// say) in an answer to a request sent at [asOf].
 class DutyReading {
   const DutyReading(this.status, this.asOf);

@@ -100,7 +100,7 @@ export function RefundPayoutPanel(){
   setBusy(true);setError('');setNotice('');
   try{
    await call();setAction(null);await load();if(supplier)await loadSupplier(supplier);
-   setNotice('Evidence review recorded. No outgoing provider payment request was made by BuildTo; independently verify the returned state.');
+   setNotice('Evidence review recorded. No outgoing provider payment request was made by Splyzo; independently verify the returned state.');
   }catch(e){setError(errors(e));}finally{setBusy(false);}
  }
  const prompts:Record<Action['type'],string>={
@@ -124,7 +124,7 @@ export function RefundPayoutPanel(){
    <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
     <ShieldCheck size={16} className="mr-2 inline"/>Refund SUCCEEDED means provider processed, not customer bank credit.
     Payout SUCCEEDED means provider processed, not independently verified bank debit.
-    BuildTo has no automatic refund or payout execution endpoint.
+    Splyzo has no automatic refund or payout execution endpoint.
    </p>
    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Finance evidence sections">
     {(['refunds','payouts','beneficiaries'] as const).map(t=><button key={t} type="button" role="tab" aria-selected={tab===t} onClick={()=>{setTab(t);setAction(null);}}
