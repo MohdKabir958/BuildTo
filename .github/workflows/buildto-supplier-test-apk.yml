@@ -4,6 +4,7 @@ on:
     branches:
       - buildto/supplier-apk-test-20261106
       - fix/v21-backend-audit-all-phases
+      - buildto/supplier-staging-apk-20261110
       - main
     paths:
       - '.github/workflows/buildto-supplier-test-apk.yml'
@@ -39,11 +40,11 @@ jobs:
         run: flutter pub get --enforce-lockfile
       - name: Verify all supplier Dart tests and source
         working-directory: apps/vendor_app
-        continue-on-error: true
         run: |
-          dart format lib/v21 test/v21 || true
-          flutter analyze --no-pub --no-fatal-infos lib/v21 test/v21 || true
-          flutter test --no-pub --concurrency=2 test/v21 || true
+          set -euo pipefail
+          dart format --output=none --set-exit-if-changed lib/v21 test/v21
+          flutter analyze --no-pub --no-fatal-infos lib/v21 test/v21
+          flutter test --no-pub --concurrency=2 test/v21
       - name: Apply BuildTo-specific launcher branding to test artifacts only
         run: |
           set -euo pipefail
@@ -77,11 +78,11 @@ jobs:
           set -euo pipefail
           cd build/buildto-supplier-test
           sha256sum *.apk > SHA256SUMS.txt
-          cat > README-INSTALL.txt <<'EOF'
+          cat > README-INSTALL.txt <<EOF
           BuildTo Supplier Android V2.1 - ARM64 test APKs (NOT Play Store releases)
           Source: github.com/MohdKabir958/BuildTo
-          Code: S00-S14 fully merged into main, workflow started from main's
-            d70052b34bf989a12dd3f60d90637128d052682c
+          Source branch: ${GITHUB_REF_NAME}
+          Source commit: ${GITHUB_SHA}
           Flutter: 3.44.9, Android debug signatures, ARM64 only.
           
           BuildTo-Supplier-Staging-ARM64.apk
