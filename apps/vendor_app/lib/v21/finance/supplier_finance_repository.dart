@@ -19,7 +19,7 @@ String financeMoney(String paise) =>
 DateTime financeUtc(Object? value) {
   final raw = catalogString(value, max: 50);
   final parsed = DateTime.tryParse(raw);
-  if (!raw.endsWith('Z') || parsed == null || !parsed.isUtc) {
+  if (parsed == null) {
     throw const FormatException('Expected a UTC timestamp');
   }
   return parsed;

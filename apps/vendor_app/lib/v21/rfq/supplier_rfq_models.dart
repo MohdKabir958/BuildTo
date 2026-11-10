@@ -3,11 +3,8 @@ import '../delivery/supplier_delivery_models.dart';
 
 DateTime rfqTimestamp(Object? input) {
   final value = catalogString(input, max: 50);
-  if (!value.endsWith('Z')) {
-    throw const FormatException('Expected a UTC RFQ timestamp');
-  }
   final parsed = DateTime.tryParse(value);
-  if (parsed == null || !parsed.isUtc) {
+  if (parsed == null) {
     throw const FormatException('Invalid RFQ timestamp');
   }
   return parsed;

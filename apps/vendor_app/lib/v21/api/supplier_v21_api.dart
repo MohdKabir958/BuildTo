@@ -239,6 +239,12 @@ class SupplierV21Api {
     } on http.ClientException {
       throw const SupplierV21Exception(SupplierV21Problem.network,
           code: 'NETWORK_UNAVAILABLE');
+    } on SupplierV21Exception {
+      rethrow;
+    } catch (e) {
+      if (e is ArgumentError || e is StateError) rethrow;
+      throw const SupplierV21Exception(SupplierV21Problem.network,
+          code: 'NETWORK_UNAVAILABLE');
     }
   }
 }

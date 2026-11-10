@@ -204,23 +204,26 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
     }
   }
 
-  Future<void> _activateWarehouse(SupplierWarehouse warehouse) async {
-    if (!widget.canWrite || warehouse.active) return;
+  Future<void> _toggleWarehouseActive(SupplierWarehouse warehouse) async {
+    if (!widget.canWrite) return;
+    final nextState = !warehouse.active;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
-        title: const Text('Activate warehouse?'),
+        title: Text(nextState ? 'Activate warehouse?' : 'Deactivate warehouse?'),
         content: Text(
-          'Enable ${warehouse.name} for verified stock operations?',
+          nextState
+              ? 'Enable ${warehouse.name} for verified stock operations?'
+              : 'Deactivate ${warehouse.name}? Stock in this warehouse cannot be dispatched until re-activated.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(dialog, true),
-            child: const Text('Activate'),
+            child: Text(nextState ? 'Activate' : 'Deactivate'),
           ),
         ],
       ),
@@ -230,14 +233,16 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
       await widget.repository.updateWarehouse(
         widget.supplierId,
         warehouse,
-        active: true,
+        active: nextState,
       );
       if (mounted) await refresh();
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to activate. Refresh your warehouse list.'),
+          SnackBar(
+            content: Text(
+              'Unable to ${nextState ? "activate" : "deactivate"}. Refresh your warehouse list.',
+            ),
           ),
         );
         await refresh();

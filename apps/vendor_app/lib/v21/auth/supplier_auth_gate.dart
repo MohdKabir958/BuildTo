@@ -27,10 +27,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   bool _ownsController = false;
   bool _applicationsOpen = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
+  void _initController() {
     if (widget.controller != null) {
       _controller = widget.controller;
     } else {
@@ -52,6 +49,13 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
       }
     }
     if (_controller != null) unawaited(_controller!.start());
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initController();
   }
 
   @override
@@ -107,6 +111,16 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                 title: 'Secure setup required',
                 subtitle: _setupFailure!,
                 icon: Icons.admin_panel_settings_outlined,
+                actions: [
+                  _AccessAction(
+                    'Retry setup',
+                    Icons.refresh_rounded,
+                    () => setState(() {
+                      _setupFailure = null;
+                      _initController();
+                    }),
+                  ),
+                ],
               ),
       );
 }

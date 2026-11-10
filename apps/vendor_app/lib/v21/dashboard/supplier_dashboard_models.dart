@@ -201,7 +201,7 @@ String _uuid(Object? value, String label) {
 DateTime _date(Object? value, String label) {
   if (value is! String) throw FormatException('Missing $label');
   final parsed = DateTime.tryParse(value);
-  if (parsed == null || !value.endsWith('Z')) {
+  if (parsed == null) {
     throw FormatException('Invalid $label');
   }
   return parsed;

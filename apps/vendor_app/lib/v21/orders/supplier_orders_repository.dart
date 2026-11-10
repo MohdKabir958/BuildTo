@@ -48,7 +48,7 @@ class SupplierOrder {
     final json = catalogObject(value);
     final timestamp = catalogString(json['createdAt'], max: 40);
     final parsed = DateTime.tryParse(timestamp);
-    if (!timestamp.endsWith('Z') || parsed == null || !parsed.isUtc) {
+    if (parsed == null) {
       throw const FormatException('Invalid supplier order date');
     }
     final items = deliveryRows(
