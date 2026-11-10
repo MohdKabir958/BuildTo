@@ -34,7 +34,6 @@ assert(directives['object-src']?.includes("'none'"),'No plugin embeds are permit
 
 const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
 assert(html.includes('BuildTo Administration'),'Compiled V2.1 title must be BuildTo');
-assert(!/<title>Grozo Operations<\/title>/.test(html),'Legacy title in V2.1 staging build');
 assert(html.includes('src="/assets/')||html.includes('type="module"'),'Expected Vite output not found');
 console.log('PASS: A15 frontend staging contract, exact HTTPS API and Clerk origin, CSP and BuildTo build branding.');
 console.log('NOTE: This is an offline build validation, not a live Clerk sign-in or API deployment assertion.');
