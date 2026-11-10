@@ -210,7 +210,8 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
-        title: Text(nextState ? 'Activate warehouse?' : 'Deactivate warehouse?'),
+        title:
+            Text(nextState ? 'Activate warehouse?' : 'Deactivate warehouse?'),
         content: Text(
           nextState
               ? 'Enable ${warehouse.name} for verified stock operations?'

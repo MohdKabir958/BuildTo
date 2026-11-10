@@ -167,8 +167,7 @@ class _SupplierAccessView extends StatelessWidget {
     if (stage == SupplierAccessStage.checking) {
       return _AccessScaffold(
         title: 'Verifying your supplier account',
-        subtitle:
-            'Checking your Clerk session and current Splyzo permissions.',
+        subtitle: 'Checking your Clerk session and current Splyzo permissions.',
         icon: Icons.shield_outlined,
         loading: true,
         actions: [
@@ -247,7 +246,8 @@ class _SupplierAccessView extends StatelessWidget {
               () => controller.authenticate(mode: 'signUp'),
               outlined: true,
             ),
-            _AccessAction(
+            if (controller.notice != null)
+              _AccessAction(
                 'Retry Clerk connection',
                 Icons.refresh_rounded,
                 controller.retryClerkInitialization,

@@ -118,7 +118,8 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
     if (cities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No serviceable cities available. Contact Splyzo admin.'),
+          content:
+              Text('No serviceable cities available. Contact Splyzo admin.'),
         ),
       );
       return;
@@ -183,8 +184,7 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                     }
                     final areas = snapshot.data!;
                     if (areas.isEmpty) {
-                      return const Text(
-                          'No active Splyzo areas in this city.');
+                      return const Text('No active Splyzo areas in this city.');
                     }
                     return DropdownButtonFormField<String>(
                       key: ValueKey(cityId),

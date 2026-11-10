@@ -128,7 +128,8 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No active warehouse found. Please activate a warehouse in the Stock tab first.'),
+          content: Text(
+              'No active warehouse found. Please activate a warehouse in the Stock tab first.'),
         ),
       );
       return;

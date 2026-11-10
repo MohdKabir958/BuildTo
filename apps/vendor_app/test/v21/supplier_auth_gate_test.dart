@@ -154,6 +154,8 @@ void main() {
     expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     expect(find.text('Sign in to my account'), findsOneWidget);
     expect(find.text('Create a new account'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.pumpAndSettle();
     expect(find.text('Retry Clerk connection'), findsOneWidget);
     await tester.ensureVisible(find.text('Retry Clerk connection'));
     await tester.pumpAndSettle();
