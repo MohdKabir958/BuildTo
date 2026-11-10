@@ -50,7 +50,8 @@ jobs:
             lib/v21/delivery/supplier_delivery_view.dart \
             lib/v21/inventory/supplier_inventory_view.dart \
             lib/v21/shipments/supplier_shipments_repository.dart \
-            lib/v21/shipments/supplier_shipments_view.dart; do
+            lib/v21/shipments/supplier_shipments_view.dart \
+            test/v21/supplier_design_test.dart; do
             echo "SPLIZO_FORMAT_BEGIN:$file"
             base64 -w0 "$file"
             echo
