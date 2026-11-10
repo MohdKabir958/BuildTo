@@ -4,8 +4,11 @@ import 'package:vendor_app/v21/screens/supplier_shell.dart';
 import 'package:vendor_app/v21/design/buildto_components.dart';
 import 'package:vendor_app/v21/design/buildto_theme.dart';
 
-Future<void> pumpPhone(WidgetTester tester, Size size,
-    {double scale = 1}) async {
+Future<void> pumpPhone(
+  WidgetTester tester,
+  Size size, {
+  double scale = 1,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(() {
