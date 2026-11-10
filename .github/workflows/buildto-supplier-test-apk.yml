@@ -43,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           dart format lib/v21 test/v21
-          # Export the canonical formatter output so formatting-only changes can be committed
+          # Export the canonical formatter output, including the design test, so formatting-only changes can be committed
           # back to the feature branch instead of being silently modified only in CI.
           for file in \
             lib/v21/auth/supplier_auth_gate.dart \
