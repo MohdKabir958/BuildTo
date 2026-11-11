@@ -26,6 +26,12 @@ const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', de
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // The customer client showroom is offline by design. Avoid initializing
+  // Firebase, authentication, background notifications, or live backend calls.
+  if (kBuildtoOfflineDemo) {
+    runApp(const KraveoCustomerApp());
+    return;
+  }
   // Push is an addition: the real Firebase layer starts after the first frame (AuthGate) and
   // can fail without affecting anything else.
   final push = PushService(

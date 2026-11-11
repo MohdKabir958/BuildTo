@@ -1,0 +1,94 @@
+name: BuildTo Customer Client Photo UI Preview APK
+
+on:
+  push:
+    branches:
+      - buildto/customer-photo-ui-preview-20261106
+    paths:
+      - '.github/workflows/buildto-customer-client-photo-preview.yml'
+      - 'apps/customer_app/**'
+      - 'packages/**'
+      - 'branding/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-client-showroom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      ORG_GRADLE_PROJECT_disableFirebase: 'true'
+      GROZO_AUTH_MODE: legacy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Resolve dependencies from lockfile
+        working-directory: apps/customer_app
+        run: flutter pub get --enforce-lockfile
+      - name: Analyze customer Flutter UI
+        working-directory: apps/customer_app
+        run: |
+          dart format lib/widgets/ui/customer_photo_rail.dart \
+                      lib/screens/customer_preview_addresses_screen.dart \
+                      test/customer_client_photo_preview_test.dart
+          flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+      - name: Test photo shortcuts and purchase flow
+        working-directory: apps/customer_app
+        run: |
+          flutter test --no-pub \
+            test/customer_client_photo_preview_test.dart \
+            test/catalog_test.dart \
+            test/cart_moq_pricing_test.dart \
+            test/checkout_order_test.dart \
+            test/order_management_test.dart
+      - name: Isolate client demo app package and label
+        run: |
+          sed -i 's#^customer.applicationId=.*#customer.applicationId=in.buildto.customer.clientpreview#' branding/android.properties
+          sed -i 's#^customer.label=.*#customer.label=BuildTo Customer Demo#' branding/android.properties
+          sed -i 's#>Buildto<#>BuildTo Customer Demo<#' apps/customer_app/android/app/src/main/res/values/branding.xml
+      - name: Compile offline photo-rich ARM64 Android APK
+        working-directory: apps/customer_app
+        run: |
+          flutter build apk --debug --no-pub \
+            --split-per-abi --target-platform android-arm64 \
+            --dart-define=BUILDTO_OFFLINE_DEMO=true \
+            --dart-define=BUILDTO_CUSTOMER_CLIENT_SHOWCASE=true
+          mkdir -p ../../build/customer-client-preview
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk \
+            ../../build/customer-client-preview/BuildTo-Customer-Client-Photo-Preview-ARM64.apk
+      - name: Include integrity manifest and client instructions
+        run: |
+          cd build/customer-client-preview
+          sha256sum *.apk > SHA256SUMS.txt
+          cat > README.txt <<'EOF'
+          BuildTo CUSTOMER Flutter client preview (Android ARM64 / debug signed)
+          Package: in.buildto.customer.clientpreview
+          Open the app: Home with curated construction-material photos.
+          Navigate Home, Categories, Cart and Profile; open material/photo cards.
+          Use product details, quantity picker, wishlist, demo checkout,
+          sample orders, simulated tracking and local delivery-site picker.
+          All photos are bundled in assets/images and assets/products.
+          No login, Firebase session, Clerk account or backend required.
+          Catalog and orders are sample data. Checkout is simulated.
+          No real payments, deliveries or customer records are processed.
+          This APK is not a production release, and physical-device visual QA
+          remains necessary before any presentation.
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BuildTo-Customer-Client-Photo-Preview-ARM64
+          path: build/customer-client-preview/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
