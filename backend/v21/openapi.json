@@ -11752,6 +11752,114 @@
           }
         }
       }
+    },
+    "/api/v2/me/wishlist": {
+      "get": {
+        "operationId": "getV21CustomerWishlist",
+        "summary": "List current customer wishlist",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authenticated customer response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          }
+        }
+      }
+    },
+    "/api/v2/me/wishlist/{listingId}": {
+      "put": {
+        "operationId": "putV21CustomerWishlist",
+        "summary": "Add approved supplier listing to customer wishlist",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authenticated customer response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteV21CustomerWishlist",
+        "summary": "Remove customer wishlist entry",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authenticated customer response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          }
+        }
+      }
+    },
+    "/api/v2/me/notifications": {
+      "get": {
+        "operationId": "getV21CustomerNotifications",
+        "summary": "Paginated private notification inbox",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authenticated customer response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          }
+        }
+      }
+    },
+    "/api/v2/me/notifications/{notificationId}/read": {
+      "post": {
+        "operationId": "postV21CustomerNotificationRead",
+        "summary": "Mark owned notification read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authenticated customer response"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Not found or not owned"
+          }
+        }
+      }
     }
   },
   "components": {

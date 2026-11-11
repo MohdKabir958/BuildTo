@@ -19,6 +19,7 @@ import {registerFulfillment} from './fulfillment-routes';
 import {registerReturnsSupportReviews,registerPublicReviews} from './customer-care-routes';
 import {registerFinance} from './finance-routes';
 import {registerCommissionPolicy} from './commission-policy-routes';
+import {registerCustomerExtras} from './customer-extras-routes';
 import {registerReturnsFinance} from './refund-routes';
 import {registerPayouts} from './payout-routes';
 import {registerAdminTeam} from './admin-team-routes';
@@ -136,7 +137,7 @@ export function createV21App(deps:AppDependencies) {
         automaticPayoutExecution:false,
         bankStatementAPIReconciled:false,
         partialGstCreditSupported:false,
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking','returns.customer','support.cases','reviews.moderated','finance.reconciliation','finance.commission-policy','finance.settlement-proposals','finance.cod-commissions','returns.credit-notes','finance.refund-requests','finance.refund-evidence','finance.payout-beneficiaries','finance.payout-reconciliation',
+        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','wishlist.customer','notifications.inbox','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking','returns.customer','support.cases','reviews.moderated','finance.reconciliation','finance.commission-policy','finance.settlement-proposals','finance.cod-commissions','returns.credit-notes','finance.refund-requests','finance.refund-evidence','finance.payout-beneficiaries','finance.payout-reconciliation',
           ...(deps.deliveryOtpSecret?['shipments.otp']:[]),...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },
       requestId:res.locals.requestId,
@@ -154,6 +155,7 @@ export function createV21App(deps:AppDependencies) {
     registerProtectedInventory(app,deps.db,auth);
     registerRfqAndPromotions(app,deps.db,auth);
     registerProtectedCheckout(app,deps.db,auth);
+    registerCustomerExtras(app,deps.db,auth);
     registerCodAndInvoices(app,deps.db,auth);
     registerFulfillment(app,deps.db,auth,deps.deliveryOtpSecret);
     registerReturnsSupportReviews(app,deps.db,auth);
