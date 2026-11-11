@@ -65,7 +65,7 @@ export async function setCommissionPolicy(db:PrismaClient,actorId:string,input:u
    actorUserId:actorId,actorRole:'FINANCE',action:'COMMISSION_POLICY_UPDATED',
    entityType:'AppSetting',entityId:COMMISSION_POLICY_KEY,
    beforeState:{version:old?.version??0,rateBps:old?decode(old.value,old.version).rateBps:null},
-   afterState:{version:expectedVersion+1,rateBps,reason:d.reason.trim()}
+   afterState:{version:expectedVersion+1,rateBps,reason:(d.reason as string).trim()}
   }});
   return {configured:true,rateBps,version:expectedVersion+1,basis:'NET_MATERIALS' as const};
  });
