@@ -6,6 +6,8 @@ import {SingleInstanceRateLimiter} from './rateLimit';
 import {RazorpayGateway} from './payment-gateway';
 import {recoverExpiredPaymentSessions} from './payment-service';
 import {recoverExpiredOrders} from './order-service';
+import {processOutboxBatch} from './outbox';
+import {customerNotificationHandlers} from './customer-notification-handlers';
 import {RazorpayXPayoutEvidence} from './payout-gateway';
 import {jsonLogger} from './logging';
 import {assertV21ReleaseIntegrity,assertV21AllMigrationsApplied} from './release-integrity';
@@ -66,6 +68,18 @@ async function main() {
         jsonLogger({event:'v21_payment_recovery_failed',requestId:'recovery'});
       }finally{recovering=false;}
     };
+    const eventHandlers=customerNotificationHandlers(db);
+    let delivering=false;
+    const deliver=async()=>{
+      if(delivering)return;
+      delivering=true;
+      try{await processOutboxBatch(db,eventHandlers,20);}
+      catch{jsonLogger({event:'v21_outbox_delivery_failed',requestId:'outbox'});}
+      finally{delivering=false;}
+    };
+    const eventTimer=setInterval(()=>{void deliver();},10_000);
+    eventTimer.unref();
+    void deliver();
     recoveryTimer=setInterval(()=>{void recover();},60_000);
     recoveryTimer.unref();
     void recover();
@@ -75,6 +89,7 @@ async function main() {
       if(stopping)return;
       stopping=true;
       if(recoveryTimer)clearInterval(recoveryTimer);
+      clearInterval(eventTimer);
       const close=server?new Promise<void>(resolve=>server!.close(()=>resolve())):Promise.resolve();
       await Promise.race([close,new Promise<void>(resolve=>setTimeout(resolve,5000))]);
       await db.$disconnect();

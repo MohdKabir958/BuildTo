@@ -14,9 +14,12 @@ export async function publishOutbox(tx:Prisma.TransactionClient,intent:OutboxInt
 }
 // SKIP LOCKED prevents workers on two replicas from taking the same event concurrently.
 // Expired leases are eligible for re-claim. At-least-once delivery: external handlers MUST deduplicate on eventKey.
-export async function claimOutbox(db:PrismaClient,limit=20,leaseSeconds=45):Promise<OutboxMessage[]> {
+export async function claimOutbox(db:PrismaClient,limit=20,leaseSeconds=45,eventTypes?:readonly string[]):Promise<OutboxMessage[]> {
   if(!Number.isInteger(limit)||limit<1||limit>50||!Number.isInteger(leaseSeconds)||leaseSeconds<10||leaseSeconds>300)
     throw new Error('INVALID_OUTBOX_CLAIM');
+  if(eventTypes && (!eventTypes.length || eventTypes.some(x=>typeof x!=='string'||!x||x.length>120)))
+    throw new Error('INVALID_OUTBOX_EVENT_FILTER');
+  const filter=eventTypes?Prisma.sql`AND "eventType" IN (${Prisma.join(eventTypes)})`:Prisma.empty;
   return db.$queryRaw<OutboxMessage[]>(Prisma.sql`
     WITH candidates AS (
       SELECT id FROM "OutboxEvent"
@@ -24,6 +27,7 @@ export async function claimOutbox(db:PrismaClient,limit=20,leaseSeconds=45):Prom
         ("status" IN ('PENDING','FAILED') AND ("nextAttemptAt" IS NULL OR "nextAttemptAt" <= NOW()))
         OR ("status" = 'PROCESSING' AND "leaseUntil" <= NOW())
       )
+      ${filter}
       ORDER BY "createdAt","id"
       FOR UPDATE SKIP LOCKED
       LIMIT ${limit}
@@ -56,7 +60,8 @@ export async function rejectOutbox(db:PrismaClient,message:Pick<OutboxMessage,'i
 }
 export type OutboxHandler=(message:OutboxMessage)=>Promise<void>;
 export async function processOutboxBatch(db:PrismaClient,handlers:ReadonlyMap<string,OutboxHandler>,limit=20) {
-  const events=await claimOutbox(db,limit);
+  if(handlers.size===0)return {claimed:0,completed:0,failed:0,unclaimed:0};
+  const events=await claimOutbox(db,limit,45,[...handlers.keys()]);
   let completed=0,failed=0,unclaimed=0;
   for(const event of events) {
     const handler=handlers.get(event.eventType);
