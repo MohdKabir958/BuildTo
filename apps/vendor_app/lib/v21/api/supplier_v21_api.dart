@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-/// Dedicated V2.1 origin. Never piggyback on Grozo's legacy /api transport.
+/// Dedicated V2.1 origin. Never piggyback on Splyzo's legacy /api transport.
 /// Supply --dart-define=BUILDTO_V21_API_BASE_URL=https://your-api-origin.
 /// S01 has NO implicit auth fallback; S02 provides the verified Clerk token.
 abstract final class SupplierV21Config {
@@ -20,7 +20,7 @@ abstract final class SupplierV21Config {
         uri.query.isNotEmpty ||
         uri.fragment.isNotEmpty ||
         uri.path != '' && uri.path != '/') {
-      throw StateError('Configure a plain HTTPS BuildTo V2.1 API origin.');
+      throw StateError('Configure a plain HTTPS Splyzo V2.1 API origin.');
     }
     final localDebug = !release &&
         uri.scheme == 'http' &&
@@ -29,7 +29,7 @@ abstract final class SupplierV21Config {
             uri.host == '10.0.2.2');
     if (uri.scheme != 'https' && !localDebug) {
       throw StateError(
-          'BuildTo V2.1 requires HTTPS except the local debug emulator.');
+          'Splyzo V2.1 requires HTTPS except the local debug emulator.');
     }
     return uri.replace(path: '', query: null, fragment: null);
   }

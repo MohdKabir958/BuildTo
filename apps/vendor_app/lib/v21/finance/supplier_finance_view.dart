@@ -212,7 +212,7 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
       builder: (ctx) => AlertDialog(
         title: const Text('Issue GST document?'),
         content: const Text(
-            'BuildTo creates the invoice number, GST, taxable amounts and snapshots from the authoritative order. You cannot supply prices or tax. This is a statutory record.'),
+            'Splyzo creates the invoice number, GST, taxable amounts and snapshots from the authoritative order. You cannot supply prices or tax. This is a statutory record.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -228,7 +228,7 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
     try {
       final invoice =
           await widget.finance.issueInvoice(widget.supplierId, order.id);
-      _notice('Document ${invoice.number} issued by BuildTo.');
+      _notice('Document ${invoice.number} issued by Splyzo.');
     } catch (e) {
       _notice(_failure(e));
     } finally {
@@ -250,7 +250,7 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
       builder: (ctx) => AlertDialog(
         title: const Text('Issue full-return GST credit note?'),
         content: const Text(
-            'Only a complete physically received return qualifies, and the issuer must be independent of its goods receiver. BuildTo validates this and calculates all tax. Issuing a credit note is not a refund.'),
+            'Only a complete physically received return qualifies, and the issuer must be independent of its goods receiver. Splyzo validates this and calculates all tax. Issuing a credit note is not a refund.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -310,7 +310,7 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text(
-                          'This records a cash-collection claim, NOT verified payment. Independent BuildTo finance review is required.'),
+                          'This records a cash-collection claim, NOT verified payment. Independent Splyzo finance review is required.'),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                           initialValue: selected,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../config/buildto_theme.dart';
 import '../widgets/ui/snack.dart';
+import 'package:kraveo_ui/kraveo_ui.dart' show SupportCenter;
+import '../services/support_api.dart';
 
 /// Screen 14 — Help & Support
 /// Customer assistance options, site delivery hotline, and construction FAQs accordion.
@@ -32,7 +34,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
     },
     {
       'q': 'Are steel bars and cement BIS certified?',
-      'a': 'All cement brands (OPC/PPC) and steel rebars (Fe 500D / 550D) sold on Buildto are 100% BIS certified with manufacturer test certificates provided upon request.',
+      'a': 'Check the supplier listing and ask for the relevant BIS certification and manufacturer test certificates before ordering.',
     },
   ];
 
@@ -41,19 +43,19 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BuildtoColors.surfaceLight,
+      backgroundColor: SplyzoColors.surfaceLight,
       appBar: AppBar(
-        backgroundColor: BuildtoColors.bgWhite,
+        backgroundColor: SplyzoColors.bgWhite,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: BuildtoColors.primaryNavy),
+          icon: const Icon(LucideIcons.arrowLeft, color: SplyzoColors.primaryNavy),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Help & Support',
           style: TextStyle(
-            color: BuildtoColors.primaryNavy,
+            color: SplyzoColors.primaryNavy,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -69,20 +71,20 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BuildtoColors.infoBg,
-                borderRadius: BorderRadius.circular(BuildtoRadius.md),
-                border: Border.all(color: BuildtoColors.infoBlue.withValues(alpha: 0.25)),
+                color: SplyzoColors.infoBg,
+                borderRadius: BorderRadius.circular(SplyzoRadius.md),
+                border: Border.all(color: SplyzoColors.infoBlue.withValues(alpha: 0.25)),
               ),
               child: const Row(
                 children: [
-                  Icon(LucideIcons.info, size: 18, color: BuildtoColors.infoBlue),
+                  Icon(LucideIcons.info, size: 18, color: SplyzoColors.infoBlue),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Demonstration Mode: Support channels demonstrate contractor workflows. In active production, live chat connects directly to regional depot dispatchers.',
                       style: TextStyle(
                         fontSize: 11,
-                        color: BuildtoColors.infoBlue,
+                        color: SplyzoColors.infoBlue,
                         fontWeight: FontWeight.w600,
                         height: 1.35,
                       ),
@@ -98,44 +100,22 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: BuildtoColors.textDark,
+                color: SplyzoColors.textDark,
               ),
             ),
             const SizedBox(height: 12),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildContactCard(
-                    icon: LucideIcons.messageSquare,
-                    title: 'Live Chat',
-                    subtitle: 'Instant Site Help',
-                    onTap: () {
-                      showKSnack(context, 'Connecting to Buildto Site Support Representative...');
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildContactCard(
-                    icon: LucideIcons.phoneCall,
-                    title: 'Call Us',
-                    subtitle: '+91 98765 00123',
-                    onTap: () {
-                      showKSnack(context, 'Calling Buildto Dispatch Support Desk (+91 98765 00123)...');
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
             _buildContactCard(
-              icon: LucideIcons.mail,
-              title: 'Email Dispatch Desk',
-              subtitle: 'support@buildto.in (Responses within 2 hours)',
+              icon: LucideIcons.messageSquare,
+              title: 'Help and requests',
+              subtitle: 'Contact the Splyzo support team',
               onTap: () {
-                showKSnack(context, 'Opening email to support@buildto.in');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SupportCenter(call: SupportApi.call),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 24),
@@ -146,22 +126,22 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: BuildtoColors.textDark,
+                color: SplyzoColors.textDark,
               ),
             ),
             const SizedBox(height: 12),
 
             Container(
               decoration: BoxDecoration(
-                color: BuildtoColors.bgWhite,
-                borderRadius: BorderRadius.circular(BuildtoRadius.md),
-                border: Border.all(color: BuildtoColors.cardBorder),
+                color: SplyzoColors.bgWhite,
+                borderRadius: BorderRadius.circular(SplyzoRadius.md),
+                border: Border.all(color: SplyzoColors.cardBorder),
               ),
               child: ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _faqs.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: BuildtoColors.cardBorder),
+                separatorBuilder: (_, __) => const Divider(height: 1, color: SplyzoColors.cardBorder),
                 itemBuilder: (context, index) {
                   final faq = _faqs[index];
                   final isExpanded = _expandedIndices.contains(index);
@@ -189,14 +169,14 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: isExpanded ? FontWeight.bold : FontWeight.w600,
-                                    color: isExpanded ? BuildtoColors.primaryNavy : BuildtoColors.textDark,
+                                    color: isExpanded ? SplyzoColors.primaryNavy : SplyzoColors.textDark,
                                   ),
                                 ),
                               ),
                               Icon(
                                 isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                                 size: 16,
-                                color: BuildtoColors.textMuted,
+                                color: SplyzoColors.textMuted,
                               ),
                             ],
                           ),
@@ -206,7 +186,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                               faq['a']!,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: BuildtoColors.textMuted,
+                                color: SplyzoColors.textMuted,
                                 height: 1.4,
                               ),
                             ),
@@ -245,7 +225,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: BuildtoColors.primaryNavy,
+                    color: SplyzoColors.primaryNavy,
                     decoration: TextDecoration.underline,
                   ),
                 ),
@@ -266,14 +246,14 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(BuildtoRadius.md),
+      borderRadius: BorderRadius.circular(SplyzoRadius.md),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: BuildtoColors.bgWhite,
-          borderRadius: BorderRadius.circular(BuildtoRadius.md),
-          border: Border.all(color: BuildtoColors.cardBorder),
-          boxShadow: BuildtoShadows.card,
+          color: SplyzoColors.bgWhite,
+          borderRadius: BorderRadius.circular(SplyzoRadius.md),
+          border: Border.all(color: SplyzoColors.cardBorder),
+          boxShadow: SplyzoShadows.card,
         ),
         child: Row(
           children: [
@@ -281,10 +261,10 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: BuildtoColors.primaryNavy.withValues(alpha: 0.1),
+                color: SplyzoColors.primaryNavy.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: BuildtoColors.primaryNavy, size: 18),
+              child: Icon(icon, color: SplyzoColors.primaryNavy, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -296,13 +276,13 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: BuildtoColors.textDark,
+                      color: SplyzoColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 11, color: BuildtoColors.textMuted),
+                    style: const TextStyle(fontSize: 11, color: SplyzoColors.textMuted),
                   ),
                 ],
               ),

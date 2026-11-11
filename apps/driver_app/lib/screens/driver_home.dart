@@ -35,7 +35,7 @@ class DriverHomeScreen extends StatefulWidget {
 
   final RiderServices? services;
 
-  /// Payout details; tests pass a fake. Null = the real Grozo API.
+  /// Payout details; tests pass a fake. Null = the real Splyzo API.
   final PayoutApi? payoutApi;
 
   @override
@@ -70,7 +70,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
     _messages = _rider.messages.listen(_showMessage);
     WidgetsBinding.instance.addObserver(this);
-    // Grozo's own idea of this rider's duty (second phone, logout elsewhere, a restore that failed on a weak
+    // Splyzo's own idea of this rider's duty (second phone, logout elsewhere, a restore that failed on a weak
     // network) is mirrored once the controller has started and whenever a fresh profile answer arrives.
     _sessionCtl =
         context.getInheritedWidgetOfExactType<SessionScope>()?.notifier;
@@ -365,7 +365,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                 const SizedBox(height: 16),
               ],
 
-              // Hero duty control (truthful: ON only after Grozo confirmed it)
+              // Hero duty control (truthful: ON only after Splyzo confirmed it)
               DutyToggle(
                   isOnline: r.onDuty,
                   busy: r.dutyBusy,

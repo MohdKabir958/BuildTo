@@ -279,7 +279,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                   ListTile(
                     leading: const Icon(LucideIcons.info, color: BuildtoColors.textMuted, size: 20),
                     title: const Text(
-                      'Buildto Customer App',
+                      'Splyzo Customer App',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: BuildtoColors.textDark),
                     ),
                     subtitle: const Text(
@@ -338,7 +338,7 @@ class ProfileSettingsScreen extends StatelessWidget {
                           context: context,
                           builder: (ctx) => AlertDialog(
                             title: const Text('Log Out'),
-                            content: const Text('Are you sure you want to log out of your Buildto account?'),
+                            content: const Text('Are you sure you want to log out of your Splyzo account?'),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(ctx),

@@ -110,7 +110,7 @@ class _IncomingOrderDialogState extends State<IncomingOrderDialog>
         o.isIncoming &&
         !_askedAfterDeadline &&
         !_c.now().isBefore(o.acceptDeadline)) {
-      // Time is up: Grozo cancels within about a minute. Ask now so the screen follows quickly.
+      // Time is up: Splyzo cancels within about a minute. Ask now so the screen follows quickly.
       _askedAfterDeadline = true;
       _c.refresh();
     }

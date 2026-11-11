@@ -1,27 +1,37 @@
-# BuildTo — Construction Materials Platform
+# Splyzo — Construction Materials Platform
 
-BuildTo is a construction-materials marketplace with customers, suppliers, delivery coordination, inventory, checkout, Indian tax and controlled payments.
+Splyzo connects customers, approved construction-material suppliers and delivery partners for sourcing and delivering building materials to project sites.
 
-## Current backend
+## Apps and services
 
-- **Active API:** `backend/v21/src/` — Express/TypeScript
-- **Active schema:** `backend/prisma/v21/schema.prisma` — Prisma/PostgreSQL/PostGIS
-- **Approved migrations:** `backend/prisma/v21/migrations/` — three V2.1 migrations
-- **Staging deployment:** [BuildTo V2.1 API on Render](https://buildto-v21-staging.onrender.com)
-- **Staging endpoints:** `/health`, `/ready`, `/api/v2/system`
-- **Status:** staging only; not production-ready.
+- `apps/customer_app/` — customer ordering and site delivery tracking
+- `apps/vendor_app/` — supplier registration, catalogue, inventory and order fulfilment
+- `apps/driver_app/` — delivery partner app
+- `web/super_admin/` — Splyzo operations and administration portal
+- `web/landing/` — public product website
+- `backend/v21/` — active V2.1 API and schema
+- `branding/` — canonical Splyzo brand configuration and artwork
 
-The repository is adapted from the former Grozo/Kraveo platform. `backend/src/`, `backend/prisma/schema.prisma`, older migrations and some client code are **legacy**, not the active V2.1 API. We are retiring them in dependency order because existing admin/mobile code still calls legacy `/api/v1` endpoints; deleting them blindly would break remaining transition tests and client contracts.
+## Brand
 
-Read `backend/v21/docs/LEGACY-CLEANUP-PLAN.md` and `backend/prisma/README.md` before removing anything else. Never run old Prisma migration scripts against Neon V2.1.
+The public product name is **Splyzo**. The canonical logo is `branding/assets/splyzo-logo.png`; `branding/brand.json` defines display names, palette, tagline and shared app asset path.
 
-## Apps
+Existing Android application IDs, native Clerk bridge package names, database identifiers and selected environment-variable names are retained for upgrade and integration compatibility. They are implementation identifiers, not public product branding. New launcher icons and splash artwork use Splyzo.
 
-- `apps/customer_app/` — Flutter customer app, integration migration pending
-- `apps/vendor_app/` — Flutter supplier app, integration migration pending
-- `apps/driver_app/` — legacy delivery app pending business-scope review
-- `web/super_admin/` — existing admin frontend, V2.1 integration pending
-- `branding/` — brand assets/configuration
+## Backend
+
+- Active API: `backend/v21/src/`
+- Active schema: `backend/prisma/v21/schema.prisma`
+- Staging API: `https://buildto-v21-staging.onrender.com` (existing infrastructure hostname; migrate separately before changing deployed endpoints)
+- Status: staging only; not production-ready.
+
+The older code under `backend/src/` and `backend/prisma/schema.prisma` remains in controlled retirement while clients are migrated. Do not run legacy Prisma migrations against the V2.1 database.
+
+## Local checks
+
+- Flutter: run `flutter pub get`, `dart format`, `flutter analyze` and the relevant app tests from each app directory.
+- Admin Portal: run the package scripts in `web/super_admin/package.json`.
+- Brand configuration: `python3 scripts/configure_brand.py --check`.
 
 ## License
 

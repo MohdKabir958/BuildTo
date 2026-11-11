@@ -101,7 +101,7 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
         SupplierV21Problem.rateLimited =>
           'Could not refresh business data. Check your connection and retry.',
         SupplierV21Problem.server =>
-          'The BuildTo dashboard service is temporarily unavailable.',
+          'The Splyzo dashboard service is temporarily unavailable.',
         _ => 'Unable to verify the supplier dashboard response.',
       };
     }

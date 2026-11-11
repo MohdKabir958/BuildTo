@@ -1,4 +1,4 @@
-/// Grozo unified design system.
+/// Splyzo unified design system.
 library kraveo_ui;
 
 export 'src/brand_config.dart';

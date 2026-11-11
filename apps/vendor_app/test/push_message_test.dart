@@ -147,7 +147,7 @@ void main() {
       expect(raw.existsSync(), isTrue);
       expect(raw.lengthSync(), lessThan(700 * 1024));
       expect(
-          File('android/app/src/main/res/drawable/ic_stat_grozo.xml')
+          File('android/app/src/main/res/drawable/ic_stat_splyzo.xml')
               .existsSync(),
           isTrue);
       final manifest =
@@ -156,7 +156,7 @@ void main() {
         'android.permission.POST_NOTIFICATIONS',
         'android.permission.USE_FULL_SCREEN_INTENT',
         'default_notification_channel_id',
-        '@drawable/ic_stat_grozo',
+        '@drawable/ic_stat_splyzo',
       ]) {
         expect(manifest, contains(needle));
       }

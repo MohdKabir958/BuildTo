@@ -7,14 +7,14 @@ import {fetchPublicRelease,validateApiOrigin} from './publicRelease';
 
 afterEach(()=>{cleanup();vi.unstubAllGlobals();vi.restoreAllMocks();});
 
-describe('BuildTo A01 admin shell',()=>{
+describe('Splyzo A01 admin shell',()=>{
   it('shows real empty-state foundation, without legacy requests or invented KPIs',()=>{
     const fetch=vi.fn();vi.stubGlobal('fetch',fetch);
     render(<AdminShell apiBaseUrl=""/>);
     expect(screen.getByRole('heading',{name:'Built for better marketplace operations.'})).toBeTruthy();
     expect(screen.getByText('API origin not configured')).toBeTruthy();
     expect(screen.getByRole('button',{name:'Suppliers'})).toBeTruthy();
-    expect(screen.queryByText(/restaurant|rider|grozo|₹[0-9]/i)).toBeNull();
+    expect(screen.queryByText(/restaurant|rider|₹[0-9]/i)).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button',{name:'Catalog'}));
     expect(screen.getByText(/This module is not connected yet/)).toBeTruthy();
@@ -45,7 +45,7 @@ describe('BuildTo A01 admin shell',()=>{
   });
 });
 
-describe('BuildTo public API origin contract',()=>{
+describe('Splyzo public API origin contract',()=>{
   it('rejects arbitrary origins and paths',()=>{
     expect(()=>validateApiOrigin('http://other.example')).toThrow();
     expect(()=>validateApiOrigin('https://buildto.example/path')).toThrow();

@@ -1,4 +1,4 @@
-name: BuildTo V2.1 admin staging release gate
+name: Splyzo V2.1 admin staging release gate
 on:
   pull_request:
     paths:

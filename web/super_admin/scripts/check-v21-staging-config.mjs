@@ -33,8 +33,7 @@ assert(directives['frame-ancestors']?.includes("'none'"),'CSP must prevent admin
 assert(directives['object-src']?.includes("'none'"),'No plugin embeds are permitted');
 
 const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
-assert(html.includes('BuildTo Administration'),'Compiled V2.1 title must be BuildTo');
-assert(!/<title>Grozo Operations<\/title>/.test(html),'Legacy title in V2.1 staging build');
+assert(html.includes('Splyzo Administration'),'Compiled V2.1 title must be Splyzo');
 assert(html.includes('src="/assets/')||html.includes('type="module"'),'Expected Vite output not found');
-console.log('PASS: A15 frontend staging contract, exact HTTPS API and Clerk origin, CSP and BuildTo build branding.');
+console.log('PASS: A15 frontend staging contract, exact HTTPS API and Clerk origin, CSP and Splyzo build branding.');
 console.log('NOTE: This is an offline build validation, not a live Clerk sign-in or API deployment assertion.');

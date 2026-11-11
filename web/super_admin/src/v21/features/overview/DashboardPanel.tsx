@@ -45,7 +45,7 @@ export function DashboardPanel(){
  ]:[];
  return <div className="space-y-6">
   <div className="rounded-2xl bg-[#102B4D] p-7 text-white">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-amber-300">BuildTo · Operations</p><h2 className="mt-2 text-2xl font-black">Marketplace overview</h2><p className="mt-2 text-sm text-slate-300">Live, read-only PostgreSQL counts. No mock revenue or optimistic totals.</p></div>
+   <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-amber-300">Splyzo · Operations</p><h2 className="mt-2 text-2xl font-black">Marketplace overview</h2><p className="mt-2 text-sm text-slate-300">Live, read-only PostgreSQL counts. No mock revenue or optimistic totals.</p></div>
     <button type="button" disabled={loading} onClick={()=>void load()} className="rounded-lg border border-white/30 px-4 py-2 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
   </div>
   {error&&<p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}

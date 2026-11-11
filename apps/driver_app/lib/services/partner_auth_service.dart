@@ -39,7 +39,7 @@ class ProfileResult {
   const ProfileResult(this.outcome, [this.session, this.suspended = false]);
   final ProfileOutcome outcome;
 
-  /// With [ProfileOutcome.unauthorized]: Grozo said the token ended because an admin paused the account
+  /// With [ProfileOutcome.unauthorized]: Splyzo said the token ended because an admin paused the account
   /// (`reason: ACCOUNT_SUSPENDED`), not because the session simply expired.
   final bool suspended;
 
@@ -121,7 +121,7 @@ class SignupResult {
   /// Present for a new account (sign-up); null when an existing account re-sent its application.
   final String? token;
 
-  /// The account as Grozo answered. Null only when an application was re-sent and the 200 answer carried no
+  /// The account as Splyzo answered. Null only when an application was re-sent and the 200 answer carried no
   /// readable user: the application is accepted, and the caller re-reads the profile.
   final PartnerSession? session;
   final SignupFailure? failure;
@@ -173,7 +173,7 @@ class ApiPartnerAuthService implements PartnerAuthService {
         if(token==null) return const LoginResult.failure(LoginFailure.invalidCredentials,message:'Sign in with Clerk first.');
         final result=await fetchProfile(token);
         if(result.outcome==ProfileOutcome.valid && result.session!=null) return LoginResult.success(token:token,session:result.session!);
-        return const LoginResult.failure(LoginFailure.wrongRole,message:'Grozo partner access could not be verified. Apply for approval, check the connection or change account.');
+        return const LoginResult.failure(LoginFailure.wrongRole,message:'Splyzo partner access could not be verified. Apply for approval, check the connection or change account.');
       } catch (_) { return const LoginResult.failure(LoginFailure.offline); }
     }
 
@@ -268,7 +268,7 @@ class ApiPartnerAuthService implements PartnerAuthService {
       case 201:
         final session = json == null ? null : PartnerSession.fromMeJson(json);
         final token = json?['token'];
-        // Re-sending an application: a 200 means Grozo accepted it, whether or not the body has a user.
+        // Re-sending an application: a 200 means Splyzo accepted it, whether or not the body has a user.
         if (!expectToken) return SignupResult.success(session: session);
         if (session == null) return const SignupResult.failure(SignupFailure.server);
         if (expectToken && (token is! String || token.isEmpty)) return const SignupResult.failure(SignupFailure.server);

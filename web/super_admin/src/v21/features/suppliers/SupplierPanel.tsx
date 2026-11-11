@@ -84,7 +84,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
   void loadDetail(selectedId,controller.signal);
   return ()=>controller.abort();
  },[selectedId,loadDetail]);
- const self=false;
+ const self=detail?.owners.some(owner=>owner.userId===currentAdminId) ?? false;
  async function submitReview(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!detail||!review||busy||review.reason.trim().length<8)return;
   setBusy(true);setError('');setInfo('');
@@ -104,7 +104,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
    <div className="flex flex-wrap items-center justify-between gap-3">
     <div className="flex items-center gap-3"><Building2 className="text-[#174C86]" size={24}/><div>
      <h2 className="text-lg font-extrabold">Supplier verification</h2>
-     <p className="text-sm text-slate-500">Approval requires human-verified business records and, where applicable, GST evidence.</p>
+     <p className="text-sm text-slate-500">Independent review is required. Approval uses human-verified business records and, where applicable, GST evidence.</p>
     </div></div>
     <button type="button" onClick={()=>void load(true)} disabled={loading} className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button>
    </div>

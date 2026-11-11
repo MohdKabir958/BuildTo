@@ -52,7 +52,7 @@ void main() {
 
 class KraveoVendorApp extends StatefulWidget {
   /// [auth] is the network layer for login / session checks; [backend], [socketFactory] and [alarm] drive the
-  /// order screens. Tests pass fakes; the app uses the real Grozo API, Socket.io and the loud alarm.
+  /// order screens. Tests pass fakes; the app uses the real Splyzo API, Socket.io and the loud alarm.
   const KraveoVendorApp(
       {super.key,
       this.auth,
@@ -105,7 +105,7 @@ class _KraveoVendorAppState extends State<KraveoVendorApp> {
       debugShowCheckedModeBanner: false,
       theme: KraveoTheme.vendor(),
       // Respect the device text scale; shared controls grow with their labels.
-      home: GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? const ClerkEntryScreen(appName: 'Grozo Vendor',preview:true) : AuthGate(
+      home: GrozoAuthConfig.usesClerk && GrozoAuthConfig.preview ? ClerkEntryScreen(appName: BrandConfig.vendorName,preview:true) : AuthGate(
           session: _session,
           push: widget.push,
           backend: widget.backend,
@@ -350,7 +350,7 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-/// A saved login exists but Grozo cannot be reached. The token is kept, so a dropped network
+/// A saved login exists but Splyzo cannot be reached. The token is kept, so a dropped network
 /// never logs the kitchen out.
 class _SessionUnreachable extends StatefulWidget {
   const _SessionUnreachable({required this.onRetry});

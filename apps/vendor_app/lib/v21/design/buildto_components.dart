@@ -1,66 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:kraveo_ui/kraveo_ui.dart' show BrandConfig;
 import 'buildto_theme.dart';
 
-/// Common design primitives for S01–S13. These have no legacy Grozo imports.
+/// Shared Splyzo supplier design primitives for S01–S13.
 class BuildToBrandMark extends StatelessWidget {
   const BuildToBrandMark({super.key, this.compact = false});
   final bool compact;
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: 'BuildTo, Building Made Easy',
-        child: ExcludeSemantics(
-          child: Row(mainAxisSize: MainAxisSize.max, children: [
-            Container(
-              width: compact ? 38 : 48,
-              height: compact ? 38 : 48,
-              decoration: BoxDecoration(
-                color: BuildToPalette.navy,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(alignment: Alignment.center, children: [
-                const Icon(Icons.apartment_rounded,
-                    color: BuildToPalette.white, size: 27),
-                Positioned(
-                    right: 6,
-                    bottom: 6,
-                    child: Container(
-                      width: 6,
-                      height: 21,
-                      decoration: BoxDecoration(
-                        color: BuildToPalette.orange,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    )),
-              ]),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('BuildTo',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: compact ? 23 : 28,
-                          fontWeight: FontWeight.w900,
-                          color: BuildToPalette.navyDeep,
-                          letterSpacing: -1.1,
-                          height: 1.0,
-                        )),
-                    const Text('Building Made Easy.',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: BuildToPalette.navy,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        )),
-                  ]),
-            ),
-          ]),
+        label: BrandConfig.name,
+        child: Image.asset(
+          BrandConfig.logoAsset,
+          package: 'kraveo_ui',
+          width: compact ? 48 : 64,
+          height: compact ? 48 : 64,
+          fit: BoxFit.contain,
         ),
       );
 }

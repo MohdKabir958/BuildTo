@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:kraveo_ui/kraveo_ui.dart' show BrandConfig;
 import 'package:provider/provider.dart';
 import '../config/buildto_theme.dart';
 import '../models/food_category.dart';
@@ -203,42 +204,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      // Buildto Brand Logo & Tagline
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: BuildtoColors.primaryNavy,
-                              borderRadius: BorderRadius.circular(BuildtoRadius.sm),
-                            ),
-                            child: const Icon(LucideIcons.hardHat, color: BuildtoColors.accentAmber, size: 20),
-                          ),
-                          const SizedBox(width: 8),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'BUILDTO',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: BuildtoColors.primaryNavy,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              Text(
-                                'Building Made Easy.',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: BuildtoColors.accentAmber,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      // Canonical Splyzo logo.
+                      Image.asset(
+                        BrandConfig.logoAsset,
+                        package: 'kraveo_ui',
+                        width: 58,
+                        height: 58,
+                        fit: BoxFit.contain,
+                      ),
                       const Spacer(),
 
                       // Delivery Location Dropdown

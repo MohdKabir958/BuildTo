@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/partner_session.dart';
 import '../widgets/support_sheet.dart';
 
-/// What a rider sees after creating an account until Grozo approves it, or when the application was
+/// What a rider sees after creating an account until Splyzo approves it, or when the application was
 /// rejected or the account suspended. Pending applications are re-checked every [pollEvery] and when the
 /// app comes back to the foreground, so approval shows up without the rider doing anything.
 class ApplicationStatusScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class ApplicationStatusScreen extends StatefulWidget {
 
   final PartnerSession session;
 
-  /// Re-checks the application with Grozo; resolves to true when something changed.
+  /// Re-checks the application with Splyzo; resolves to true when something changed.
   final Future<bool> Function() onRefresh;
   final VoidCallback onEdit;
   final Future<void> Function() onLogout;

@@ -8,7 +8,7 @@ export default defineConfig(({mode}) => {
   return {
   plugins: [react(), {
     name: 'market-brand-title',
-    transformIndexHtml: (html) => html.replace(/<title>.*?<\/title>/, `<title>${isV21?'BuildTo Administration · Staging':brand.name+' Operations'}</title>`),
+    transformIndexHtml: (html) => html.replace(/<title>.*?<\/title>/, `<title>${isV21?brand.name+' Administration · Staging':brand.name+' Operations'}</title>`),
   }],
   build: {
     // Never inline fonts/assets as data: URIs - the production CSP only allows font-src 'self'.

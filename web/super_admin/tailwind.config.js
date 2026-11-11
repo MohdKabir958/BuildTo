@@ -1,6 +1,6 @@
 import brand from '../../branding/brand.json' with { type: 'json' };
 /** @type {import('tailwindcss').Config} */
-// Grozo design tokens. Hex values mirror packages/kraveo_ui (KraveoPalette / KStatus / KraveoTokens.driver).
+// Splyzo design tokens. Hex values mirror packages/kraveo_ui (KraveoPalette / KStatus / KraveoTokens.driver).
 // Keep in sync with src/lib/tokens.ts (used where a raw hex is required, e.g. Recharts).
 export default {
   content: [
@@ -11,44 +11,44 @@ export default {
     extend: {
       colors: {
         kraveo: {
-          // Forest green ramp (brand = g800)
-          g50: '#EEF8EF',
-          g100: '#D5EFD8',
-          g200: '#A9DEB0',
-          g300: '#0C6423',
-          g400: '#005A26', // dark-surface brand (driver/admin)
-          g500: '#23913A',
-          g600: '#147A2C',
-          g700: '#0C6423',
+          // Splyzo navy and blue ramp (brand = g800)
+          g50: '#EFF5FF',
+          g100: '#DCE9FF',
+          g200: '#B8D2FF',
+          g300: '#82B5F9',
+          g400: '#4A8EDC', // dark-surface brand (driver/admin)
+          g500: '#216BC2',
+          g600: '#1555A6',
+          g700: '#103F83',
           g800: brand.primary,
-          g900: '#063D14',
-          g950: '#032309',
+          g900: '#082451',
+          g950: '#041633',
           brand: brand.primary,
-          brandSoft: '#EEF8EF',
-          // Electric yellow (accent, brand = 400)
+          brandSoft: '#EFF5FF',
+          // Splyzo orange accent (brand = 400)
           yellow: brand.accent,
-          y100: '#FFF6C2',
-          y200: '#FFEC85',
-          y300: '#FFE24D',
+          y100: '#FFF1E8',
+          y200: '#FFD7C2',
+          y300: '#FFB38A',
           y400: brand.accent,
-          y500: '#E6BE00',
-          y700: '#8A6D00',
+          y500: '#DD4719',
+          y700: '#9B2E12',
           // Cream (used only on the logo badge)
-          cream: '#FAF7F0',
+          cream: '#F5F8FC',
           // Night (driver / admin) neutrals
-          night: '#F6F8F6',
+          night: '#F5F8FC',
           surface: '#FFFFFF',
-          surface2: '#EEF3EF',
-          line: '#DDE5DF',
-          ink: '#14201A',
-          ink2: '#46534B',
-          ink3: '#58675E',
+          surface2: '#EDF2F8',
+          line: '#DCE5F0',
+          ink: '#14243B',
+          ink2: '#46566F',
+          ink3: '#64748B',
           // Semantic
           success: '#176B37',
           warning: '#865000',
           danger: '#B42332',
           info: '#245CA2',
-          // One status language across every Grozo surface
+          // One status language across every Splyzo surface
           status: {
             placed: '#875500',
             accepted: '#0A655C',
@@ -74,10 +74,10 @@ export default {
       },
       boxShadow: {
         // KShadow.soft / lift / glow. Dark surfaces need a stronger alpha than the light apps to stay visible.
-        'k-soft': '0 1px 3px rgba(20,32,26,0.03)',
-        'k-lift': '0 8px 24px rgba(20,32,26,0.08)',
-        'k-glow': '0 1px 3px rgba(20,32,26,0.05)',
-        'k-glow-yellow': '0 1px 3px rgba(20,32,26,0.05)',
+        'k-soft': '0 1px 3px rgba(20,36,59,0.03)',
+        'k-lift': '0 8px 24px rgba(20,36,59,0.08)',
+        'k-glow': '0 1px 3px rgba(20,36,59,0.05)',
+        'k-glow-yellow': '0 1px 3px rgba(20,36,59,0.05)',
       },
       transitionDuration: {
         fast: '140ms',
@@ -118,7 +118,7 @@ export default {
           '100%': { backgroundPosition: '-50% 0' },
         },
         'dot-pulse': {
-          '0%': { boxShadow: '0 0 0 0 var(--dot, rgba(67,174,85,0.55))' },
+          '0%': { boxShadow: '0 0 0 0 var(--dot, rgba(74,142,220,0.55))' },
           '70%': { boxShadow: '0 0 0 7px transparent' },
           '100%': { boxShadow: '0 0 0 0 transparent' },
         },

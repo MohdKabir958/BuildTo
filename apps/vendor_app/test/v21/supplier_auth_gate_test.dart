@@ -63,7 +63,7 @@ SupplierAuthController makeController(
           jsonEncode({
             'data': {
               'id': 'db-account',
-              'displayName': 'BuildTo Verified',
+              'displayName': 'Splyzo Verified',
               'adminRole': null,
               'suppliers': [
                 {'supplierId': supplier, 'role': 'OWNER'},
@@ -122,13 +122,13 @@ void main() {
         BuildToSupplierV21App(controller: controller),
         const Size(393, 852),
       );
-      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+      expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
       expect(find.text('Sign in to my account'), findsOneWidget);
       expect(find.text('Create a new account'), findsOneWidget);
       expect(find.text('Verifying your supplier account'), findsNothing);
       delayed.complete();
       await tester.pumpAndSettle();
-      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+      expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     },
   );
 
@@ -151,9 +151,11 @@ void main() {
       BuildToSupplierV21App(controller: controller),
       const Size(360, 800),
     );
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     expect(find.text('Sign in to my account'), findsOneWidget);
     expect(find.text('Create a new account'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.pumpAndSettle();
     expect(find.text('Retry Clerk connection'), findsOneWidget);
     await tester.ensureVisible(find.text('Retry Clerk connection'));
     await tester.pumpAndSettle();
@@ -161,7 +163,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(attempts, 2);
     expect(find.text('Retry Clerk connection'), findsNothing);
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -189,15 +191,15 @@ void main() {
     expect(find.text('Cancel and return to welcome'), findsOneWidget);
     await tester.tap(find.text('Cancel and return to welcome'));
     await tester.pumpAndSettle();
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     delayedMe.complete(http.Response('{"error":{"code":"UNKNOWN"}}', 500));
     await tester.pumpAndSettle();
-    expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+    expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-    'BuildTo Clerk sign-in leads to backend-authorized supplier shell',
+    'Splyzo Clerk sign-in leads to backend-authorized supplier shell',
     (tester) async {
       final clerk = UiClerk();
       final controller = makeController(clerk);
@@ -210,11 +212,11 @@ void main() {
         BuildToSupplierV21App(controller: controller),
         const Size(393, 852),
       );
-      expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+      expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
       await tester.tap(find.text('Sign in to my account'));
       await tester.pumpAndSettle();
       expect(find.text('Verified'), findsOneWidget);
-      expect(find.text('BuildTo Verified'), findsOneWidget);
+      expect(find.text('Splyzo Verified'), findsOneWidget);
       expect(find.textContaining('Supplier • '), findsOneWidget);
       expect(find.text('Orders'), findsWidgets);
       expect(find.textContaining('₹'), findsNothing);
@@ -268,7 +270,7 @@ void main() {
           BuildToSupplierV21App(controller: controller),
           size,
         );
-        expect(find.text('Welcome to BuildTo Supplier'), findsOneWidget);
+        expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
         expect(tester.takeException(), isNull, reason: 'overflow at $size');
         await tester.pumpWidget(const SizedBox.shrink());
         controller.dispose();

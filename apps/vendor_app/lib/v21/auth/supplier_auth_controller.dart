@@ -333,7 +333,7 @@ class SupplierAuthController extends ChangeNotifier {
         'Your Clerk session expired. Sign in again.',
       SupplierAccessStage.accessDenied =>
         'This account does not currently have access to that supplier.',
-      SupplierAccessStage.misconfigured => 'BuildTo staging is not configured.',
+      SupplierAccessStage.misconfigured => 'Splyzo staging is not configured.',
       _ => 'Secure account verification is unavailable. Please retry.',
     };
     _publish();

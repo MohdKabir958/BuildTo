@@ -550,7 +550,7 @@ class _QuoteEditorState extends State<_QuoteEditor> {
               style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 5),
           const Text(
-              'Every material is required. Final totals and GST are calculated by BuildTo.'),
+              'Every material is required. Final totals and GST are calculated by Splyzo.'),
           const Divider(height: 24),
           Expanded(
               child: ListView(children: [
