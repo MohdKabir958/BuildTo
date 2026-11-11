@@ -6968,11 +6968,24 @@
                     "items": {
                       "type": "object",
                       "additionalProperties": false,
-                      "required": ["orderItemId", "deliveredQty", "rejectedQty"],
+                      "required": [
+                        "orderItemId",
+                        "deliveredQty",
+                        "rejectedQty"
+                      ],
                       "properties": {
-                        "orderItemId": {"type": "string", "format": "uuid"},
-                        "deliveredQty": {"type": "string", "pattern": "^(?:0|[1-9][0-9]{0,13}(?:\\.[0-9]{1,3})?)$"},
-                        "rejectedQty": {"type": "string", "pattern": "^(?:0|[1-9][0-9]{0,13}(?:\\.[0-9]{1,3})?)$"}
+                        "orderItemId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "deliveredQty": {
+                          "type": "string",
+                          "pattern": "^(?:0|[1-9][0-9]{0,13}(?:\\.[0-9]{1,3})?)$"
+                        },
+                        "rejectedQty": {
+                          "type": "string",
+                          "pattern": "^(?:0|[1-9][0-9]{0,13}(?:\\.[0-9]{1,3})?)$"
+                        }
                       }
                     }
                   }
@@ -11058,12 +11071,32 @@
       "get": {
         "operationId": "mySupplierApplicationDetail",
         "summary": "Applicant-owned supplier review progress, document statuses and reviewer feedback; never exposes private media keys",
-        "security": [{"clerkBearer": []}],
-        "parameters": [{"name": "supplierId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}],
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "200": {"description": "Owned application and evidence review status, wrapped in data and requestId"},
-          "401": {"description": "Clerk identity required"},
-          "404": {"description": "Application not owned or not found"}
+          "200": {
+            "description": "Owned application and evidence review status, wrapped in data and requestId"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "404": {
+            "description": "Application not owned or not found"
+          }
         }
       }
     },
@@ -11647,6 +11680,75 @@
           },
           "403": {
             "description": "AUDIT_READ required"
+          }
+        }
+      }
+    },
+    "/api/v2/admin/finance/commission-policy": {
+      "get": {
+        "operationId": "getV21CommissionPolicy",
+        "summary": "Finance administrator reads explicit marketplace commission policy",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current policy or unconfigured state"
+          },
+          "403": {
+            "description": "Finance administrator permission required"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateV21CommissionPolicy",
+        "summary": "Version-checked audited commission policy update; applies to subsequent orders",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "rateBps",
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "rateBps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5000,
+                    "description": "Basis points of tax-exclusive, post-discount goods value"
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated commission policy"
+          },
+          "409": {
+            "description": "Optimistic version conflict"
           }
         }
       }

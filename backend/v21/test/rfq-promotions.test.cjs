@@ -36,6 +36,9 @@ const quotePayload=(price='125.5000')=>({deliveryPaise:'1000',
   quantity:'2.000',unitCode:'BAG',unitPrice:price,taxRateBps:1800}]
 });
 test('fixture: normal customer, separate customer, two approved suppliers and operations admin',async()=>{
+ await db.appSetting.upsert({where:{key:'marketplace.commission.v1'},
+  create:{key:'marketplace.commission.v1',value:{schemaVersion:1,basis:'NET_MATERIALS',rateBps:500}},
+  update:{value:{schemaVersion:1,basis:'NET_MATERIALS',rateBps:500}}});
  const users={};
  for(const key of ['customer','otherCustomer','supplier','secondSupplier','viewer','admin']){
   users[key]=await db.user.create({data:{clerkUserId:sub(),displayName:'RFQ '+key}});

@@ -7,6 +7,7 @@ import {stableRequestHash} from './contracts';
 import {publishOutbox} from './outbox';
 import {priceCheckout,lockedCartSnapshot,PricedCheckout} from './checkout-pricing';
 import {recordOrderPromotion} from './promotion-service';
+import {commissionPaise} from './commission-policy';
 import {holdOrderItemStock,releaseOrderItemStock} from './inventory-reservations';
 import {checkoutInput,placementInput,uuid} from './checkout-validation';
 
@@ -199,6 +200,7 @@ export async function placeCheckoutOrder(db:PrismaClient,userId:string,quoteId:s
    for(const supplier of [...priced.suppliers].sort((a,b)=>a.supplierId.localeCompare(b.supplierId))){
     const child=await tx.supplierOrder.create({data:{
      purchaseOrderId:order.id,supplierId:supplier.supplierId,
+     platformFeePaise:commissionPaise(BigInt(supplier.subtotalPaise),BigInt(supplier.discountPaise),priced.commissionRateBps),
      status:'PENDING_ACCEPTANCE',subtotalPaise:BigInt(supplier.subtotalPaise),
      discountPaise:BigInt(supplier.discountPaise),taxPaise:BigInt(supplier.taxPaise),
      deliveryPaise:BigInt(supplier.deliveryPaise),totalPaise:BigInt(supplier.totalPaise)
