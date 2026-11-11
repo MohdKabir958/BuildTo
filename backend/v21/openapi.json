@@ -11690,7 +11690,7 @@
         "summary": "Finance administrator reads explicit marketplace commission policy",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "responses": {
@@ -11707,7 +11707,7 @@
         "summary": "Version-checked audited commission policy update; applies to subsequent orders",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "requestBody": {
@@ -11759,7 +11759,7 @@
         "summary": "List current customer wishlist",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "responses": {
@@ -11781,7 +11781,7 @@
         "summary": "Add approved supplier listing to customer wishlist",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "responses": {
@@ -11801,7 +11801,7 @@
         "summary": "Remove customer wishlist entry",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "responses": {
@@ -11823,7 +11823,7 @@
         "summary": "Paginated private notification inbox",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "responses": {
@@ -11845,7 +11845,7 @@
         "summary": "Mark owned notification read",
         "security": [
           {
-            "bearerAuth": []
+            "clerkBearer": []
           }
         ],
         "responses": {
