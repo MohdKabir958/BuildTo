@@ -330,7 +330,7 @@ class SupplierAuthController extends ChangeNotifier {
     };
     _notice = switch (_stage) {
       SupplierAccessStage.sessionExpired =>
-        'Your Clerk session expired. Sign in again.',
+        'Your session expired. Sign in again.',
       SupplierAccessStage.accessDenied =>
         'This account does not currently have access to that supplier.',
       SupplierAccessStage.misconfigured => 'Splyzo staging is not configured.',

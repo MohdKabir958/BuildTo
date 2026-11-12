@@ -10,6 +10,7 @@ import 'package:vendor_app/v21/api/supplier_v21_api.dart';
 import 'package:vendor_app/v21/auth/supplier_auth_controller.dart';
 import 'package:vendor_app/v21/auth/supplier_auth_gate.dart';
 import 'package:vendor_app/v21/auth/supplier_clerk_port.dart';
+import 'package:vendor_app/v21/screens/supplier_shell.dart';
 
 const supplier = '123e4567-e89b-12d3-a456-426614174000';
 const second = '123e4567-e89b-12d3-a456-426614174001';
@@ -105,6 +106,30 @@ Future<void> pumpPhone(WidgetTester tester, Widget child, Size size) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('private overlays are disposed when a supplier signs out',
+      (tester) async {
+    final clerk = UiClerk();
+    final controller = makeController(clerk);
+    addTearDown(() {
+      controller.dispose();
+      clerk.state.dispose();
+    });
+    await pumpPhone(tester, BuildToSupplierV21App(controller: controller),
+        const Size(393, 852));
+    await controller.authenticate();
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(BuildToSupplierShell));
+    unawaited(showModalBottomSheet<void>(
+        context: context,
+        builder: (_) => const Text('PRIVATE SUPPLIER DOCUMENT')));
+    await tester.pumpAndSettle();
+    expect(find.text('PRIVATE SUPPLIER DOCUMENT'), findsOneWidget);
+    await controller.signOut();
+    await tester.pumpAndSettle();
+    expect(find.text('PRIVATE SUPPLIER DOCUMENT'), findsNothing);
+    expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'cold start shows welcome immediately even if native Clerk is delayed',
@@ -156,13 +181,13 @@ void main() {
     expect(find.text('Create a new account'), findsOneWidget);
     await tester.drag(find.byType(ListView).first, const Offset(0, -500));
     await tester.pumpAndSettle();
-    expect(find.text('Retry Clerk connection'), findsOneWidget);
-    await tester.ensureVisible(find.text('Retry Clerk connection'));
+    expect(find.text('Retry connection'), findsOneWidget);
+    await tester.ensureVisible(find.text('Retry connection'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Retry Clerk connection'));
+    await tester.tap(find.text('Retry connection'));
     await tester.pumpAndSettle();
     expect(attempts, 2);
-    expect(find.text('Retry Clerk connection'), findsNothing);
+    expect(find.text('Retry connection'), findsNothing);
     expect(find.text('Welcome to Splyzo Supplier'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

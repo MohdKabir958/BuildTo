@@ -200,9 +200,9 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                         ],
                         icon: const Icon(Icons.more_vert_rounded),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
               Expanded(
                 child: IndexedStack(
                   index: selected.index,

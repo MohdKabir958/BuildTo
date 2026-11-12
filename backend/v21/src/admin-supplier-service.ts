@@ -31,7 +31,10 @@ async function lockSupplier(tx:Prisma.TransactionClient,id:string){
  if(rows.length===0)no('NOT_FOUND','Supplier not found.',404);
 }
 async function reviewer(tx:Prisma.TransactionClient,actor:string,id:string){
+ await tx.$queryRaw(Prisma.sql`SELECT "userId" FROM "AdminMembership" WHERE "userId"=${actor}::uuid FOR SHARE`);
  await requireAdminPermission(tx,actor,'SUPPLIER_APPROVE');
+ const related=await tx.supplierMember.findUnique({where:{supplierId_userId:{supplierId:id,userId:actor}}});
+ if(related)no('INDEPENDENT_SUPPLIER_REVIEW_REQUIRED','Supplier personnel cannot review their own application.',403);
 }
 async function audit(tx:Prisma.TransactionClient,actor:string,id:string,action:string,before:Prisma.InputJsonObject,after:Prisma.InputJsonObject){
  await tx.auditEvent.create({data:{
@@ -110,8 +113,8 @@ export async function attachSupplierDocument(db:PrismaClient,actor:string,id:str
   const supplier=await tx.supplier.findUniqueOrThrow({where:{id},select:{approval:true}});
   if(!['PENDING','UNDER_REVIEW','REJECTED'].includes(supplier.approval))
    no('DOCUMENT_LOCKED','Cannot attach evidence after approval.',409);
-  const media=await tx.mediaAsset.findUnique({where:{id:mediaId},select:{ownerUserId:true,sizeBytes:true,mimeType:true,sha256:true}});
-  if(!media||media.ownerUserId!==actor||!media.sha256||media.sizeBytes>BigInt(10485760)||
+  const media=await tx.mediaAsset.findUnique({where:{id:mediaId},select:{ownerUserId:true,sizeBytes:true,mimeType:true,sha256:true,purpose:true,productId:true}});
+  if(!media||media.purpose!=='EVIDENCE'||media.productId||media.ownerUserId!==actor||!media.sha256||media.sizeBytes>BigInt(10485760)||
    !['application/pdf','image/jpeg','image/png'].includes(media.mimeType))
    no('EVIDENCE_UNAVAILABLE','Use a verified private PDF/JPEG/PNG asset owned by your account.',403);
   if(await tx.supplierDocument.findFirst({where:{mediaId}}))
@@ -168,7 +171,7 @@ export async function adminSupplierDetail(db:PrismaClient,actor:string,id:string
   businessType:true,contactEmail:true,contactPhone:true,billingAddress:true,
   members:{where:{role:'OWNER'},select:{userId:true,active:true,user:{select:{displayName:true,email:true}}}},
   documents:{select:{id:true,documentType:true,status:true,reviewNote:true,expiresAt:true,createdAt:true,
-   media:{select:{mimeType:true,sizeBytes:true,sha256:true}}},orderBy:{createdAt:'asc'}}
+   media:{select:{id:true,mimeType:true,sizeBytes:true,sha256:true}}},orderBy:{createdAt:'asc'}}
  }});
  if(!found)throw new ApiError(404,'NOT_FOUND','Supplier not found.');
  const {members,documents,businessType,contactEmail,contactPhone,billingAddress,...base}=found;
@@ -176,7 +179,7 @@ export async function adminSupplierDetail(db:PrismaClient,actor:string,id:string
   owners:members.map(x=>({userId:x.userId,active:x.active,displayName:x.user.displayName,email:x.user.email})),
   documents:documents.map(x=>({id:x.id,documentType:x.documentType,status:x.status,reviewNote:x.reviewNote,
    expiresAt:iso(x.expiresAt),createdAt:x.createdAt.toISOString(),
-   mimeType:x.media.mimeType,sizeBytes:x.media.sizeBytes.toString(),digestAvailable:Boolean(x.media.sha256)}))
+   downloadPath:"/api/v2/media/"+x.media.id+"?format=base64",mimeType:x.media.mimeType,sizeBytes:x.media.sizeBytes.toString(),digestAvailable:Boolean(x.media.sha256)}))
  };
 }
 export async function reviewSupplierDocument(db:PrismaClient,actor:string,id:string,documentId:string,input:unknown){
@@ -222,6 +225,11 @@ export async function reviewSupplierApplication(db:PrismaClient,actor:string,id:
     no('INCOMPLETE_APPLICATION','Verified contact and billing address required.',409);
    const ownerCount=await tx.supplierMember.count({where:{supplierId:id,role:'OWNER',revokedAt:null}});
    if(ownerCount<1)no('OWNER_REQUIRED','Supplier requires an owner.',409);
+   const required=['BUSINESS_REGISTRATION',...(['REGULAR','COMPOSITION'].includes(old.gstRegistration)?['GST_CERTIFICATE']:[])];
+   const documents=await tx.supplierDocument.findMany({where:{supplierId:id,status:'VERIFIED',
+    OR:[{expiresAt:null},{expiresAt:{gt:new Date()}}]},select:{documentType:true,verifiedById:true,media:{select:{sha256:true}}}});
+   for(const type of required)if(!documents.some(doc=>doc.documentType===type&&doc.verifiedById&&doc.media.sha256))
+    no('VERIFIED_DOCUMENTS_REQUIRED','Current independently verified business and applicable GST evidence required.',409);
   }
   const saved=await tx.supplier.update({where:{id},data:{
    approval:decision,

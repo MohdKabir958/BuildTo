@@ -10,7 +10,7 @@ type Supplier={
  gstRegistration:string;gstin:string|null;verifiedAt:string|null;suspendedAt:string|null;createdAt:string;
 };
 type Doc={
- id:string;documentType:string;status:string;reviewNote:string|null;
+ id:string;documentType:string;status:string;reviewNote:string|null;downloadPath?:string;
  mimeType:string;sizeBytes:string;digestAvailable:boolean;expiresAt:string|null;createdAt:string;
 };
 type Detail=Supplier&{
@@ -46,6 +46,20 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
  const [review,setReview]=useState<Review|null>(null);
  const [error,setError]=useState('');
  const [info,setInfo]=useState('');
+ const [downloading,setDownloading]=useState<string|null>(null);
+ const download=async(doc:Doc)=>{
+  if(!doc.downloadPath||downloading)return;
+  setDownloading(doc.id);setError('');
+  try{
+   if(!/^\/api\/v2\/media\/[0-9a-f-]{36}\?format=base64$/.test(doc.downloadPath))throw new Error('Invalid document reference');
+   const result=await api.get<{base64:string;mimeType:string}>(doc.downloadPath);
+   if(!['application/pdf','image/png','image/jpeg'].includes(result.data.mimeType)||typeof result.data.base64!=='string'||result.data.base64.length>14000000)throw new Error('Invalid document');
+   const bytes=Uint8Array.from(atob(result.data.base64),c=>c.charCodeAt(0));
+   const url=URL.createObjectURL(new Blob([bytes],{type:result.data.mimeType}));
+   const anchor=document.createElement('a');anchor.href=url;anchor.download='verification-document.'+(result.data.mimeType==='application/pdf'?'pdf':result.data.mimeType==='image/png'?'png':'jpg');
+   anchor.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(failure){setError(message(failure));}finally{setDownloading(null);}
+ };
 
  const load=useCallback(async(reset:boolean,next?:string,signal?:AbortSignal)=>{
   setLoading(true);setError('');
@@ -150,12 +164,13 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
     </div>
     <div className="mt-6">
      <div className="flex items-center gap-2"><ClipboardCheck size={18}/><h4 className="font-bold">Evidence checklist</h4></div>
-     <p className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900"><ShieldAlert size={16} className="shrink-0"/>Evidence is private. Only metadata and document review decisions are available here; file preview/download is not implemented. Never mark a document verified without an independently approved way to inspect its actual contents.</p>
+     <p className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900"><ShieldAlert size={16} className="shrink-0"/>Evidence is private. Download and inspect each document before recording a review decision. Downloads require your current reviewer session.</p>
      {detail.documents.length===0?<p className="mt-3 text-sm text-slate-500">No documents attached yet. Approval is blocked until evidence is verified.</p>:
       <ul className="mt-3 space-y-3">{detail.documents.map(d=><li key={d.id} className="rounded-xl border border-slate-200 p-4">
        <div className="flex flex-wrap justify-between gap-3"><div>
         <p className="font-semibold">{d.documentType.replace(/_/g,' ')}</p>
         <p className="text-xs text-slate-500">{d.mimeType} · {d.sizeBytes} bytes · Digest {d.digestAvailable?'recorded':'missing'} · {d.status}</p>
+        {!self&&d.downloadPath&&<button type="button" disabled={downloading!==null} onClick={()=>void download(d)} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold">{downloading===d.id?'Downloading…':'Download private document'}</button>}
         {d.expiresAt&&<p className="text-xs text-slate-500">Expires: {date(d.expiresAt)}</p>}
         {d.reviewNote&&<p className="mt-2 text-sm text-slate-600">Review note: {d.reviewNote}</p>}
        </div>

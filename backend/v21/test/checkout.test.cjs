@@ -36,6 +36,9 @@ const add=async(token,listingId,value)=>
  send('put','/api/v2/cart/lines/'+listingId,token,qty(value,(await cart(token)).version));
 
 test('fixture: two suppliers, delivery zones, customer address, priced listings and warehouse stock',async()=>{
+ await db.appSetting.upsert({where:{key:'marketplace.commission.v1'},
+  create:{key:'marketplace.commission.v1',value:{schemaVersion:1,basis:'NET_MATERIALS',rateBps:500}},
+  update:{value:{schemaVersion:1,basis:'NET_MATERIALS',rateBps:500}}});
  for(const name of ['customer','otherCustomer']){
   const user=await db.user.create({data:{clerkUserId:subject(),displayName:'Checkout '+name}});
   state[name]=user;tokens[name]=user.clerkUserId;
@@ -173,6 +176,9 @@ test('multi-supplier order placement is atomic, repeat-safe and never assumes pa
  assert.equal(order.totalPaise,'42100');
  assert(order.reservationExpiresAt);
  state.firstOrderId=order.id;
+ const feeRows=await db.supplierOrder.findMany({where:{purchaseOrderId:order.id}});
+ assert.equal(feeRows.length,2);
+ assert(feeRows.every(row=>row.platformFeePaise>0n),'All supplier orders must snapshot a nonzero configured commission');
  const retry=await send('post','/api/v2/checkouts/'+quote.body.data.id+'/place','customer',command,idem);
  assert.equal(retry.status,200,JSON.stringify(retry.body));
  assert.equal(retry.body.replayed,true);

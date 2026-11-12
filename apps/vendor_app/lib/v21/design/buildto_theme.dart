@@ -49,7 +49,8 @@ abstract final class BuildToTheme {
       onSurface: BuildToPalette.ink,
       error: BuildToPalette.danger,
     );
-    final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+    final base = ThemeData(
+        useMaterial3: true, colorScheme: scheme, fontFamily: 'Roboto');
     return base.copyWith(
       scaffoldBackgroundColor: BuildToPalette.canvas,
       visualDensity: VisualDensity.standard,
@@ -59,30 +60,42 @@ abstract final class BuildToTheme {
         elevation: 0,
         centerTitle: false,
       ),
-      textTheme: base.textTheme.copyWith(
-        headlineMedium: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.7,
-            color: BuildToPalette.navyDeep),
-        headlineSmall: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-            color: BuildToPalette.navyDeep),
-        titleLarge: const TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-            color: BuildToPalette.navyDeep),
-        titleMedium: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: BuildToPalette.navyDeep),
-        bodyMedium: const TextStyle(
-            fontSize: 14, height: 1.4, color: BuildToPalette.ink),
-        bodySmall: const TextStyle(
-            fontSize: 12, height: 1.4, color: BuildToPalette.muted),
-      ),
+      textTheme: base.textTheme
+          .copyWith(
+            headlineMedium: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.7,
+                color: BuildToPalette.navyDeep),
+            headlineSmall: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                color: BuildToPalette.navyDeep),
+            titleLarge: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: BuildToPalette.navyDeep),
+            titleMedium: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: BuildToPalette.navyDeep),
+            bodyMedium: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 14,
+                height: 1.4,
+                color: BuildToPalette.ink),
+            bodySmall: const TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 12,
+                height: 1.4,
+                color: BuildToPalette.muted),
+          )
+          .apply(fontFamily: 'Roboto'),
       cardTheme: CardThemeData(
         color: BuildToPalette.white,
         elevation: 0,
@@ -100,7 +113,8 @@ abstract final class BuildToTheme {
           foregroundColor: BuildToPalette.white,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+              fontFamily: 'Roboto', fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -111,7 +125,8 @@ abstract final class BuildToTheme {
           side: const BorderSide(color: BuildToPalette.navy),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+              fontFamily: 'Roboto', fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -132,6 +147,7 @@ abstract final class BuildToTheme {
         backgroundColor: BuildToPalette.white,
         indicatorColor: BuildToPalette.sky,
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+              fontFamily: 'Roboto',
               color: states.contains(WidgetState.selected)
                   ? BuildToPalette.navy
                   : BuildToPalette.muted,

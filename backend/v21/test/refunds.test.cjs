@@ -82,7 +82,7 @@ async function orderWithReturn({received=true,returnedQty=2,method='RAZORPAY'}={
   supplierId:state.supplier.id,supplierOrderId:child.id,
   invoiceNumber:'RFT-'+id().replaceAll('-').slice(0,22),
   financialYear:'2026-27',status:'ISSUED',kind:'TAX_INVOICE',
-  sellerSnapshot:{legalName:'Tax Materials Pvt Ltd',gstin:'36AAAAA'+String(Math.floor(1000+Math.random()*9000))+'A1Z'+String(Math.floor(Math.random()*10))},
+  sellerSnapshot:{legalName:'Tax Materials Pvt Ltd',gstin:state.supplier.gstin},
   buyerSnapshot:{recipientName:'Return buyer',stateCode:'TS'},
   lineSnapshot:{items:[{sku,name:'Return test cement',hsn:'2523',
    unitCode:'BAG',quantity:'2',unitPrice:'50',taxRateBps:1800,

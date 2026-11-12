@@ -65,10 +65,10 @@ const PHOTO_ADDITIONS={
 const LATEST={
  ...BASELINE,
  tables:BASELINE.tables.concat(PHOTO_ADDITIONS.tables),
- columns:BASELINE.columns.concat(ADDITIONS.columns,PAYOUT_ADDITIONS.columns,PHOTO_ADDITIONS.columns),
- constraints:BASELINE.constraints.concat(ADDITIONS.constraints,PAYOUT_ADDITIONS.constraints),
- indexes:BASELINE.indexes.concat(ADDITIONS.indexes,PAYOUT_ADDITIONS.indexes),
- triggers:BASELINE.triggers.concat(ADDITIONS.triggers,PAYOUT_ADDITIONS.triggers)
+ columns:BASELINE.columns.concat(ADDITIONS.columns,PAYOUT_ADDITIONS.columns,PHOTO_ADDITIONS.columns,["MediaAsset.productId","MediaAsset.position","MediaAsset.purpose","SupplierQuote.freightSnapshot","SupplierOrder.freightSnapshot"]),
+ constraints:BASELINE.constraints.concat(ADDITIONS.constraints,PAYOUT_ADDITIONS.constraints,["MediaAsset_productId_fkey","MediaAsset_public_image_guard","supplier_quote_freight_amount","supplier_order_freight_amount"]),
+ indexes:BASELINE.indexes.concat(ADDITIONS.indexes,PAYOUT_ADDITIONS.indexes,["MediaAsset_productId_position_idx"]),
+ triggers:BASELINE.triggers.concat(ADDITIONS.triggers,PAYOUT_ADDITIONS.triggers,["buildto_quote_freight_immutable","buildto_order_freight_immutable"])
 };
 
 async function verifyExistingSchema(prisma,{baselineOnly=false}={}) {

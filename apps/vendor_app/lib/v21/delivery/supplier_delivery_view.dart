@@ -325,6 +325,19 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
         minimumPaise: item.minimumPaise));
   }
 
+  Future<void> freightRate(SupplierCoverage item) async {
+    final saved = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => FractionallySizedBox(
+            heightFactor: 0.9,
+            child: _FreightRateEditor(
+                supplierId: widget.supplierId,
+                areaId: item.areaId,
+                repository: widget.repository)));
+    if (mounted && saved == true) await refresh();
+  }
+
   Future<void> flatRate(SupplierCoverage item) async {
     if (!item.active) return;
     final current = item.rates.isEmpty ? null : item.rates.single;
@@ -483,7 +496,7 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('BUILDTO • LOCAL DELIVERY',
+                const Text('SPLYZO • LOCAL DELIVERY',
                     style: TextStyle(
                         color: BuildToPalette.orange,
                         fontSize: 12,
@@ -512,7 +525,7 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
           const SizedBox(height: 22),
           const BuildToSectionHeading(
             title: 'Configured service areas',
-            subtitle: 'Admin-controlled PIN coverage and supplier flat rates.',
+            subtitle: 'Approved PIN areas and your delivery tariffs.',
           ),
           const SizedBox(height: 12),
           if (coverage.isEmpty)
@@ -545,8 +558,9 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                     if (item.rates.isEmpty)
                       const Text('Flat freight not yet configured.')
                     else ...[
-                      Text(
-                          'Base delivery: ${deliveryMoney(item.rates.single.basePaise)}'),
+                      Text(item.rates.single.quoteRequired
+                          ? 'Freight tariff • RFQ quotation required'
+                          : 'Base delivery: ${deliveryMoney(item.rates.single.basePaise)}'),
                       Text(
                           'Handling: ${deliveryMoney(item.rates.single.handlingPaise)}'),
                       if (item.rates.single.freeAbovePaise != null)
@@ -569,6 +583,11 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
                               : null,
                           child: const Text('Flat delivery fee'),
                         ),
+                        OutlinedButton(
+                            onPressed: item.active
+                                ? () => unawaited(freightRate(item))
+                                : null,
+                            child: const Text('Truck freight tariff')),
                       ]),
                     ],
                   ],
@@ -580,4 +599,129 @@ class _SupplierDeliveryViewState extends State<SupplierDeliveryView> {
       ),
     );
   }
+}
+
+class _FreightRateEditor extends StatefulWidget {
+  const _FreightRateEditor(
+      {required this.supplierId,
+      required this.areaId,
+      required this.repository});
+  final String supplierId, areaId;
+  final SupplierDeliveryRepository repository;
+  @override
+  State<_FreightRateEditor> createState() => _FreightRateEditorState();
+}
+
+class _FreightRateEditorState extends State<_FreightRateEditor> {
+  final fields = {
+    for (final key in [
+      'vehicle',
+      'base',
+      'handling',
+      'km',
+      'tonne',
+      'volume',
+      'kgCapacity',
+      'm3Capacity'
+    ])
+      key: TextEditingController(
+          text:
+              ['vehicle', 'kgCapacity', 'm3Capacity'].contains(key) ? '' : '0')
+  };
+  bool saving = false, uncertain = false;
+  String? error;
+  @override
+  void dispose() {
+    for (final field in fields.values) {
+      field.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> save() async {
+    if (saving || uncertain) return;
+    setState(() {
+      saving = true;
+      error = null;
+    });
+    try {
+      final vehicle = fields['vehicle']!.text.trim();
+      if (vehicle.isEmpty || vehicle.length > 70) throw const FormatException();
+      String? capacity(String key) {
+        final value = fields[key]!.text.trim();
+        if (value.isEmpty) return null;
+        catalogQty(value);
+        return value;
+      }
+
+      await widget.repository
+          .configureFreightRate(widget.supplierId, widget.areaId, {
+        'vehicleClass': vehicle,
+        'baseFeePaise': deliveryRupeesToPaise(fields['base']!.text),
+        'handlingFeePaise': deliveryRupeesToPaise(fields['handling']!.text),
+        'perKmPaise': deliveryRupeesToPaise(fields['km']!.text),
+        'perTonneKmPaise': deliveryRupeesToPaise(fields['tonne']!.text),
+        'perCubicMetreKmPaise': deliveryRupeesToPaise(fields['volume']!.text),
+        'weightCapacityKg': capacity('kgCapacity'),
+        'volumeCapacityM3': capacity('m3Capacity'),
+      });
+      if (mounted) Navigator.pop(context, true);
+    } on SupplierV21Exception catch (failure) {
+      if (mounted) {
+        setState(() {
+          uncertain = failure.problem == SupplierV21Problem.network;
+          error = uncertain
+              ? 'Saving may have completed. Close and refresh delivery settings before retrying.'
+              : 'Tariff was not confirmed. Check your access, vehicle capacities and amounts.';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => error =
+            'Enter a vehicle class, exact amounts and positive capacities.');
+      }
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+          child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, MediaQuery.viewInsetsOf(context).bottom + 16),
+        child: ListView(children: [
+          Text('Truck freight tariff',
+              style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          const Text(
+              'Replaces the active tariff for this area. Customers receive the calculated freight in an RFQ quotation. Route distance must be verified by your team.'),
+          for (final entry in const {
+            'vehicle': 'Vehicle class',
+            'base': 'Base charge per trip (₹)',
+            'handling': 'Handling per trip (₹)',
+            'km': 'Charge per vehicle km (₹)',
+            'tonne': 'Charge per tonne km (₹)',
+            'volume': 'Charge per m³ km (₹)',
+            'kgCapacity': 'Vehicle capacity (kg, if applicable)',
+            'm3Capacity': 'Vehicle capacity (m³, if applicable)'
+          }.entries) ...[
+            const SizedBox(height: 14),
+            TextField(
+                controller: fields[entry.key],
+                keyboardType: entry.key == 'vehicle'
+                    ? TextInputType.text
+                    : const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: entry.value)),
+          ],
+          const SizedBox(height: 16),
+          if (error != null)
+            Text(error!, style: const TextStyle(color: BuildToPalette.danger)),
+          const SizedBox(height: 12),
+          BuildToPrimaryButton(
+              label: 'Save freight tariff',
+              busy: saving,
+              onPressed: uncertain ? null : () => unawaited(save())),
+        ]),
+      ));
 }

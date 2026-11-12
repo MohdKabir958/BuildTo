@@ -53,6 +53,18 @@ class SupplierDeliveryRepository {
     }
   }
 
+  Future<void> configureFreightRate(
+      String supplierId, String areaId, Map<String, Object?> tariff) async {
+    final response = await client.request(
+        'PUT', '${_scope(supplierId)}/areas/${catalogId(areaId)}/freight-rate',
+        body: tariff);
+    final result = catalogObject(response.data);
+    catalogId(result['id']);
+    if (result['quoteRequired'] != true) {
+      throw const FormatException('Freight tariff was not confirmed');
+    }
+  }
+
   Future<SupplierFlatRate> configureFlatRate({
     required String supplierId,
     required String areaId,

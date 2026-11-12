@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import '../api/supplier_v21_api.dart';
 import 'supplier_application_models.dart';
 
@@ -9,6 +11,24 @@ class SupplierApplicationsApi {
 
   static final RegExp _uuid =
       RegExp(r'^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$');
+
+  Future<String> uploadEvidence(Uint8List bytes, String mimeType) async {
+    if (bytes.isEmpty ||
+        bytes.length > 10 * 1024 * 1024 ||
+        !{'application/pdf', 'image/png', 'image/jpeg'}.contains(mimeType)) {
+      throw const FormatException('Choose a PDF, JPEG or PNG up to 10 MB.');
+    }
+    final response = await client.request('POST', '/api/v2/media', body: {
+      'purpose': 'EVIDENCE',
+      'mimeType': mimeType,
+      'base64': base64Encode(bytes),
+    });
+    final id = response.requireObject()['id'];
+    if (id is! String || !_uuid.hasMatch(id)) {
+      throw const FormatException('Invalid uploaded document receipt');
+    }
+    return id;
+  }
 
   Future<List<SupplierApplicationSummary>> list() async {
     final response = await client.get('/api/v2/me/supplier-applications');

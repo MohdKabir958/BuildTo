@@ -94,10 +94,10 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
           session != widget.controller.sessionKey) {
         return;
       }
-      final approved = detail?.summary.approval ==
-              SupplierApplicationStatus.approved ||
-          records.any(
-              (record) => record.approval == SupplierApplicationStatus.approved);
+      final approved =
+          detail?.summary.approval == SupplierApplicationStatus.approved ||
+              records.any((record) =>
+                  record.approval == SupplierApplicationStatus.approved);
       if (approved &&
           widget.leaveWhenApproved &&
           widget.controller.stage == SupplierAccessStage.noSupplier &&
@@ -138,7 +138,8 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => const PrivateEvidenceLinkSheet(),
+      builder: (_) =>
+          PrivateEvidenceLinkSheet(upload: widget.api.uploadEvidence),
     );
     if (!mounted ||
         !sessionOk ||
@@ -178,8 +179,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
             child: Center(
                 child: BuildToStatePanel(
           title: 'Secure account required',
-          message:
-              'Sign in with Clerk again before viewing your private applications.',
+          message: 'Sign in again before viewing your private applications.',
           icon: Icons.lock_outline_rounded,
         ))),
       );
@@ -322,7 +322,7 @@ class _NavyBanner extends StatelessWidget {
             Icon(Icons.verified_user_outlined, color: BuildToPalette.orange),
             SizedBox(width: 10),
             Expanded(
-                child: Text('BUILDTO SUPPLIER',
+                child: Text('SPLYZO SUPPLIER',
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -435,16 +435,15 @@ class _ReviewDetail extends StatelessWidget {
         Icon(Icons.lock_outline_rounded, color: BuildToPalette.navy),
         SizedBox(width: 12),
         Expanded(
-            child: Text('V2.1 does not provide raw private file uploads. '
-                'Only an account-owned, already-provisioned private asset can be linked. '
-                'Never use public KYC links.')),
+            child: Text('Upload a PDF, JPEG or PNG document up to 10 MB. '
+                'Your documents stay private and are checked by an independent reviewer.')),
       ])),
       if (canLink) ...[
         const SizedBox(height: 14),
         OutlinedButton.icon(
             onPressed: onLinkEvidence,
             icon: const Icon(Icons.attach_file_rounded),
-            label: const Text('Link pre-provisioned private evidence')),
+            label: const Text('Upload verification document')),
       ],
     ]);
   }

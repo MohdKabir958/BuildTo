@@ -29,6 +29,26 @@ class SupplierRfqRepository {
         max: 50);
   }
 
+  Future<List<({String id, String label})>> freightRates(
+      String supplierId) async {
+    final data = (await client
+            .get('/api/v2/suppliers/${catalogId(supplierId)}/delivery'))
+        .data;
+    if (data is! List<dynamic>) {
+      throw const FormatException('Invalid freight rates');
+    }
+    return [
+      for (final area in data)
+        for (final rate in (catalogObject(area)['rates'] as List<dynamic>))
+          if (catalogObject(rate)['quoteRequired'] == true)
+            (
+              id: catalogId(catalogObject(rate)['id']),
+              label:
+                  '${catalogObject(area)['areaName']} • ${catalogObject(rate)['vehicleClass'] ?? 'Freight tariff'}'
+            )
+    ];
+  }
+
   Future<SupplierQuote> submit({
     required String supplierId,
     required SupplierRfq rfq,
@@ -36,6 +56,7 @@ class SupplierRfqRepository {
     required String deliveryPaiseValue,
     required String? deliveryTerms,
     required String intent,
+    Map<String, Object?>? freight,
   }) async {
     if (!rfq.isWithinDeadline) {
       throw const FormatException('RFQ invitation has expired');
@@ -56,10 +77,11 @@ class SupplierRfqRepository {
           'deliveryPaise': deliveryPaiseValue,
           'deliveryTerms': deliveryTerms,
           'validUntil': null,
+          if (freight != null) 'freight': freight,
         }))
         .data;
     final data = catalogObject(envelope);
-    return SupplierQuote.parse(data['quote'], supplierId, rfq.id);
+    return SupplierQuote.parse(data, supplierId, rfq.id);
   }
 }
 

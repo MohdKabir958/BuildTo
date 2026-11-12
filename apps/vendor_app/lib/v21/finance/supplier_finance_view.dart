@@ -439,7 +439,7 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
                 borderRadius: BorderRadius.circular(20)),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('BUILDTO • VERIFIED MONEY RECORDS',
+              const Text('SPLYZO • VERIFIED MONEY RECORDS',
                   style: TextStyle(
                       color: BuildToPalette.orange,
                       fontWeight: FontWeight.w800,
@@ -484,7 +484,7 @@ class _SupplierFinanceViewState extends State<SupplierFinanceView> {
           if (widget.canRead && tab == 0) ...[
             const BuildToSectionHeading(
                 title: 'Settlement statements',
-                subtitle: 'Backend-authoritative, at most 100 recent entries.'),
+                subtitle: 'Your latest approved settlement records.'),
             const SizedBox(height: 10),
             if (statement!.settlements.isEmpty)
               const BuildToStatePanel(

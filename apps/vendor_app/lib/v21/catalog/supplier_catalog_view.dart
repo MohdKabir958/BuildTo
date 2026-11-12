@@ -229,7 +229,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                 Icon(Icons.inventory_2_outlined, color: BuildToPalette.orange),
                 SizedBox(width: 8),
                 Expanded(
-                    child: Text('SPLYZO • YOUR PRODUCTS',
+                    child: Text('SPLYZO • PRODUCT WORKSPACE',
                         style: TextStyle(
                             color: Colors.white,
                             letterSpacing: 1,
@@ -246,7 +246,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                       fontWeight: FontWeight.w900,
                       fontSize: 26)),
               const SizedBox(height: 8),
-              const Text('Customers see a product as soon as you save it.',
+              const Text('Products • Prices • Availability',
                   style: TextStyle(color: Color(0xFFE5F2FE), fontSize: 13)),
               if (widget.canWrite) ...[
                 const SizedBox(height: 16),
@@ -374,7 +374,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
           Text(
               bounded
                   ? 'At most 100 recent listings. Counts are lower bounds, not lifetime totals.'
-                  : 'Only current, authenticated supplier records are displayed.',
+                  : 'Listings become public after approval.',
               style: Theme.of(context).textTheme.bodySmall),
         ],
       ),

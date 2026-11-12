@@ -63,21 +63,21 @@ class _SupplierRegistrationWizardState
     final fromDisplay =
         SupplierRegistrationDraft.slugFromName(displayName.text);
     return SupplierRegistrationDraft(
-        slug: fromDisplay.isNotEmpty
-            ? fromDisplay
-            : SupplierRegistrationDraft.slugFromName(legalName.text),
-        legalName: legalName.text,
-        displayName: displayName.text,
-        contactEmail: widget.email ?? '',
-        contactPhone: phone.text,
-        gstRegistration: gst,
-        gstin: gstin.text,
-        line1: line1.text,
-        line2: line2.text,
-        city: city.text,
-        state: state.text,
-        pinCode: pinCode.text,
-      );
+      slug: fromDisplay.isNotEmpty
+          ? fromDisplay
+          : SupplierRegistrationDraft.slugFromName(legalName.text),
+      legalName: legalName.text,
+      displayName: displayName.text,
+      contactEmail: widget.email ?? '',
+      contactPhone: phone.text,
+      gstRegistration: gst,
+      gstin: gstin.text,
+      line1: line1.text,
+      line2: line2.text,
+      city: city.text,
+      state: state.text,
+      pinCode: pinCode.text,
+    );
   }
 
   bool _allValid() {
@@ -114,8 +114,7 @@ class _SupplierRegistrationWizardState
       }
       if (step == 0 &&
           SupplierRegistrationDraft.validateSlug(_draft().slug) != null) {
-        setState(() =>
-            error = 'Use a business name with letters or numbers.');
+        setState(() => error = 'Use a business name with letters or numbers.');
         return;
       }
       setState(() {

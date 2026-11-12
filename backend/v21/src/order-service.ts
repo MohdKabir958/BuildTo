@@ -7,6 +7,7 @@ import {stableRequestHash} from './contracts';
 import {publishOutbox} from './outbox';
 import {priceCheckout,lockedCartSnapshot,PricedCheckout} from './checkout-pricing';
 import {recordOrderPromotion} from './promotion-service';
+import {commissionPaise} from './commission-policy';
 import {holdOrderItemStock,releaseOrderItemStock} from './inventory-reservations';
 import {checkoutInput,placementInput,uuid} from './checkout-validation';
 
@@ -32,7 +33,7 @@ const orderSelect={
  payments:{select:{status:true,provider:true,paymentMethod:true,capturedPaise:true},orderBy:{createdAt:'desc' as const}},
  supplierOrders:{select:{
   id:true,supplierId:true,sourceQuoteId:true,status:true,codRecordedPaise:true,codVerifiedPaise:true,subtotalPaise:true,discountPaise:true,
-  taxPaise:true,deliveryPaise:true,totalPaise:true,
+  taxPaise:true,deliveryPaise:true,totalPaise:true,freightSnapshot:true,
   items:{select:{id:true,listingId:true,skuSnapshot:true,nameSnapshot:true,
    unitCode:true,quantity:true,unitPrice:true,taxablePaise:true,
    discountPaise:true,taxPaise:true,lineTotalPaise:true,
@@ -61,7 +62,7 @@ function orderDTO(o:any){
    id:s.id,supplierId:s.supplierId,sourceQuoteId:s.sourceQuoteId,status:s.status,
    codRecordedPaise:s.codRecordedPaise.toString(),codVerifiedPaise:s.codVerifiedPaise.toString(),
    subtotalPaise:s.subtotalPaise.toString(),discountPaise:s.discountPaise.toString(),
-   taxPaise:s.taxPaise.toString(),deliveryPaise:s.deliveryPaise.toString(),
+   taxPaise:s.taxPaise.toString(),deliveryPaise:s.deliveryPaise.toString(),freightSnapshot:s.freightSnapshot,
    totalPaise:s.totalPaise.toString(),
    items:s.items.map((i:any)=>({
     id:i.id,listingId:i.listingId,sku:i.skuSnapshot,name:i.nameSnapshot,
@@ -199,6 +200,7 @@ export async function placeCheckoutOrder(db:PrismaClient,userId:string,quoteId:s
    for(const supplier of [...priced.suppliers].sort((a,b)=>a.supplierId.localeCompare(b.supplierId))){
     const child=await tx.supplierOrder.create({data:{
      purchaseOrderId:order.id,supplierId:supplier.supplierId,
+     platformFeePaise:commissionPaise(BigInt(supplier.subtotalPaise),BigInt(supplier.discountPaise),priced.commissionRateBps),
      status:'PENDING_ACCEPTANCE',subtotalPaise:BigInt(supplier.subtotalPaise),
      discountPaise:BigInt(supplier.discountPaise),taxPaise:BigInt(supplier.taxPaise),
      deliveryPaise:BigInt(supplier.deliveryPaise),totalPaise:BigInt(supplier.totalPaise)

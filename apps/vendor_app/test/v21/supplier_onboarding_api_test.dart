@@ -70,8 +70,8 @@ void main() {
   });
 
   test('GST, slug, phone, address and PIN validation match backend shape', () {
-    expect(SupplierRegistrationDraft.slugFromName('MK Suppliers'),
-        'mk-suppliers');
+    expect(
+        SupplierRegistrationDraft.slugFromName('MK Suppliers'), 'mk-suppliers');
     expect(SupplierRegistrationDraft.slugFromName('Materials Hub'),
         'materials-hub');
     expect(SupplierRegistrationDraft.slugFromName('A'), '');

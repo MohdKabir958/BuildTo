@@ -79,10 +79,12 @@ class SupplierFlatRate {
     required this.id,
     required this.basePaise,
     required this.handlingPaise,
+    this.quoteRequired = false,
     this.freeAbovePaise,
   });
   final String id, basePaise, handlingPaise;
   final String? freeAbovePaise;
+  final bool quoteRequired;
 
   factory SupplierFlatRate.parse(Object? raw) {
     final data = catalogObject(raw);
@@ -90,6 +92,7 @@ class SupplierFlatRate {
       id: catalogId(data['id']),
       basePaise: deliveryPaise(data['baseFeePaise']),
       handlingPaise: deliveryPaise(data['handlingFeePaise']),
+      quoteRequired: data['quoteRequired'] == true,
       freeAbovePaise: data['freeAbovePaise'] == null
           ? null
           : deliveryPaise(data['freeAbovePaise']),

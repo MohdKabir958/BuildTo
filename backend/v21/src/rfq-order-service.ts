@@ -5,6 +5,7 @@ import {executeIdempotently} from './idempotency';
 import {placementInput,record,uuid,money} from './checkout-validation';
 import {quoteLineAmounts} from './rfq-validation';
 import {splitOrderGst} from './checkout-tax';
+import {requireCommissionPolicy,commissionPaise} from './commission-policy';
 import {outbox,reserveStock,getCustomerOrder} from './order-service';
 
 // RFQ customer accepts the quote first; this separate action converts the
@@ -107,6 +108,7 @@ export async function placeAcceptedRfqOrder(db:PrismaClient,customerId:string,
       customerId_clientRequestId:{customerId,clientRequestId}
     },select:{id:true}}))
     throw new ApiError(409,'CLIENT_REQUEST_ID_REUSED','Use a new request ID.');
+   const commissionPolicy=await requireCommissionPolicy(tx);
    const parent=await tx.purchaseOrder.create({data:{
     customerId,clientRequestId,publicNumber:'BT-RFQ-'+randomUUID().replaceAll('-','').slice(0,24).toUpperCase(),
     currency:'INR',status:'PLACED',
@@ -116,6 +118,8 @@ export async function placeAcceptedRfqOrder(db:PrismaClient,customerId:string,
    },select:{id:true}});
    const order=await tx.supplierOrder.create({data:{
     purchaseOrderId:parent.id,supplierId:quote.supplierId,sourceQuoteId:quote.id,
+    ...(quote.freightSnapshot?{freightSnapshot:quote.freightSnapshot as Prisma.InputJsonObject}:{}),
+    platformFeePaise:commissionPaise(quote.subtotalPaise,0n,commissionPolicy.rateBps),
     status:'PENDING_ACCEPTANCE',subtotalPaise:quote.subtotalPaise,
     taxPaise:quote.taxPaise,discountPaise:0n,deliveryPaise:quote.deliveryPaise,
     totalPaise:quote.totalPaise

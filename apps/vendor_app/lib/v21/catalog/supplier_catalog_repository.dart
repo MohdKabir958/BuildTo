@@ -26,15 +26,9 @@ class CatalogListingInput {
     required this.taxRateBps,
     required this.taxInclusive,
   });
-  final String productId,
-      sku,
-      unitCode;
+  final String productId, sku, unitCode;
   final String? productName, categoryId, imageUrl;
-  final String
-      packSize,
-      minOrderQty,
-      stepQty,
-      unitPrice;
+  final String packSize, minOrderQty, stepQty, unitPrice;
   final String? maxOrderQty, mrpPaise;
   final int taxRateBps;
   final bool taxInclusive;

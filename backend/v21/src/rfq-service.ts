@@ -1,3 +1,4 @@
+import {rfqFreightSnapshot} from './freight';
 import {randomUUID} from 'node:crypto';
 import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
@@ -24,7 +25,7 @@ function rfqDTO(r:any){
 const quoteSelect={
  id:true,rfqId:true,supplierId:true,quoteNumber:true,version:true,status:true,
  subtotalPaise:true,taxPaise:true,deliveryPaise:true,totalPaise:true,
- deliveryTerms:true,validUntil:true,createdAt:true,acceptedAt:true,
+ freightSnapshot:true,deliveryTerms:true,validUntil:true,createdAt:true,acceptedAt:true,
  lines:{select:{rfqItemId:true,listingId:true,quantity:true,unitCode:true,unitPrice:true,
   taxRateBps:true,lineTotalPaise:true},orderBy:{rfqItemId:'asc' as const}},
 } as const;
@@ -32,7 +33,7 @@ function quoteDTO(q:any){
  return {id:q.id,rfqId:q.rfqId,supplierId:q.supplierId,quoteNumber:q.quoteNumber,
  version:q.version,status:q.status,subtotalPaise:q.subtotalPaise.toString(),
  taxPaise:q.taxPaise.toString(),deliveryPaise:q.deliveryPaise.toString(),
- totalPaise:q.totalPaise.toString(),deliveryTerms:q.deliveryTerms,
+ totalPaise:q.totalPaise.toString(),freightSnapshot:q.freightSnapshot,deliveryTerms:q.deliveryTerms,
  validUntil:q.validUntil?.toISOString()??null,createdAt:q.createdAt.toISOString(),
  acceptedAt:q.acceptedAt?.toISOString()??null,
  lines:q.lines.map((x:any)=>({rfqItemId:x.rfqItemId,listingId:x.listingId,
@@ -203,7 +204,10 @@ export async function submitSupplierQuote(db:PrismaClient,userId:string,supplier
    taxes=boundedPaise(taxes+money.taxPaise);
    return {...line,lineTotalPaise:money.lineTotalPaise};
   });
-  const total=boundedPaise(subtotal+taxes+input.deliveryPaise);
+  const freightSnapshot=input.freight===undefined?null:await rfqFreightSnapshot(tx,supplierId,rfqId,input.freight);
+  const deliveryPaise=freightSnapshot?BigInt(String(freightSnapshot.amountPaise)):input.deliveryPaise;
+  if(freightSnapshot&&input.deliveryPaise!==0n&&input.deliveryPaise!==deliveryPaise)throw new ApiError(400,'FREIGHT_AMOUNT_MISMATCH','Use the calculated freight amount.');
+  const total=boundedPaise(subtotal+taxes+deliveryPaise);
   const previous=await tx.supplierQuote.findFirst({where:{rfqId,supplierId},
    orderBy:{version:'desc'},select:{id:true,quoteNumber:true,version:true,status:true}});
   if(previous&&!['SUBMITTED','REVISED','WITHDRAWN'].includes(previous.status))
@@ -215,7 +219,8 @@ export async function submitSupplierQuote(db:PrismaClient,userId:string,supplier
   const quote=await tx.supplierQuote.create({data:{
    rfqId,supplierId,quoteNumber:previous?.quoteNumber??('QT-'+randomUUID().replaceAll('-','').slice(0,20).toUpperCase()),
    version,status:'SUBMITTED',deliveryTerms:input.deliveryTerms,validUntil:input.validUntil,
-   subtotalPaise:subtotal,taxPaise:taxes,deliveryPaise:input.deliveryPaise,totalPaise:total,
+   subtotalPaise:subtotal,taxPaise:taxes,deliveryPaise,totalPaise:total,
+   ...(freightSnapshot?{freightSnapshot}:{}),
    lines:{create:lines.map(x=>({
     rfqItemId:x.rfqItemId,listingId:x.listingId,quantity:x.quantity,unitCode:x.unitCode,
     unitPrice:x.unitPrice,taxRateBps:x.taxRateBps,lineTotalPaise:x.lineTotalPaise
