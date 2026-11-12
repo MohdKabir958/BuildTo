@@ -118,7 +118,7 @@ void main() {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.owner);
     expect(find.text('Material catalog'), findsOneWidget);
-    expect(find.text('Add material listing'), findsOneWidget);
+    expect(find.text('Add a product'), findsOneWidget);
     await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     expect(find.textContaining('₹315.25'), findsWidgets);
@@ -131,15 +131,15 @@ void main() {
       (tester) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.viewer);
-    expect(find.text('Add material listing'), findsNothing);
+    expect(find.text('Add a product'), findsNothing);
     await showFirstListing(tester);
     expect(find.text('CEMENT-43'), findsOneWidget);
     expect(server.reads, 1);
     await tester.tap(find.text('CEMENT-43'));
     await tester.pumpAndSettle();
     expect(find.text('Listing details'), findsOneWidget);
-    expect(find.text('Edit listing'), findsNothing);
-    expect(find.text('Submit for admin review'), findsNothing);
+    expect(find.text('Change price'), findsNothing);
+    expect(find.text('Show to customers'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

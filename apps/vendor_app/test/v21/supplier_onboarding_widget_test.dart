@@ -103,6 +103,7 @@ void main() {
         posted++;
         final data = jsonDecode(request.body) as Map<String, dynamic>;
         expect(data['contactEmail'], 'owner@example.test');
+        expect(data['slug'], 'materials-hub');
         expect(data['gstRegistration'], 'REGULAR');
         expect(data['billingAddress']['pinCode'], '500001');
         submitted = true;
@@ -133,7 +134,6 @@ void main() {
     await tester.enterText(
         field('Registered legal name'), 'Materials Hub Pvt Ltd');
     await tester.enterText(field('Supplier display name'), 'Materials Hub');
-    await tester.enterText(field('Unique business slug'), 'materials-hub');
     tester.testTextInput.hide();
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -199,6 +199,66 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Your business'), findsOneWidget);
     expect(find.text('Approved'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('approved application opens the supplier home', (tester) async {
+    final clerk = ClerkFixture();
+    var membershipReady = false;
+    final backend = MockClient((request) async {
+      final path = request.url.path;
+      if (path == '/api/v2/me') {
+        return http.Response(
+            jsonEncode({
+              'data': {
+                'id': 'user-db',
+                'displayName': 'Supplier Tester',
+                'suppliers': membershipReady
+                    ? [
+                        {'supplierId': supplierId, 'role': 'OWNER'}
+                      ]
+                    : [],
+              }
+            }),
+            200);
+      }
+      if (path == '/api/v2/me/supplier-applications') {
+        membershipReady = true;
+        return http.Response(
+            jsonEncode({
+              'data': [summary(approval: 'APPROVED')]
+            }),
+            200);
+      }
+      if (path == '/api/v2/suppliers/$supplierId/access') {
+        return http.Response(
+            jsonEncode({
+              'data': {'supplierId': supplierId, 'role': 'OWNER'}
+            }),
+            200);
+      }
+      return http.Response('{"error":{"code":"NOT_FOUND"}}', 404);
+    });
+    final controller = SupplierAuthController(
+        clerk: clerk,
+        api: SupplierV21Api(
+            origin: Uri.parse('https://buildto-v21-staging.onrender.com'),
+            token: () => clerk.token(),
+            httpClient: backend));
+    addTearDown(() {
+      controller.dispose();
+      clerk.identityValue.dispose();
+    });
+    await pumpAt(tester, BuildToSupplierV21App(controller: controller),
+        const Size(393, 852));
+    await tester.tap(find.text('Sign in to my account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open supplier applications'));
+    await tester.pumpAndSettle();
+    expect(find.text('Supplier registration'), findsNothing);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Catalog'), findsOneWidget);
+    expect(find.text('Verified'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

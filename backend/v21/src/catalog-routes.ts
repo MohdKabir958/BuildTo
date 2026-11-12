@@ -1,10 +1,11 @@
-import type {Express,Request,Response,NextFunction,RequestHandler} from 'express';
+import express, {type Express,type Request,type Response,type NextFunction,type RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {publicCategories,publicBrands,publicProducts,publicUnits,publicListings} from './catalog-read';
 import {createCategory,updateCategory,createBrand,createProduct,updateProduct,addProductConversion} from './catalog-admin';
 import {adminCategories,adminBrands,adminProducts} from './catalog-admin-read';
 import {createListing,ownListings,updateListing,submitListing,replacePriceTiers,pendingListings,reviewListing} from './catalog-listings';
+import {productPhotoContentType,readProductPhoto,storeProductPhoto} from './catalog-photos';
 
 const queryString=(x:unknown,name:string):string|undefined=>{
  if(x===undefined)return undefined;
@@ -34,6 +35,15 @@ export function registerPublicCatalog(app:Express,db:PrismaClient) {
    categoryId:queryString(req.query.categoryId,'categoryId'),cursor:queryString(req.query.cursor,'cursor'),
    search:queryString(req.query.search,'search'),
  })));
+ app.get('/api/v2/catalog/images/:imageId',async(req,res,next)=>{
+  try{
+   const photo=await readProductPhoto(db,req.params.imageId);
+   res.setHeader('Content-Type',photo.mimeType);
+   res.setHeader('Cache-Control','public, max-age=86400');
+   res.setHeader('X-Content-Type-Options','nosniff');
+   res.status(200).send(Buffer.from(photo.bytes));
+  }catch(error){next(error);}
+ });
  app.get('/api/v2/catalog/listings',handlers(req=>{
    const productId=queryString(req.query.productId,'productId');
    if(!productId)throw new ApiError(400,'PRODUCT_ID_REQUIRED','productId filter is required.');
@@ -63,6 +73,16 @@ export function registerProtectedCatalog(app:Express,db:PrismaClient,auth:Reques
  app.get(a+'/listings/pending',auth,handlers((_req,res)=>pendingListings(db,owned(res))));
  app.post(a+'/listings/:listingId/review',auth,handlers((req,res)=>
    reviewListing(db,owned(res),req.params.listingId,req.body)));
+ app.post('/api/v2/suppliers/:supplierId/product-photos',auth,
+  express.raw({limit:'8mb',type:req=>productPhotoContentType(String(req.headers['content-type']||''))!==null}),
+  async(req,res,next)=>{
+   try{
+    if(!Buffer.isBuffer(req.body)||req.body.length===0)
+     throw new ApiError(415,'UNSUPPORTED_IMAGE','Use a JPEG, PNG, WebP, GIF, BMP, HEIC, or AVIF photo.');
+    const saved=await storeProductPhoto(db,owned(res),req.params.supplierId,req.body,String(req.header('content-type')||''));
+    res.status(201).json({data:saved,requestId:res.locals.requestId});
+   }catch(error){next(error);}
+  });
  const s='/api/v2/suppliers/:supplierId/listings';
  app.get(s,auth,handlers((req,res)=>ownListings(db,owned(res),req.params.supplierId)));
  app.post(s,auth,async(req,res,next)=>{

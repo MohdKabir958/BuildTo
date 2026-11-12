@@ -1,4 +1,4 @@
-import {createHash, randomUUID} from 'node:crypto';
+import {createHash} from 'node:crypto';
 import {readFileSync,readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 import type {PrismaClient} from '../../generated/buildto-v21';
@@ -10,6 +10,7 @@ export const REVIEWED_V21_MIGRATIONS=[
  '20261104_return_refund_credit_note_link',
  '20261104_payout_beneficiary_reconciliation',
  '20261107_step1_partial_shipment_allocation',
+ '20261111_supplier_product_photo',
  '20261112_media_product_images',
  '20261112_rfq_freight_snapshot'
 ] as const;

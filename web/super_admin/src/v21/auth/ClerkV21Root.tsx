@@ -14,12 +14,23 @@ function Frame({children}:{children:React.ReactNode}) {
   return <main className="flex min-h-screen items-center justify-center bg-[#F5F7FB] px-4 py-10 text-[#172D49]">
     <div className="w-full max-w-md rounded-[24px] border border-slate-200 bg-white p-7 shadow-xl sm:p-9">
       <div className="mb-7 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#102B4D] text-2xl font-black text-amber-300" aria-hidden="true">B</span>
-        <div><p className="text-lg font-extrabold">BuildTo</p><p className="text-xs font-medium text-slate-500">Secure administrator workspace</p></div>
+        <img src="/brand/splyzo-logo.png" alt="" className="h-11 w-11 rounded-xl object-contain"/>
+        <div><p className="text-lg font-extrabold">Splyzo</p><p className="text-xs font-medium text-slate-500">Secure administrator workspace</p></div>
       </div>
       {children}
     </div>
   </main>;
+}
+
+function useClerkScreen() {
+  const read=()=>window.location.hash.includes('sign-up')?'sign-up':'sign-in';
+  const [screen,setScreen]=useState(read);
+  useEffect(()=>{
+    const onHash=()=>setScreen(read());
+    window.addEventListener('hashchange',onHash);
+    return ()=>window.removeEventListener('hashchange',onHash);
+  },[]);
+  return screen;
 }
 
 function ClerkV21Gate() {
@@ -44,7 +55,7 @@ function ClerkV21Gate() {
       }catch(error){
         if(controller.signal.aborted)return;
         const message=error instanceof AdminAccessError && error.status===403
-          ?'Your Clerk account is not an active BuildTo administrator. Ask the owner to grant access.'
+          ?'Your Clerk account is not an active Splyzo administrator. Ask the owner to grant access.'
           :error instanceof AdminAccessError && error.status===401
           ?'Clerk could not authorize this session. Sign out and sign in again.'
           :'Cannot verify admin access. Check the API connection and retry.';
@@ -55,10 +66,7 @@ function ClerkV21Gate() {
   },[isLoaded,isSignedIn,identity,getToken,apiBaseUrl,retry]);
 
   if(!isLoaded)return <Frame><p role="status" className="text-sm">Loading Clerk authentication…</p></Frame>;
-  if(!isSignedIn)return <Frame>
-    <div className="mb-5"><h1 className="text-2xl font-extrabold">Admin sign in</h1><p className="mt-2 text-sm leading-6 text-slate-600">Use your approved BuildTo Clerk account. Signing up does not grant administrator access.</p></div>
-    <SignIn routing="hash" appearance={{variables:{colorPrimary:'#123E6A',borderRadius:'12px'},elements:{rootBox:'w-full',card:'shadow-none border-0',cardBox:'shadow-none'}}}/>
-  </Frame>;
+  if(!isSignedIn)return <AuthScreen/>;
   if(state.phase==='allowed'&&state.identity===identity&&state.admin)
     return <V21ApiProvider client={new V21ApiClient(apiBaseUrl,()=>getToken())}><AdminShell apiBaseUrl={apiBaseUrl} administrator={state.admin} onSignOut={()=>{void signOut();}}/><div className="fixed bottom-4 right-4 z-30 rounded-full bg-white p-1 shadow-lg"><UserButton/></div></V21ApiProvider>;
   return <Frame>
@@ -72,10 +80,24 @@ function ClerkV21Gate() {
   </Frame>;
 }
 
+function AuthScreen() {
+  const screen=useClerkScreen();
+  const signingUp=screen==='sign-up';
+  return <Frame>
+    <div className="mb-5">
+      <h1 className="text-2xl font-extrabold">{signingUp?'Create a Splyzo account':'Admin sign in'}</h1>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{signingUp
+        ?'Use your email to create a Splyzo account. An owner still has to grant administrator access.'
+        :'Use your approved Splyzo account. Creating an account does not grant administrator access.'}</p>
+    </div>
+    <SignIn routing="hash" appearance={{variables:{colorPrimary:'#123E6A',borderRadius:'12px'},elements:{rootBox:'w-full',card:'shadow-none border-0',cardBox:'shadow-none'}}}/>
+  </Frame>;
+}
+
 export function ClerkV21Root() {
   const key=import.meta.env.VITE_CLERK_PUBLISHABLE_KEY||'';
   if(!stagingOnly(import.meta.env.VITE_AUTH_MODE,key)){
-    return <Frame><h1 className="text-xl font-bold">Staging authentication not configured</h1><p className="mt-3 text-sm text-slate-600">BuildTo Admin V2.1 requires a Clerk development publishable key and clerk-test mode. No legacy passcode fallback is permitted.</p></Frame>;
+    return <Frame><h1 className="text-xl font-bold">Staging authentication not configured</h1><p className="mt-3 text-sm text-slate-600">Splyzo Admin requires a Clerk development publishable key and clerk-test mode. No legacy passcode fallback is permitted.</p></Frame>;
   }
   return <ClerkProvider publishableKey={key} afterSignOutUrl="/">
     <ClerkLoading><Frame><p role="status" className="text-sm">Loading secure sign-in…</p></Frame></ClerkLoading>

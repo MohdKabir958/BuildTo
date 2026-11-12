@@ -1,4 +1,5 @@
 import {PrivateFileMediaStore} from './media';
+import {privateS3MediaStore} from './media-s3';
 import http from 'node:http';
 import {readConfig} from './config';
 import {createV21App} from './app';
@@ -26,6 +27,7 @@ async function main() {
   let server:http.Server|undefined;
   let recoveryTimer:ReturnType<typeof setInterval>|undefined;
   try {
+    await assertV21AllMigrationsApplied(db);
     const schema=await verifyExistingSchema(db);
     if(!schema.migrationHistoryExists)
       throw new Error('V21_MIGRATION_LEDGER_REQUIRED: complete staging Prisma baseline before API startup.');
@@ -49,7 +51,7 @@ async function main() {
       razorpayWebhookSecret:config.razorpayWebhookSecret??undefined,paymentGateway,
       payoutEvidenceGateway,
       deviceEncryptionKey:process.env.BUILDTO_V21_DEVICE_ENCRYPTION_KEY,
-      mediaStore:process.env.BUILDTO_V21_MEDIA_ROOT?new PrivateFileMediaStore(process.env.BUILDTO_V21_MEDIA_ROOT):undefined,
+      mediaStore:privateS3MediaStore(process.env)??(process.env.BUILDTO_V21_MEDIA_ROOT?new PrivateFileMediaStore(process.env.BUILDTO_V21_MEDIA_ROOT):undefined),
       readinessCheck:()=>assertV21AllMigrationsApplied(db),
       deliveryOtpSecret:config.deliveryOtpHmacSecret??undefined});
     server=http.createServer(app);

@@ -122,38 +122,16 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
             children: [
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  narrow ? 12 : 20,
-                  16,
-                  narrow ? 12 : 20,
-                  10,
+                  narrow ? 8 : 12,
+                  8,
+                  narrow ? 4 : 8,
+                  8,
                 ),
                 child: Row(
                   children: [
-                    const Expanded(child: BuildToBrandMark(compact: true)),
-                    const SizedBox(width: 8),
-                    BuildToStatusChip(
-                      label: widget.verifiedSupplier == null
-                          ? 'Staging'
-                          : 'Verified',
-                      status: widget.verifiedSupplier == null
-                          ? BuildToStatus.pending
-                          : BuildToStatus.success,
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(),
-              if (widget.verifiedSupplier != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.business_outlined,
-                        size: 18,
-                        color: BuildToPalette.navy,
-                      ),
-                      const SizedBox(width: 8),
+                    const BuildToBrandMark(compact: true),
+                    if (widget.verifiedSupplier != null) ...[
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,6 +151,18 @@ class _BuildToSupplierShellState extends State<BuildToSupplierShell> {
                           ],
                         ),
                       ),
+                    ] else
+                      const Spacer(),
+                    const SizedBox(width: 8),
+                    BuildToStatusChip(
+                      label: widget.verifiedSupplier == null
+                          ? 'Staging'
+                          : 'Verified',
+                      status: widget.verifiedSupplier == null
+                          ? BuildToStatus.pending
+                          : BuildToStatus.success,
+                    ),
+                    if (widget.verifiedSupplier != null)
                       PopupMenuButton<String>(
                         tooltip: 'Supplier account actions',
                         onSelected: (value) {

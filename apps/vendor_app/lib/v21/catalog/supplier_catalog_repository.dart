@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import '../api/supplier_v21_api.dart';
 import 'supplier_catalog_models.dart';
 
@@ -12,6 +13,9 @@ class CatalogListingInput {
   const CatalogListingInput({
     required this.productId,
     required this.sku,
+    this.productName,
+    this.categoryId,
+    this.imageUrl,
     required this.unitCode,
     required this.packSize,
     required this.minOrderQty,
@@ -24,7 +28,9 @@ class CatalogListingInput {
   });
   final String productId,
       sku,
-      unitCode,
+      unitCode;
+  final String? productName, categoryId, imageUrl;
+  final String
       packSize,
       minOrderQty,
       stepQty,
@@ -33,9 +39,19 @@ class CatalogListingInput {
   final int taxRateBps;
   final bool taxInclusive;
 
+  bool get namesOwnProduct => (productName ?? '').trim().isNotEmpty;
+
   void validate() {
-    catalogId(productId);
-    catalogSku(sku);
+    if (namesOwnProduct) {
+      final ownName = productName!.trim();
+      if (ownName.length > 240) {
+        throw const FormatException('Enter a shorter product name.');
+      }
+      if (categoryId != null && categoryId!.isNotEmpty) catalogId(categoryId!);
+    } else {
+      catalogId(productId);
+      catalogSku(sku);
+    }
     if (unitCode.length > 20 ||
         !RegExp(r'^[A-Z0-9][A-Z0-9._-]*$').hasMatch(unitCode)) {
       throw const FormatException('Select a valid product unit');
@@ -67,8 +83,14 @@ class CatalogListingInput {
     validate();
     return {
       if (expectedVersion == null) ...{
-        'productId': productId,
-        'sku': catalogSku(sku),
+        if (namesOwnProduct) ...{
+          'productName': productName!.trim(),
+          if (categoryId != null && categoryId!.isNotEmpty)
+            'categoryId': categoryId,
+        } else ...{
+          'productId': productId,
+          'sku': catalogSku(sku),
+        },
         'unitCode': unitCode,
       } else
         'expectedVersion': expectedVersion,
@@ -80,6 +102,7 @@ class CatalogListingInput {
       'mrpPaise': mrpPaise,
       'taxRateBps': taxRateBps,
       'taxInclusive': taxInclusive,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 }
@@ -132,6 +155,23 @@ class SupplierCatalogRepository {
     final response = await client.get('/api/v2/catalog/products',
         query: query.isEmpty ? null : query);
     return CatalogProductPage.fromJson(response.data);
+  }
+
+  Future<String> uploadProductPhoto({
+    required String supplierId,
+    required Uint8List bytes,
+    required String contentType,
+  }) async {
+    final response = await client.sendBytes(
+      '/api/v2/suppliers/${catalogId(supplierId)}/product-photos',
+      bytes,
+      contentType,
+    );
+    final url = response.requireObject()['imageUrl'];
+    if (url is! String || !url.startsWith('/api/v2/catalog/images/')) {
+      throw const FormatException('Photo was not stored.');
+    }
+    return url;
   }
 
   Future<CatalogListing> create({

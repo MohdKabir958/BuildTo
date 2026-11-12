@@ -28,10 +28,12 @@
     "build:v21": "npm run db:v21:generate && tsc -p v21/tsconfig.json",
     "test:v21:api": "node --test --test-concurrency=1 v21/test/*.test.cjs",
     "test:v21:identity": "node --test v21/test/identity.test.cjs",
-    "release:v21:preflight": "node v21/scripts/release-preflight.cjs"
+    "release:v21:preflight": "node v21/scripts/release-preflight.cjs",
+    "db:v21:deploy": "prisma migrate deploy --schema prisma/v21/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.1106.0",
+    "@aws-sdk/client-s3": "^3.1106.0",
     "@clerk/express": "^2.1.81",
     "@prisma/client": "^5.14.0",
     "axios": "^1.6.8",

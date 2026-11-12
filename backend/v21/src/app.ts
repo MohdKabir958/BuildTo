@@ -121,6 +121,7 @@ export function createV21App(deps:AppDependencies) {
   app.use(express.json({limit:'64kb',strict:true}));
   app.use((req,res,next)=>{
     if(['POST','PUT','PATCH'].includes(req.method) && req.path.startsWith('/api/v2/') &&
+       !req.path.endsWith('/product-photos') &&
        !req.is('application/json'))return next(new ApiError(415,'JSON_REQUIRED','Content-Type must be application/json.'));
     next();
   });

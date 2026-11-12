@@ -27,8 +27,8 @@ const safeRows=()=>REVIEWED_V21_MIGRATIONS.map((migration_name,i)=>({
 }));
 const safeCounts=()=>Object.fromEntries(INTEGRITY_COUNTERS.map(k=>[k,0]));
 
-test('release manifest allows exactly 6 reviewed migrations, all applied with matching SHA256',()=>{
- assert.equal(REVIEWED_V21_MIGRATIONS.length,6);
+test('release manifest allows exactly 7 reviewed migrations, all applied with matching SHA256',()=>{
+ assert.equal(REVIEWED_V21_MIGRATIONS.length,7);
  assert.doesNotThrow(()=>assertMigrationLedgerRecords(safeRows()));
  assert.throws(()=>assertMigrationLedgerRecords(safeRows().slice(1)),/LEDGER_INCOMPLETE/);
  assert.throws(()=>assertMigrationLedgerRecords([...safeRows(),{

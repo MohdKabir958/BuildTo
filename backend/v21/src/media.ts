@@ -90,7 +90,8 @@ export function registerPublicImages(app:Express,db:PrismaClient,store?:MediaSto
  app.get('/api/v2/catalog/images/:mediaId',async(req,res,next)=>{try{
   const id=uuid(req.params.mediaId,'mediaId');
   const asset=await db.mediaAsset.findFirst({where:{id,purpose:'CATALOG_IMAGE',product:{active:true,category:{active:true}}}});
-  if(!asset||!store)throw new ApiError(404,'NOT_FOUND','Image unavailable.');
+  if(!asset){next();return;}
+  if(!store)throw new ApiError(404,'NOT_FOUND','Image unavailable.');
   const bytes=await store.get(asset.objectKey);
   if(createHash('sha256').update(bytes).digest('hex')!==asset.sha256)throw new ApiError(503,'MEDIA_INTEGRITY_FAILED','Image unavailable.');
   res.type('png').send(bytes);

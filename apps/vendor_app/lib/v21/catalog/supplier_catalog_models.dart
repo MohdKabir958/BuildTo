@@ -160,8 +160,9 @@ enum CatalogListingStatus {
         suspended => 'Suspended',
         archived => 'Archived',
       };
-  bool get canEdit => this == draft || this == rejected || this == approved;
-  bool get canSubmit => this == draft || this == rejected;
+  bool get canEdit =>
+      this == draft || this == rejected || this == approved || this == pending;
+  bool get canSubmit => this == draft || this == rejected || this == pending;
   bool get canPrice => this != archived && this != suspended;
 }
 
@@ -281,8 +282,11 @@ class CatalogListing {
     required this.taxRateBps,
     required this.taxInclusive,
     required this.tiers,
+    this.productName,
+    this.imageUrl,
   });
   final String id, supplierId, productId, sku, unitCode;
+  final String? productName, imageUrl;
   final CatalogListingStatus status;
   final bool active, taxInclusive;
   final int version, taxRateBps;
@@ -337,6 +341,13 @@ class CatalogListing {
       taxRateBps: catalogInt(data['taxRateBps'], max: 10000),
       taxInclusive: data['taxInclusive'] as bool,
       tiers: tiers,
+      productName: data['productName'] == null
+          ? null
+          : catalogString(data['productName'], max: 240),
+      imageUrl: data['imageUrl'] is String &&
+              (data['imageUrl'] as String).startsWith('/api/v2/catalog/images/')
+          ? data['imageUrl'] as String
+          : null,
     );
   }
 }
