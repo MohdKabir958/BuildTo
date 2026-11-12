@@ -22,7 +22,6 @@ const fallbackSellingUnits = [
   CatalogUnit('LITRE', 'Litre'),
 ];
 
-
 /// Supplier product form. A verified supplier publishes immediately.
 /// Product and selling unit are chosen only when adding a product.
 class SupplierListingEditor extends StatefulWidget {
@@ -257,8 +256,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       return;
     }
     if (widget.original == null && productName.text.trim().isEmpty) {
-      setState(() =>
-          error = 'Enter the product you have in your warehouse.');
+      setState(() => error = 'Enter the product you have in your warehouse.');
       return;
     }
     if (widget.original == null &&
@@ -401,8 +399,9 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                 const SizedBox(height: 8),
                 FormField<String>(
                   key: const Key('catalog-unit'),
-                  validator: (_) =>
-                      unit == null ? 'Choose bag, kg, piece, or another unit.' : null,
+                  validator: (_) => unit == null
+                      ? 'Choose bag, kg, piece, or another unit.'
+                      : null,
                   builder: (state) => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -475,10 +474,10 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                 child: OutlinedButton.icon(
                   onPressed: busy ? null : () => unawaited(pickPhoto()),
                   icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(photoBytes == null &&
-                          widget.original?.imageUrl == null
-                      ? 'Add a photo'
-                      : 'Change photo'),
+                  label: Text(
+                      photoBytes == null && widget.original?.imageUrl == null
+                          ? 'Add a photo'
+                          : 'Change photo'),
                 ),
               ),
               const SizedBox(height: 6),
@@ -512,7 +511,8 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     ),
                 ],
               ),
-              if (!const ['0', '5', '12', '18', '28'].contains(taxBps.text.trim()))
+              if (!const ['0', '5', '12', '18', '28']
+                  .contains(taxBps.text.trim()))
                 _field('GST %', taxBps, validator: (value) {
                   try {
                     catalogTaxBasisPoints((value ?? '').trim());
@@ -542,8 +542,8 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                       validator: (value) => (value ?? '').trim().isEmpty
                           ? null
                           : _quantity(value)),
-                  _field('Printed price / MRP (₹)', mrp,
-                      optional: true, validator: (value) {
+                  _field('Printed price / MRP (₹)', mrp, optional: true,
+                      validator: (value) {
                     if ((value ?? '').trim().isEmpty) return null;
                     try {
                       catalogPaiseFromRupees(value!.trim());

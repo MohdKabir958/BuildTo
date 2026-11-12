@@ -136,14 +136,12 @@ class SupplierV21Api {
             })
             ..bodyBytes = bytes)
           .timeout(const Duration(seconds: 60));
-      final payload =
-          await http.Response.fromStream(response).timeout(timeout);
+      final payload = await http.Response.fromStream(response).timeout(timeout);
       final decoded = jsonDecode(payload.body);
       if (decoded is! Map<String, dynamic> || payload.statusCode >= 300) {
         final err = decoded is Map<String, dynamic> ? decoded['error'] : null;
-        final code = err is Map && err['code'] is String
-            ? err['code'] as String
-            : null;
+        final code =
+            err is Map && err['code'] is String ? err['code'] as String : null;
         throw SupplierV21Exception(
           payload.statusCode == 413 || payload.statusCode == 415
               ? SupplierV21Problem.validation

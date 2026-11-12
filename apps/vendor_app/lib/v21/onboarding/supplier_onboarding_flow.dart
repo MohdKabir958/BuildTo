@@ -94,10 +94,10 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
           session != widget.controller.sessionKey) {
         return;
       }
-      final approved = detail?.summary.approval ==
-              SupplierApplicationStatus.approved ||
-          records.any(
-              (record) => record.approval == SupplierApplicationStatus.approved);
+      final approved =
+          detail?.summary.approval == SupplierApplicationStatus.approved ||
+              records.any((record) =>
+                  record.approval == SupplierApplicationStatus.approved);
       if (approved &&
           widget.leaveWhenApproved &&
           widget.controller.stage == SupplierAccessStage.noSupplier &&

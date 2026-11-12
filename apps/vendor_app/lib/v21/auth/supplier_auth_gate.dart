@@ -137,9 +137,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                   final homeReady =
                       controller.stage == SupplierAccessStage.authorized &&
                           controller.activeSupplier != null;
-                  if (_applicationsOpen &&
-                      _returnHomeOnApproval &&
-                      homeReady) {
+                  if (_applicationsOpen && _returnHomeOnApproval && homeReady) {
                     _applicationsOpen = false;
                     _returnHomeOnApproval = false;
                   }
@@ -160,8 +158,8 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                   return _SupplierAccessView(
                     controller: controller,
                     openApplications: () => setState(() {
-                      _returnHomeOnApproval = controller.stage !=
-                          SupplierAccessStage.authorized;
+                      _returnHomeOnApproval =
+                          controller.stage != SupplierAccessStage.authorized;
                       _approvalDepartureStarted = false;
                       _applicationsOpen = true;
                     }),
