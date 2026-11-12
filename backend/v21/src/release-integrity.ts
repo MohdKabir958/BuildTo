@@ -9,7 +9,9 @@ export const REVIEWED_V21_MIGRATIONS=[
  '20261103_buildto_v21_initial',
  '20261104_return_refund_credit_note_link',
  '20261104_payout_beneficiary_reconciliation',
- '20261107_step1_partial_shipment_allocation'
+ '20261107_step1_partial_shipment_allocation',
+ '20261112_media_product_images',
+ '20261112_rfq_freight_snapshot'
 ] as const;
 
 type MigrationRecord={

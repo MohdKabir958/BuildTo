@@ -99,7 +99,7 @@ class _SupplierCareViewState extends State<SupplierCareView> {
         loading = false;
         error = switch (e) {
           SupplierV21Exception(problem: SupplierV21Problem.authentication) =>
-            'Your Clerk session expired. Sign in again.',
+            'Your session expired. Sign in again.',
           SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
           SupplierV21Exception(problem: SupplierV21Problem.notFound) =>
             'Supplier membership or this order is no longer authorized.',
@@ -188,7 +188,7 @@ class _SupplierCareViewState extends State<SupplierCareView> {
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('BUILDTO • SUPPLIER CARE',
+                Text('SPLYZO • SUPPLIER CARE',
                     style: TextStyle(
                         color: BuildToPalette.orange,
                         fontSize: 12,

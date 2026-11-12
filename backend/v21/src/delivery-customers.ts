@@ -142,7 +142,8 @@ export async function checkSupplierDelivery(db:PrismaClient,userId:string,suppli
        OR
        (sa."geoBoundary" IS NULL AND sa."geoCenter" IS NULL AND sa."radiusKm" IS NULL)
      )
-     AND rate."perKmPaise"=0 AND rate."perTonneKmPaise"=0
+     AND rate."weightCapacityKg" IS NULL AND rate."volumeCapacityM3" IS NULL
+    AND rate."perKmPaise"=0 AND rate."perTonneKmPaise"=0
      AND rate."perCubicMetreKmPaise"=0
      AND NOT EXISTS (
        SELECT 1 FROM "SupplierFreightBracket" bracket

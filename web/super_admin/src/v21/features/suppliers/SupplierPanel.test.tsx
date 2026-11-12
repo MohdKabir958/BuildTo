@@ -26,13 +26,13 @@ function setup(myId=reviewer){
  return api;
 }
 describe('A06 supplier approval UI',()=>{
- it('shows real queue, detail, blocked file preview and audit reason before actions',async()=>{
+ it('shows real queue, private evidence review instructions and audit reason before actions',async()=>{
   const api=setup();
   await screen.findByText('Example Cement');
   expect(api.get).toHaveBeenCalledWith('/api/v2/admin/suppliers?limit=25&status=PENDING',expect.anything());
   fireEvent.click(screen.getByRole('button',{name:'View details'}));
   await screen.findByText('Evidence checklist');
-  expect(screen.getByText(/file preview\/download is not implemented/i)).toBeTruthy();
+  expect(screen.getByText(/Download and inspect each document/i)).toBeTruthy();
   fireEvent.click(screen.getByRole('button',{name:'Verify'}));
   expect(screen.getByRole('button',{name:'Confirm reviewed decision'}).hasAttribute('disabled')).toBe(true);
   fireEvent.change(screen.getByLabelText(/Mandatory audit reason/),{target:{value:'Business identity checked via approved offline review'}});

@@ -1,3 +1,4 @@
+import {PrivateFileMediaStore} from './media';
 import http from 'node:http';
 import {readConfig} from './config';
 import {createV21App} from './app';
@@ -47,6 +48,8 @@ async function main() {
       proxyHops:config.proxyHops,identityVerifier,clerkWebhookSecret:config.clerkWebhookSecret,
       razorpayWebhookSecret:config.razorpayWebhookSecret??undefined,paymentGateway,
       payoutEvidenceGateway,
+      deviceEncryptionKey:process.env.BUILDTO_V21_DEVICE_ENCRYPTION_KEY,
+      mediaStore:process.env.BUILDTO_V21_MEDIA_ROOT?new PrivateFileMediaStore(process.env.BUILDTO_V21_MEDIA_ROOT):undefined,
       readinessCheck:()=>assertV21AllMigrationsApplied(db),
       deliveryOtpSecret:config.deliveryOtpHmacSecret??undefined});
     server=http.createServer(app);

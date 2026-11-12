@@ -80,7 +80,7 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
         busy = false;
         error = switch (e) {
           SupplierV21Exception(problem: SupplierV21Problem.authentication) =>
-            'Your Clerk session expired. Sign in again.',
+            'Your session expired. Sign in again.',
           SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
           SupplierV21Exception(problem: SupplierV21Problem.notFound) =>
             'Supplier RFQ access was changed or revoked.',
@@ -177,7 +177,7 @@ class _SupplierRfqViewState extends State<SupplierRfqView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('BUILDTO • MATERIAL PROCUREMENT',
+                const Text('SPLYZO • MATERIAL PROCUREMENT',
                     style: TextStyle(
                         color: BuildToPalette.orange,
                         fontWeight: FontWeight.w800,
@@ -399,6 +399,17 @@ class _RfqDetailsState extends State<_RfqDetails> {
                                 const TextStyle(fontWeight: FontWeight.w800)),
                         Text(
                             'Includes GST estimate ${rfqMoney(quote.taxPaise)} and delivery ${rfqMoney(quote.deliveryPaiseValue)}'),
+                        if (quote.freightSnapshot case final snapshot?) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                              '${snapshot['roadDistanceKm']} km road route • ${snapshot['trips']} trip(s)'),
+                          if (snapshot['weightKg'] != null)
+                            Text('Cargo: ${snapshot['weightKg']} kg'),
+                          if (snapshot['volumeM3'] != null)
+                            Text('Cargo: ${snapshot['volumeM3']} m³'),
+                          Text(
+                              'Route verified by supplier: ${snapshot['distanceEvidence']}'),
+                        ],
                       ],
                     ),
                   )),
@@ -443,6 +454,23 @@ class _QuoteEditorState extends State<_QuoteEditor> {
   late final List<TextEditingController> taxes;
   final delivery = TextEditingController(text: '0');
   final terms = TextEditingController();
+  final roadDistance = TextEditingController();
+  final distanceEvidence = TextEditingController();
+  List<({String id, String label})> freightRates = [];
+  String? freightRateId;
+  String? freightNotice;
+  Future<void> loadFreightRates() async {
+    try {
+      final result = await widget.repository.freightRates(widget.supplierId);
+      if (mounted) setState(() => freightRates = result);
+    } catch (_) {
+      if (mounted) {
+        setState(() => freightNotice =
+            'Freight tariffs could not load. Use an agreed delivery charge or reopen to retry.');
+      }
+    }
+  }
+
   late final String intent = supplierQuoteIntent();
   bool saving = false;
   bool outcomeUncertain = false;
@@ -451,6 +479,7 @@ class _QuoteEditorState extends State<_QuoteEditor> {
   @override
   void initState() {
     super.initState();
+    unawaited(loadFreightRates());
     final last = {
       for (final line in widget.latest?.lines ?? <SupplierQuoteLine>[])
         line.rfqItemId: line,
@@ -475,7 +504,14 @@ class _QuoteEditorState extends State<_QuoteEditor> {
 
   @override
   void dispose() {
-    for (final controller in [...prices, ...taxes, delivery, terms]) {
+    for (final controller in [
+      ...prices,
+      ...taxes,
+      delivery,
+      terms,
+      roadDistance,
+      distanceEvidence
+    ]) {
       controller.dispose();
     }
     super.dispose();
@@ -502,7 +538,16 @@ class _QuoteEditorState extends State<_QuoteEditor> {
           taxRateBps: taxRate,
         ));
       }
-      final freight = deliveryRupeesToPaise(delivery.text.trim());
+      final freight = freightRateId == null
+          ? deliveryRupeesToPaise(delivery.text.trim())
+          : '0';
+      if (freightRateId != null &&
+          (!RegExp(r'^(?:0|[1-9][0-9]{0,3})(?:\.[0-9]{1,3})?$')
+                  .hasMatch(roadDistance.text.trim()) ||
+              distanceEvidence.text.trim().length < 8)) {
+        throw const FormatException(
+            'Enter verified road distance and its source.');
+      }
       await widget.repository.submit(
         supplierId: widget.supplierId,
         rfq: widget.request,
@@ -510,6 +555,13 @@ class _QuoteEditorState extends State<_QuoteEditor> {
         deliveryPaiseValue: freight,
         deliveryTerms: terms.text.trim().isEmpty ? null : terms.text.trim(),
         intent: intent,
+        freight: freightRateId == null
+            ? null
+            : {
+                'rateId': freightRateId,
+                'roadDistanceKm': roadDistance.text.trim(),
+                'distanceEvidence': distanceEvidence.text.trim(),
+              },
       );
       if (mounted) Navigator.pop(context, true);
     } on SupplierV21Exception catch (e) {
@@ -586,14 +638,57 @@ class _QuoteEditorState extends State<_QuoteEditor> {
                 ],
               )),
             const SizedBox(height: 10),
-            TextField(
-              controller: delivery,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Quoted delivery charge (₹)',
+            if (freightNotice != null) Text(freightNotice!),
+            if (freightRates.isNotEmpty) ...[
+              DropdownButtonFormField<String>(
+                initialValue: freightRateId,
+                isExpanded: true,
+                decoration:
+                    const InputDecoration(labelText: 'Delivery pricing'),
+                items: [
+                  const DropdownMenuItem<String>(
+                      value: null, child: Text('Agreed delivery charge')),
+                  for (final rate in freightRates)
+                    DropdownMenuItem(
+                        value: rate.id,
+                        child:
+                            Text(rate.label, overflow: TextOverflow.ellipsis))
+                ],
+                onChanged: saving
+                    ? null
+                    : (value) => setState(() => freightRateId = value),
               ),
-            ),
+              const SizedBox(height: 12),
+            ],
+            if (freightRateId != null) ...[
+              TextField(
+                  controller: roadDistance,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: 'Verified road distance (km)',
+                      helperText:
+                          'Depot to site, using the actual road route')),
+              const SizedBox(height: 12),
+              TextField(
+                  controller: distanceEvidence,
+                  maxLength: 300,
+                  decoration: const InputDecoration(
+                      labelText: 'Distance source',
+                      helperText:
+                          'For example, route check date and depot/site details')),
+              const Text(
+                  'Splyzo calculates freight using catalog load conversions and vehicle capacity. Review the saved quote before sharing it.'),
+            ],
+            if (freightRateId == null)
+              TextField(
+                controller: delivery,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Quoted delivery charge (₹)',
+                ),
+              ),
             const SizedBox(height: 12),
             TextField(
               controller: terms,
@@ -611,7 +706,7 @@ class _QuoteEditorState extends State<_QuoteEditor> {
             BuildToPrimaryButton(
               label: outcomeUncertain
                   ? 'Refresh quote history first'
-                  : 'Submit server-priced quotation',
+                  : 'Submit quotation',
               busy: saving,
               onPressed: outcomeUncertain ? null : () => unawaited(submit()),
             ),

@@ -1,3 +1,4 @@
+import {configureFreightRate} from './freight';
 import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
@@ -48,6 +49,7 @@ export function registerProtectedDelivery(app:Express,db:PrismaClient,auth:Reque
  app.get(sp,auth,handlers((req,res)=>listSupplierCoverage(db,who(res),req.params.supplierId)));
  app.put(sp+'/areas/:areaId',auth,handlers((req,res)=>
    configureSupplierArea(db,who(res),req.params.supplierId,req.params.areaId,req.body)));
+ app.put(sp+'/areas/:areaId/freight-rate',auth,handlers((req,res)=>configureFreightRate(db,who(res),req.params.supplierId,req.params.areaId,req.body)));
  app.put(sp+'/areas/:areaId/flat-rate',auth,handlers((req,res)=>
    configureFlatDeliveryFee(db,who(res),req.params.supplierId,req.params.areaId,req.body)));
 }

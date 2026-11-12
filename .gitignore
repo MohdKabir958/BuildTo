@@ -81,3 +81,6 @@ __pycache__/
 !Docs/clerk/evidence/clerk-targeted-final/backend-full-run.log
 !Docs/clerk/evidence/android/*-build.log
 **/.flutter-plugins-dependencies
+
+# Private, reproducible supplier visual-review captures
+/docs/qa/supplier-evidence/

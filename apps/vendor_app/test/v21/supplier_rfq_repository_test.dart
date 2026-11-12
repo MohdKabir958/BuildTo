@@ -144,7 +144,7 @@ void main() {
           'taxRateBps': 1800,
         }
       ]);
-      return ok({'quote': quote(), 'replayed': false}, status: 201);
+      return ok(quote(), status: 201);
     }));
     final saved = await service.submit(
       supplierId: supplier,

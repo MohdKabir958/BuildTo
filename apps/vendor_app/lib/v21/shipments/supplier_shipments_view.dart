@@ -518,7 +518,7 @@ class _SupplierShipmentsViewState extends State<SupplierShipmentsView> {
                 borderRadius: BorderRadius.circular(20)),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('BUILDTO • MATERIAL HANDOVER',
+              const Text('SPLYZO • MATERIAL HANDOVER',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,

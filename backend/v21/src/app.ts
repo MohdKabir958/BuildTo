@@ -1,3 +1,6 @@
+import {registerPublicContent,registerContentDevices} from './content-devices';
+import {registerMedia,registerPublicImages,MediaStore} from './media';
+import {registerProjects} from './projects';
 import express, {NextFunction,Request,Response} from 'express';
 import {randomUUID} from 'node:crypto';
 import {PrismaClient} from '../../generated/buildto-v21';
@@ -33,6 +36,8 @@ import type {PaymentGateway} from './payment-gateway';
 
 export interface AppDependencies {
   db:PrismaClient;
+  mediaStore?:MediaStore;
+  deviceEncryptionKey?:string;
   identityVerifier?:IdentityVerifier;
   clerkWebhookSecret?:string;
   razorpayWebhookSecret?:string;
@@ -62,7 +67,7 @@ export function createV21App(deps:AppDependencies) {
       if(!deps.allowedOrigins.includes(origin))return next(new ApiError(403,'ORIGIN_NOT_ALLOWED','Origin is not allowed.'));
       res.setHeader('Access-Control-Allow-Origin',origin);
       res.setHeader('Vary','Origin');
-      res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key, X-Request-Id');
+      res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key, X-Request-Id, If-Match');
       res.setHeader('Access-Control-Allow-Methods','GET, POST, PATCH, PUT, DELETE, OPTIONS');
       res.setHeader('Access-Control-Max-Age','600');
     }
@@ -108,6 +113,11 @@ export function createV21App(deps:AppDependencies) {
        }catch(error){next(error);}
       });
   }
+  // Authenticate and rate-limit large uploads before allocating their JSON body.
+  app.post('/api/v2/media',makeLimit('media-upload',20),(req,res,next)=>{
+    if(!deps.identityVerifier)return next(new ApiError(401,'INVALID_SESSION','Authentication required.'));
+    return requireIdentity(deps.identityVerifier,deps.db)(req,res,next);
+  },express.json({limit:'14mb',strict:true}));
   app.use(express.json({limit:'64kb',strict:true}));
   app.use((req,res,next)=>{
     if(['POST','PUT','PATCH'].includes(req.method) && req.path.startsWith('/api/v2/') &&
@@ -137,12 +147,14 @@ export function createV21App(deps:AppDependencies) {
         automaticPayoutExecution:false,
         bankStatementAPIReconciled:false,
         partialGstCreditSupported:false,
-        capabilities:['catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','wishlist.customer','notifications.inbox','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking','returns.customer','support.cases','reviews.moderated','finance.reconciliation','finance.commission-policy','finance.settlement-proposals','finance.cod-commissions','returns.credit-notes','finance.refund-requests','finance.refund-evidence','finance.payout-beneficiaries','finance.payout-reconciliation',
+        capabilities:['projects.customer','sites.customer','content.published','delivery.rfq-freight','devices.metadata',...(deps.mediaStore?['media.private','catalog.images']:[]),...(deps.deviceEncryptionKey?['devices.registration']:[]),'catalog.discovery','catalog.supplier','catalog.review','delivery.areas','delivery.flat-fees','inventory.warehouses','inventory.adjustments','inventory.transfers','rfq.requests','rfq.quotes','promotions.admin','cart.customer','checkout.pricing','orders.customer','wishlist.customer','notifications.inbox','cod.customer','cod.supplier','cod.finance-review','invoices.supplier','fulfillment.supplier','shipments.tracking','returns.customer','support.cases','reviews.moderated','finance.reconciliation','finance.commission-policy','finance.settlement-proposals','finance.cod-commissions','returns.credit-notes','finance.refund-requests','finance.refund-evidence','finance.payout-beneficiaries','finance.payout-reconciliation',
           ...(deps.deliveryOtpSecret?['shipments.otp']:[]),...(deps.paymentGateway && deps.razorpayWebhookSecret?['payments.razorpay']:[])] as string[],
       },
       requestId:res.locals.requestId,
     });
   });
+  registerPublicContent(app,deps.db);
+  registerPublicImages(app,deps.db,deps.mediaStore);
   registerPublicCatalog(app,deps.db);
   registerPublicDelivery(app,deps.db);
   registerPublicReviews(app,deps.db);
@@ -150,6 +162,9 @@ export function createV21App(deps:AppDependencies) {
   // mutation endpoints are exposed before domain-specific security tests.
   if(deps.identityVerifier){
     const auth=requireIdentity(deps.identityVerifier,deps.db);
+    registerContentDevices(app,deps.db,auth,deps.deviceEncryptionKey);
+    registerMedia(app,deps.db,auth,deps.mediaStore);
+    registerProjects(app,deps.db,auth);
     registerProtectedCatalog(app,deps.db,auth);
     registerProtectedDelivery(app,deps.db,auth);
     registerProtectedInventory(app,deps.db,auth);

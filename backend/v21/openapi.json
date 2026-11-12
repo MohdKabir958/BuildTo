@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Buildto V2 API — Foundation",
+    "title": "Buildto V2 API \u2014 Foundation",
     "version": "0.24.0",
-    "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled."
+    "description": "Buildto V2.1 staging candidate: full modular construction materials marketplace, controlled COD/capture, GST and full-return credit notes, supplier ledger and payout reconciliation. Migration, auth and finance release gates remain mandatory. No automatic merchant refunds, payout bank transfers, bank-statement API reconciliation or production cutover is enabled. Private uploads, product images, owned projects/sites, supplier RFQ freight, content and encrypted device registration are additive capabilities; external execution remains gated."
   },
   "paths": {
     "/health": {
@@ -4564,7 +4564,8 @@
           "428": {
             "description": "Missing idempotency key"
           }
-        }
+        },
+        "description": "Optional freight {rateId, roadDistanceKm, distanceEvidence} calculates server-priced delivery from verified product conversions. The response data is the quote itself. Snapshot includes tariff, supplier-attested route, capacities, cargo, trips and amount. Missing dimensions fail closed."
       }
     },
     "/api/v2/admin/promotions": {
@@ -11859,6 +11860,1201 @@
             "description": "Not found or not owned"
           }
         }
+      }
+    },
+    "/api/v2/media": {
+      "post": {
+        "operationId": "postV21Media",
+        "summary": "Upload private evidence or an administrator catalog image; validated/reencoded JPEG/PNG or attachment-only PDF up to 10 MiB",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "EVIDENCE",
+                      "CATALOG_IMAGE"
+                    ]
+                  },
+                  "mimeType": {
+                    "type": "string",
+                    "enum": [
+                      "image/jpeg",
+                      "image/png",
+                      "application/pdf"
+                    ]
+                  },
+                  "base64": {
+                    "type": "string",
+                    "format": "byte"
+                  }
+                },
+                "required": [
+                  "purpose",
+                  "mimeType",
+                  "base64"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/media/{mediaId}": {
+      "get": {
+        "operationId": "getV21MediaMediaid",
+        "summary": "Download owned evidence or independently reviewed supplier documents; storage must be configured",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Authenticated base64 receipt when format=base64"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base64"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/catalog/images/{mediaId}": {
+      "get": {
+        "operationId": "getV21CatalogImagesMediaid",
+        "summary": "Read published product image; private evidence is never published",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/admin/catalog/products/{productId}/images/{mediaId}": {
+      "put": {
+        "operationId": "putV21AdminCatalogProductsProductidImagesMediaid",
+        "summary": "Link an administrator-owned catalog image to a product",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 11
+                  }
+                },
+                "required": [
+                  "position"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteV21AdminCatalogProductsProductidImagesMediaid",
+        "summary": "Remove a public product-image relation",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/me/projects": {
+      "get": {
+        "operationId": "getV21MeProjects",
+        "summary": "List owned projects (25 per page, cursor by ID)",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "postV21MeProjects",
+        "summary": "Create owned project",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/projects/{projectId}": {
+      "get": {
+        "operationId": "getV21MeProjectsProjectid",
+        "summary": "Read owned project with up to 100 sites",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patchV21MeProjectsProjectid",
+        "summary": "Update owned project",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "ON_HOLD",
+                      "COMPLETED",
+                      "ARCHIVED"
+                    ]
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteV21MeProjectsProjectid",
+        "summary": "Archive project or deactivate site while preserving order history",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/me/sites": {
+      "get": {
+        "operationId": "getV21MeSites",
+        "summary": "List owned sites (25 per page, cursor by ID)",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "postV21MeSites",
+        "summary": "Create owned site",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "projectId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "addressId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "contactName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "contactPhone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "accessNotes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "addressId"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/sites/{siteId}": {
+      "patch": {
+        "operationId": "patchV21MeSitesSiteid",
+        "summary": "Update owned site",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "projectId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "addressId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "contactName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "contactPhone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "accessNotes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteV21MeSitesSiteid",
+        "summary": "Archive project or deactivate site while preserving order history",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/suppliers/{supplierId}/delivery/areas/{areaId}/freight-rate": {
+      "put": {
+        "operationId": "putV21SuppliersSupplieridDeliveryAreasAreaidFreightRate",
+        "summary": "Configure supplier RFQ freight tariff with explicit vehicle capacities; distance remains supplier-attested",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "baseFeePaise": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  "handlingFeePaise": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  "perKmPaise": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  "perTonneKmPaise": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  "perCubicMetreKmPaise": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  },
+                  "weightCapacityKg": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "volumeCapacityM3": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "vehicleClass": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "baseFeePaise",
+                  "handlingFeePaise",
+                  "vehicleClass"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/content/{slug}": {
+      "get": {
+        "operationId": "getV21ContentSlug",
+        "summary": "Read published versioned plain-text content",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/admin/content/{slug}": {
+      "put": {
+        "operationId": "putV21AdminContentSlug",
+        "summary": "Publish or update content with version check and audit reason",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "published": {
+                    "type": "boolean"
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title",
+                  "body",
+                  "published",
+                  "expectedVersion",
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/devices": {
+      "get": {
+        "operationId": "getV21MeDevices",
+        "summary": "Read own device metadata; raw and encrypted tokens are never returned",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postV21MeDevices",
+        "summary": "Register encrypted device token; requires configured encryption key; push dispatch remains disabled",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "app": {
+                    "type": "string",
+                    "enum": [
+                      "supplier",
+                      "customer"
+                    ]
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "ios",
+                      "web"
+                    ]
+                  }
+                },
+                "required": [
+                  "token",
+                  "app",
+                  "platform"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/me/devices/{deviceId}": {
+      "delete": {
+        "operationId": "deleteV21MeDevicesDeviceid",
+        "summary": "Disable an owned device",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Unavailable or not owned"
+          },
+          "409": {
+            "description": "State or version conflict"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       }
     }
   },

@@ -47,7 +47,7 @@ export function createRfqInput(v:unknown) {
  };
 }
 export function quoteInput(v:unknown) {
- const o=record(v,['lines','deliveryPaise','deliveryTerms','validUntil']);
+ const o=record(v,['lines','deliveryPaise','deliveryTerms','validUntil','freight']);
  if(!Array.isArray(o.lines)||o.lines.length===0||o.lines.length>30)
   throw new ApiError(400,'INVALID_QUOTE_LINES','Quote must price all RFQ lines.');
  const seen=new Set<string>();
@@ -65,6 +65,7 @@ export function quoteInput(v:unknown) {
   };
  });
  return {
+  freight:o.freight,
   lines,deliveryPaise:o.deliveryPaise===undefined?0n:paise(o.deliveryPaise,'deliveryPaise'),
   deliveryTerms:o.deliveryTerms===undefined||o.deliveryTerms===null?null:requiredString(o.deliveryTerms,'deliveryTerms',500),
   validUntil:o.validUntil===undefined||o.validUntil===null?null:futureDate(o.validUntil,'validUntil',90)

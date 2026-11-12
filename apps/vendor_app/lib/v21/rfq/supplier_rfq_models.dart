@@ -211,12 +211,14 @@ class SupplierQuote {
     required this.createdAt,
     this.validUntil,
     this.deliveryTerms,
+    this.freightSnapshot,
   });
   final String id, rfqId, supplierId, quoteNumber;
   final int version;
   final SupplierQuoteStatus status;
   final String subtotalPaise, taxPaise, deliveryPaiseValue, totalPaise;
   final String? deliveryTerms;
+  final Map<String, dynamic>? freightSnapshot;
   final DateTime createdAt;
   final DateTime? validUntil;
   final List<SupplierQuoteLine> lines;
@@ -256,6 +258,9 @@ class SupplierQuote {
       createdAt: rfqTimestamp(data['createdAt']),
       validUntil:
           data['validUntil'] == null ? null : rfqTimestamp(data['validUntil']),
+      freightSnapshot: data['freightSnapshot'] == null
+          ? null
+          : catalogObject(data['freightSnapshot']),
       deliveryTerms: data['deliveryTerms'] == null
           ? null
           : catalogString(data['deliveryTerms'], max: 500),

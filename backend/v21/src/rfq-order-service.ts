@@ -118,6 +118,7 @@ export async function placeAcceptedRfqOrder(db:PrismaClient,customerId:string,
    },select:{id:true}});
    const order=await tx.supplierOrder.create({data:{
     purchaseOrderId:parent.id,supplierId:quote.supplierId,sourceQuoteId:quote.id,
+    ...(quote.freightSnapshot?{freightSnapshot:quote.freightSnapshot as Prisma.InputJsonObject}:{}),
     platformFeePaise:commissionPaise(quote.subtotalPaise,0n,commissionPolicy.rateBps),
     status:'PENDING_ACCEPTANCE',subtotalPaise:quote.subtotalPaise,
     taxPaise:quote.taxPaise,discountPaise:0n,deliveryPaise:quote.deliveryPaise,

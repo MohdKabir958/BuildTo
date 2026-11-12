@@ -4,6 +4,7 @@ import {uuid} from './catalog-validation';
 
 const productSelect={
  id:true,code:true,name:true,description:true,hsnCode:true,specification:true,
+ images:{where:{purpose:'CATALOG_IMAGE'},select:{id:true,position:true},orderBy:{position:'asc' as const},take:12},
  category:{select:{id:true,name:true,slug:true}},brand:{select:{id:true,name:true,slug:true}},
 } as const;
 const LISTING_DISCOVERED={

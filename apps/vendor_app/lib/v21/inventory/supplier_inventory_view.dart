@@ -91,7 +91,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
         loading = false;
         error = switch (e) {
           SupplierV21Exception(problem: SupplierV21Problem.authentication) =>
-            'Your Clerk session expired. Sign in again.',
+            'Your session expired. Sign in again.',
           SupplierV21Exception(problem: SupplierV21Problem.forbidden) ||
           SupplierV21Exception(
             problem: SupplierV21Problem.notFound,
@@ -655,7 +655,7 @@ class _SupplierInventoryViewState extends State<SupplierInventoryView> {
           const SizedBox(height: 22),
           const BuildToSectionHeading(
             title: 'Warehouses',
-            subtitle: 'Supplier-owned locations and activation state.',
+            subtitle: 'Your warehouses and their current status.',
           ),
           const SizedBox(height: 10),
           if (warehouses.isEmpty)

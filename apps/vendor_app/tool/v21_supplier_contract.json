@@ -253,6 +253,24 @@
           "path": "/api/v2/suppliers/{supplierId}/returns/{returnId}/credit-note"
         }
       ]
+    },
+    {
+      "id": "private-evidence-upload",
+      "operations": [
+        {
+          "method": "POST",
+          "path": "/api/v2/media"
+        }
+      ]
+    },
+    {
+      "id": "rfq-freight-configuration",
+      "operations": [
+        {
+          "method": "PUT",
+          "path": "/api/v2/suppliers/{supplierId}/delivery/areas/{areaId}/freight-rate"
+        }
+      ]
     }
   ]
 }

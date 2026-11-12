@@ -195,13 +195,16 @@ export async function listSupplierCoverage(db:PrismaClient,userId:string,supplie
   db.supplierServiceArea.findMany({where:{supplierId},select:{areaId:true,active:true,minimumPaise:true,area:{select:{name:true,cityId:true,active:true}}},
    take:100}),
   db.supplierDeliveryRate.findMany({where:{supplierId,active:true,effectiveTo:null},
-   select:{id:true,areaId:true,baseFeePaise:true,handlingFeePaise:true,freeAbovePaise:true},take:100}),
+   select:{id:true,areaId:true,baseFeePaise:true,handlingFeePaise:true,freeAbovePaise:true,perKmPaise:true,perTonneKmPaise:true,perCubicMetreKmPaise:true,weightCapacityKg:true,volumeCapacityM3:true,vehicleClass:true,freightBrackets:{where:{active:true},select:{id:true}}},take:100}),
  ]);
  return areas.map(x=>({
   areaId:x.areaId,areaName:x.area.name,cityId:x.area.cityId,
   active:x.active&&x.area.active,minimumPaise:x.minimumPaise.toString(),
   rates:rates.filter(r=>r.areaId===x.areaId).map(r=>({
    id:r.id,baseFeePaise:r.baseFeePaise.toString(),
+   quoteRequired:r.perKmPaise>0n||r.perTonneKmPaise>0n||r.perCubicMetreKmPaise>0n||r.weightCapacityKg!==null||r.volumeCapacityM3!==null||r.freightBrackets.length>0,
+   vehicleClass:r.vehicleClass,perKmPaise:r.perKmPaise.toString(),perTonneKmPaise:r.perTonneKmPaise.toString(),perCubicMetreKmPaise:r.perCubicMetreKmPaise.toString(),
+   weightCapacityKg:r.weightCapacityKg?.toString()??null,volumeCapacityM3:r.volumeCapacityM3?.toString()??null,
    handlingFeePaise:r.handlingFeePaise.toString(),
    freeAbovePaise:r.freeAbovePaise?.toString()??null,
   })),

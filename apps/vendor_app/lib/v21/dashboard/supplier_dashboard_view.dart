@@ -207,7 +207,7 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
           const SizedBox(height: 24),
           const BuildToSectionHeading(
             title: 'Business at a glance',
-            subtitle: 'Supplier-scoped operational snapshots.',
+            subtitle: 'Your current orders, catalog and stock.',
           ),
           const SizedBox(height: 13),
           LayoutBuilder(builder: (context, constraints) {
@@ -318,7 +318,7 @@ class _DashboardHero extends StatelessWidget {
             SizedBox(width: 9),
             Expanded(
                 child: Text(
-              'BUILDTO • BUSINESS PULSE',
+              'SPLYZO • BUSINESS PULSE',
               style: TextStyle(
                   color: Colors.white,
                   letterSpacing: 1,

@@ -235,7 +235,7 @@ class _SupplierOrdersViewState extends State<SupplierOrdersView> {
             ),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('BUILDTO • ORDER OPERATIONS',
+              const Text('SPLYZO • ORDER OPERATIONS',
                   style: TextStyle(
                       color: BuildToPalette.orange,
                       fontSize: 12,
@@ -248,7 +248,7 @@ class _SupplierOrdersViewState extends State<SupplierOrdersView> {
                       fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
               const Text(
-                  'Only the backend can confirm funded/COD eligibility and reserved stock.',
+                  'Accept orders after payment or COD and stock availability are verified.',
                   style: TextStyle(color: Color(0xFFDDECF9))),
             ]),
           ),
@@ -269,7 +269,7 @@ class _SupplierOrdersViewState extends State<SupplierOrdersView> {
           if (visible.isEmpty)
             const BuildToStatePanel(
               title: 'No orders in this view',
-              message: 'Pull to refresh the supplier-scoped queue.',
+              message: 'Pull to refresh your order list.',
               icon: Icons.receipt_long_outlined,
             ),
           ...visible.map((order) => BuildToCard(

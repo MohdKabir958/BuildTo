@@ -26,6 +26,28 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   String? _setupFailure;
   bool _ownsController = false;
   bool _applicationsOpen = false;
+  GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  String? _navigationScope;
+  String? _navigationSession;
+
+  void _handleAccessChange() {
+    final controller = _controller;
+    if (!mounted || controller == null) return;
+    final member = controller.activeSupplier;
+    final scope =
+        '${controller.sessionKey}|${controller.stage.name}|${member?.supplierId}|${member?.role.name}';
+    if (scope == _navigationScope) return;
+    setState(() {
+      // Dispose all sheets/detail routes along with the old business scope.
+      // Replacing only the home widget would leave private overlays visible.
+      _navigatorKey = GlobalKey<NavigatorState>();
+      if (_navigationSession != controller.sessionKey) {
+        _applicationsOpen = false;
+      }
+      _navigationSession = controller.sessionKey;
+      _navigationScope = scope;
+    });
+  }
 
   void _initController() {
     if (widget.controller != null) {
@@ -48,7 +70,10 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
             'Check the Splyzo API origin and Android Clerk settings.';
       }
     }
-    if (_controller != null) unawaited(_controller!.start());
+    if (_controller != null) {
+      _controller!.addListener(_handleAccessChange);
+      unawaited(_controller!.start());
+    }
   }
 
   @override
@@ -75,12 +100,14 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _controller?.removeListener(_handleAccessChange);
     if (_ownsController) _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
+        navigatorKey: _navigatorKey,
         title: 'Splyzo Supplier',
         debugShowCheckedModeBanner: false,
         theme: BuildToTheme.light(),
@@ -248,7 +275,7 @@ class _SupplierAccessView extends StatelessWidget {
             ),
             if (controller.notice != null)
               _AccessAction(
-                'Retry Clerk connection',
+                'Retry connection',
                 Icons.refresh_rounded,
                 controller.retryClerkInitialization,
                 outlined: true,

@@ -58,6 +58,7 @@ async function eligibleRate(tx:Tx,addressId:string,supplierId:string):Promise<Ra
        AND ST_DWithin(sa."geoCenter",addr."geoPoint",sa."radiusKm"::double precision*1000))
       OR (sa."geoBoundary" IS NULL AND sa."geoCenter" IS NULL AND sa."radiusKm" IS NULL)
     )
+    AND rate."weightCapacityKg" IS NULL AND rate."volumeCapacityM3" IS NULL
     AND rate."perKmPaise"=0 AND rate."perTonneKmPaise"=0
     AND rate."perCubicMetreKmPaise"=0
     AND NOT EXISTS (
@@ -98,7 +99,7 @@ export async function priceCheckout(tx:Tx,customerId:string,opts:{
  if(!addr)throw new ApiError(404,'ADDRESS_NOT_FOUND','Delivery address not found.');
  if(opts.siteId){
   const site=await tx.constructionSite.findFirst({where:{
-   id:opts.siteId,customerId,active:true,addressId:addr.id
+   id:opts.siteId,customerId,active:true,addressId:addr.id,OR:[{projectId:null},{project:{status:"ACTIVE",customerId}}]
   },select:{id:true}});
   if(!site)throw new ApiError(404,'SITE_NOT_FOUND','Site is not available at this address.');
  }

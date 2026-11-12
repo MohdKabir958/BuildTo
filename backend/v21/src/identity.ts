@@ -29,6 +29,11 @@ function invalidSession():ApiError {return new ApiError(401,'INVALID_SESSION','A
 const validSubject=(s:unknown):s is string=>typeof s==='string' && /^user_[a-zA-Z0-9]{6,150}$/.test(s);
 const validSession=(s:unknown):s is string=>typeof s==='string' && /^sess_[a-zA-Z0-9]{6,150}$/.test(s);
 
+export function assertAuthorizedParty(party:unknown,o:Pick<ClerkOptions,'authorizedParties'|'allowNativeWithoutAzp'>):void {
+ if(party===undefined && o.allowNativeWithoutAzp===true)return;
+ if(typeof party!=='string'||!o.authorizedParties.includes(party))throw invalidSession();
+}
+
 export function createClerkIdentityVerifier(o:ClerkOptions):IdentityVerifier {
   validateClerkOptions(o);
   // Bounded positive cache for a single API process; never caches failed checks.
@@ -47,9 +52,7 @@ export function createClerkIdentityVerifier(o:ClerkOptions):IdentityVerifier {
     }catch {throw invalidSession();}
     if(!validSubject(claims.sub)||!validSession(claims.sid)||claims.iss!==o.issuer)throw invalidSession();
     const party=(claims as {azp?:unknown}).azp;
-    if(typeof party==='string' && o.authorizedParties.length>0 && !o.authorizedParties.includes(party)) {
-      throw invalidSession();
-    }
+    assertAuthorizedParty(party,o);
     // JWT signature, expiration and audience above are verified on every call.
     const key=claims.sub+':'+claims.sid;
     const now=Date.now();
@@ -96,9 +99,10 @@ export async function resolveLocalPrincipal(
   if(!user){
     try {
       const clerkUser = await clerkClient.users.getUser(identity.subject);
-      const email = clerkUser.primaryEmailAddress?.emailAddress ?? clerkUser.emailAddresses?.[0]?.emailAddress ?? null;
+      if(clerkUser.banned)throw invalidSession();
+      const email = clerkUser.primaryEmailAddress?.verification?.status==='verified'?clerkUser.primaryEmailAddress.emailAddress:null;
       const displayName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || clerkUser.username || email?.split('@')[0] || 'Supplier User';
-      const phone = clerkUser.primaryPhoneNumber?.phoneNumber ?? clerkUser.phoneNumbers?.[0]?.phoneNumber ?? null;
+      const phone = clerkUser.primaryPhoneNumber?.verification?.status==='verified'?clerkUser.primaryPhoneNumber.phoneNumber:null;
       const created = await (db as PrismaClient).user.create({
         data: {
           clerkUserId: identity.subject,
