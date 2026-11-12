@@ -26,6 +26,20 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   String? _setupFailure;
   bool _ownsController = false;
   bool _applicationsOpen = false;
+  bool _returnHomeOnApproval = false;
+  bool _approvalDepartureStarted = false;
+
+  bool _departAfterApproval() {
+    final controller = _controller;
+    if (!_returnHomeOnApproval ||
+        _approvalDepartureStarted ||
+        controller == null) {
+      return false;
+    }
+    _approvalDepartureStarted = true;
+    unawaited(controller.refresh());
+    return true;
+  }
 
   void _initController() {
     if (widget.controller != null) {
@@ -92,18 +106,37 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                   final canView = controller.sessionKey != null &&
                       (controller.stage == SupplierAccessStage.authorized ||
                           controller.stage == SupplierAccessStage.noSupplier);
+                  final homeReady =
+                      controller.stage == SupplierAccessStage.authorized &&
+                          controller.activeSupplier != null;
+                  if (_applicationsOpen &&
+                      _returnHomeOnApproval &&
+                      homeReady) {
+                    _applicationsOpen = false;
+                    _returnHomeOnApproval = false;
+                  }
                   if (_applicationsOpen && canView) {
                     return SupplierOnboardingFlow(
                       key: ValueKey(controller.sessionKey),
                       controller: controller,
                       api: controller.applications,
-                      onClose: () => setState(() => _applicationsOpen = false),
+                      leaveWhenApproved: _returnHomeOnApproval,
+                      onApproved: _departAfterApproval,
+                      onClose: () => setState(() {
+                        _applicationsOpen = false;
+                        _returnHomeOnApproval = false;
+                        _approvalDepartureStarted = false;
+                      }),
                     );
                   }
                   return _SupplierAccessView(
                     controller: controller,
-                    openApplications: () =>
-                        setState(() => _applicationsOpen = true),
+                    openApplications: () => setState(() {
+                      _returnHomeOnApproval = controller.stage !=
+                          SupplierAccessStage.authorized;
+                      _approvalDepartureStarted = false;
+                      _applicationsOpen = true;
+                    }),
                   );
                 },
               )

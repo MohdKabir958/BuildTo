@@ -75,14 +75,34 @@ export function specification(x:unknown):Prisma.InputJsonObject {
 export function requireNonemptyPatch(o:PlainRecord){
   if(Object.keys(o).length===0)throw new ApiError(400,'EMPTY_PATCH','Nothing to update.');
 }
+const catalogImagePathPattern=/^\/api\/v2\/catalog\/images\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function catalogImagePath(x:unknown):string {
+  if(typeof x!=='string'||!catalogImagePathPattern.test(x))
+    throw new ApiError(400,'INVALID_IMAGE','Choose the photo again.');
+  return x;
+}
 export function listingFields(x:unknown,partial=false) {
-  const o=record(x,['sku','productId','unitCode','packSize','minOrderQty','stepQty','maxOrderQty','unitPrice','mrpPaise','taxRateBps','taxInclusive','expectedVersion']);
+  const o=record(x,['sku','productId','productName','categoryId','unitCode','packSize','minOrderQty','stepQty','maxOrderQty','unitPrice','mrpPaise','taxRateBps','taxInclusive','expectedVersion','imageUrl']);
   if(partial)requireNonemptyPatch(o);
   const out:Record<string,unknown>={};
-  if(!partial){out.productId=uuid(o.productId,'productId');out.sku=code(o.sku,'sku');out.unitCode=code(o.unitCode,'unitCode',20);}
+  if(!partial){
+    out.unitCode=code(o.unitCode,'unitCode',20);
+    if(o.productId!==undefined && o.productName!==undefined)
+      throw new ApiError(400,'UNKNOWN_FIELD','Send either an existing product or a new product name.');
+    if(o.productId!==undefined){
+      out.productId=uuid(o.productId,'productId');
+      out.sku=code(o.sku,'sku');
+    } else if(o.productName!==undefined){
+      out.productName=requiredString(o.productName,'productName',240);
+      if(o.categoryId!==undefined)out.categoryId=uuid(o.categoryId,'categoryId');
+      if(o.sku!==undefined)out.sku=code(o.sku,'sku');
+    }     else throw new ApiError(400,'PRODUCT_NAME_REQUIRED','Enter the product name.');
+    if(o.imageUrl!==undefined)out.imageUrl=catalogImagePath(o.imageUrl);
+  }
   else {
-    if(o.productId!==undefined||o.sku!==undefined||o.unitCode!==undefined)
+    if(o.productId!==undefined||o.sku!==undefined||o.unitCode!==undefined||o.productName!==undefined||o.categoryId!==undefined)
       throw new ApiError(400,'IMMUTABLE_LISTING_IDENTITY','Product, unit and SKU cannot be edited in-place.');
+    if(o.imageUrl!==undefined)out.imageUrl=catalogImagePath(o.imageUrl);
   }
   for(const k of ['packSize','minOrderQty','stepQty'] as const) {
     if(o[k]!==undefined)out[k]=quantity(o[k],k);

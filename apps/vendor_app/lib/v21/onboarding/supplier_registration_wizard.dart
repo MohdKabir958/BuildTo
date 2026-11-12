@@ -27,7 +27,6 @@ class SupplierRegistrationWizard extends StatefulWidget {
 class _SupplierRegistrationWizardState
     extends State<SupplierRegistrationWizard> {
   final formKey = GlobalKey<FormState>();
-  final slug = TextEditingController();
   final legalName = TextEditingController();
   final displayName = TextEditingController();
   final phone = TextEditingController();
@@ -45,7 +44,6 @@ class _SupplierRegistrationWizardState
   @override
   void dispose() {
     for (final c in [
-      slug,
       legalName,
       displayName,
       phone,
@@ -61,8 +59,13 @@ class _SupplierRegistrationWizardState
     super.dispose();
   }
 
-  SupplierRegistrationDraft _draft() => SupplierRegistrationDraft(
-        slug: slug.text,
+  SupplierRegistrationDraft _draft() {
+    final fromDisplay =
+        SupplierRegistrationDraft.slugFromName(displayName.text);
+    return SupplierRegistrationDraft(
+        slug: fromDisplay.isNotEmpty
+            ? fromDisplay
+            : SupplierRegistrationDraft.slugFromName(legalName.text),
         legalName: legalName.text,
         displayName: displayName.text,
         contactEmail: widget.email ?? '',
@@ -75,6 +78,7 @@ class _SupplierRegistrationWizardState
         state: state.text,
         pinCode: pinCode.text,
       );
+  }
 
   bool _allValid() {
     final d = _draft();
@@ -106,6 +110,12 @@ class _SupplierRegistrationWizardState
     }
     if (step < 3) {
       if (formKey.currentState?.validate() != true) {
+        return;
+      }
+      if (step == 0 &&
+          SupplierRegistrationDraft.validateSlug(_draft().slug) != null) {
+        setState(() =>
+            error = 'Use a business name with letters or numbers.');
         return;
       }
       setState(() {
@@ -200,15 +210,10 @@ class _SupplierRegistrationWizardState
                     _Field(
                         label: 'Supplier display name',
                         controller: displayName,
+                        helper: 'This is the name customers will see.',
                         validator: (v) =>
                             SupplierRegistrationDraft.validateRequired(
                                 v, 'Display name')),
-                    _Field(
-                        label: 'Unique business slug',
-                        controller: slug,
-                        helper:
-                            'Letters, numbers and hyphens; at least 3 characters.',
-                        validator: SupplierRegistrationDraft.validateSlug),
                   ],
                   if (step == 1) ...[
                     const Text('Your verified Clerk email',
@@ -280,7 +285,6 @@ class _SupplierRegistrationWizardState
                   if (step == 3) ...[
                     _ReviewValue('Registered name', legalName.text),
                     _ReviewValue('Display name', displayName.text),
-                    _ReviewValue('Business slug', slug.text),
                     _ReviewValue('Clerk email', widget.email ?? 'Unavailable'),
                     _ReviewValue('GST registration', gst.apiValue),
                     if (gst.needsGstin)

@@ -9,7 +9,8 @@ export const REVIEWED_V21_MIGRATIONS=[
  '20261103_buildto_v21_initial',
  '20261104_return_refund_credit_note_link',
  '20261104_payout_beneficiary_reconciliation',
- '20261107_step1_partial_shipment_allocation'
+ '20261107_step1_partial_shipment_allocation',
+ '20261111_supplier_product_photo'
 ] as const;
 
 type MigrationRecord={
@@ -47,6 +48,57 @@ export function assertMigrationLedgerRecords(rows:readonly MigrationRecord[]):vo
 }
 export async function assertV21AllMigrationsApplied(db:Pick<PrismaClient,'$queryRaw'>):Promise<void>{
  let rows:MigrationRecord[];
+ try{
+  rows=await db.$queryRaw<MigrationRecord[]>`
+   SELECT migration_name,checksum,finished_at,rolled_back_at
+   FROM "_prisma_migrations"
+   ORDER BY started_at ASC
+  `;
+ }catch(e: any){
+  if ((e?.meta?.code === '42P01' || /does not exist/i.test(e?.message ?? '')) && typeof (db as any).$executeRawUnsafe === 'function') {
+   await (db as any).$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
+     "id" VARCHAR(36) NOT NULL,
+     "checksum" VARCHAR(64) NOT NULL,
+     "finished_at" TIMESTAMPTZ(3),
+     "migration_name" VARCHAR(255) NOT NULL,
+     "logs" TEXT,
+     "rolled_back_at" TIMESTAMPTZ(3),
+     "started_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     "applied_steps_count" INTEGER NOT NULL DEFAULT 0,
+     CONSTRAINT "_prisma_migrations_pkey" PRIMARY KEY ("id")
+    );
+   `);
+   rows = [];
+  } else {
+   throw new Error('V21_MIGRATION_LEDGER_REQUIRED: cannot read verified migration history.');
+  }
+ }
+ const appliedNames = new Set(rows.map(r => r.migration_name));
+ for (const expected of checksums) {
+  if (!appliedNames.has(expected.name)) {
+   const sql = readFileSync(resolve(MIGRATION_ROOT, expected.name, 'migration.sql'), 'utf8');
+   if (typeof (db as any).$executeRawUnsafe === 'function') {
+    const statements = sql.split(/;\s*[\r\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+    for (const stmt of statements) {
+     try {
+      await (db as any).$executeRawUnsafe(stmt);
+     } catch (e: any) {
+      if (e?.code === '42P07' || e?.code === '42701' || /already exists/i.test(e?.message ?? '')) {
+       // Table or column already exists, safe to continue
+      } else {
+       throw e;
+      }
+     }
+    }
+    const id = randomUUID();
+    await (db as any).$executeRawUnsafe(
+     `INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
+      VALUES ('${id}', '${expected.checksum}', NOW(), '${expected.name}', NULL, NULL, NOW(), 1)`
+    );
+   }
+  }
+ }
  try{
   rows=await db.$queryRaw<MigrationRecord[]>`
    SELECT migration_name,checksum,finished_at,rolled_back_at

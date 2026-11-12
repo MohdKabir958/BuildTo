@@ -16,10 +16,17 @@ class SupplierOnboardingFlow extends StatefulWidget {
     required this.controller,
     required this.api,
     required this.onClose,
+    this.leaveWhenApproved = false,
+    this.onApproved,
   });
   final SupplierAuthController controller;
   final SupplierApplicationsApi api;
   final VoidCallback onClose;
+  final bool leaveWhenApproved;
+
+  /// Returns true when a one-time access check has started. The registration
+  /// screen should not paint again while that check is in flight.
+  final bool Function()? onApproved;
   @override
   State<SupplierOnboardingFlow> createState() => _SupplierOnboardingFlowState();
 }
@@ -80,6 +87,22 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       SupplierApplicationDetail? detail;
       if (target != null && records.any((record) => record.id == target)) {
         detail = await widget.api.detail(target);
+      }
+      if (!mounted ||
+          version != generation ||
+          !sessionOk ||
+          session != widget.controller.sessionKey) {
+        return;
+      }
+      final approved = detail?.summary.approval ==
+              SupplierApplicationStatus.approved ||
+          records.any(
+              (record) => record.approval == SupplierApplicationStatus.approved);
+      if (approved &&
+          widget.leaveWhenApproved &&
+          widget.controller.stage == SupplierAccessStage.noSupplier &&
+          (widget.onApproved?.call() ?? false)) {
+        return;
       }
       if (!mounted ||
           version != generation ||

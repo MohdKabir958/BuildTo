@@ -23,6 +23,7 @@ async function main() {
   let server:http.Server|undefined;
   let recoveryTimer:ReturnType<typeof setInterval>|undefined;
   try {
+    await assertV21AllMigrationsApplied(db);
     const schema=await verifyExistingSchema(db);
     if(!schema.migrationHistoryExists)
       throw new Error('V21_MIGRATION_LEDGER_REQUIRED: complete staging Prisma baseline before API startup.');

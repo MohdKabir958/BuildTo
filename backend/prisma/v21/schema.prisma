@@ -585,6 +585,7 @@ model Product {
   description   String?
   hsnCode       String?   @db.VarChar(12)
   specification Json      @default("{}") // validate against category-specific JSON contract in API
+  imageUrl      String?   @db.VarChar(200)
   active        Boolean   @default(false)
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
@@ -595,6 +596,12 @@ model Product {
   rfqItems      RfqItem[]
   @@index([categoryId, active])
   @@index([brandId, active])
+}
+model CatalogImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  mimeType  String   @db.VarChar(40)
+  bytes     Bytes
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 }
 model ProductUnitConversion {
   id         String        @id @default(uuid()) @db.Uuid

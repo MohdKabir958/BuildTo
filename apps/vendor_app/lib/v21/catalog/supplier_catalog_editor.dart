@@ -1,207 +1,30 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 import '../api/supplier_v21_api.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import 'supplier_catalog_models.dart';
 import 'supplier_catalog_repository.dart';
 
-/// Search and paginate the public construction-material masters, never invent
-/// new master products from a seller's free-text SKU.
-class CatalogProductPicker extends StatefulWidget {
-  const CatalogProductPicker(
-      {super.key, required this.repository, required this.categories});
-  final SupplierCatalogRepository repository;
-  final List<CatalogCategory> categories;
-  @override
-  State<CatalogProductPicker> createState() => _CatalogProductPickerState();
-}
+const fallbackSellingUnits = [
+  CatalogUnit('BAG', 'Bag'),
+  CatalogUnit('KG', 'Kg'),
+  CatalogUnit('PIECE', 'Piece'),
+  CatalogUnit('TONNE', 'Tonne'),
+  CatalogUnit('BOX', 'Box'),
+  CatalogUnit('BUNDLE', 'Bundle'),
+  CatalogUnit('METER', 'Meter'),
+  CatalogUnit('SQM', 'Square meter'),
+  CatalogUnit('CUM', 'Cubic meter'),
+  CatalogUnit('LITRE', 'Litre'),
+];
 
-class _CatalogProductPickerState extends State<CatalogProductPicker> {
-  final search = TextEditingController();
-  final products = <CatalogProduct>[];
-  String? categoryId, nextCursor, message;
-  bool loading = false;
-  int ticket = 0;
-  @override
-  void initState() {
-    super.initState();
-    unawaited(load());
-  }
 
-  @override
-  void dispose() {
-    ticket++;
-    search.dispose();
-    super.dispose();
-  }
-
-  Future<void> load({bool more = false}) async {
-    if (more && (loading || nextCursor == null)) return;
-    final marker = ++ticket;
-    setState(() {
-      loading = true;
-      message = null;
-      if (!more) {
-        products.clear();
-        nextCursor = null;
-      }
-    });
-    try {
-      final result = await widget.repository.products(
-        categoryId: categoryId,
-        search: search.text,
-        cursor: more ? nextCursor : null,
-      );
-      if (!mounted || marker != ticket) return;
-      setState(() {
-        final seen = products.map((p) => p.id).toSet();
-        for (final product in result.items) {
-          if (seen.add(product.id)) products.add(product);
-        }
-        nextCursor = result.nextCursor;
-      });
-    } catch (e) {
-      if (!mounted || marker != ticket) return;
-      setState(() => message =
-          'Product search is unavailable. Check the filters and retry.');
-    } finally {
-      if (mounted && marker == ticket) setState(() => loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-              18, 12, 18, MediaQuery.viewInsetsOf(context).bottom + 12),
-          child: Column(children: [
-            const BuildToSectionHeading(
-              title: 'Choose construction material',
-              subtitle:
-                  'Products come from the approved Splyzo master catalog.',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('catalog-product-search'),
-              controller: search,
-              textInputAction: TextInputAction.search,
-              maxLength: 80,
-              decoration: InputDecoration(
-                labelText: 'Search by material name',
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: IconButton(
-                  tooltip: 'Search products',
-                  onPressed: () => unawaited(load()),
-                  icon: const Icon(Icons.arrow_forward_rounded),
-                ),
-              ),
-              onSubmitted: (_) => unawaited(load()),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 44,
-              child: ListView(scrollDirection: Axis.horizontal, children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: const Text('All categories'),
-                    selected: categoryId == null,
-                    onSelected: (_) {
-                      setState(() => categoryId = null);
-                      unawaited(load());
-                    },
-                  ),
-                ),
-                for (final category in widget.categories)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(category.name),
-                      selected: categoryId == category.id,
-                      onSelected: (_) {
-                        setState(() => categoryId = category.id);
-                        unawaited(load());
-                      },
-                    ),
-                  ),
-              ]),
-            ),
-            const SizedBox(height: 8),
-            if (loading && products.isEmpty)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (message != null)
-              Expanded(
-                  child: Center(
-                      child: BuildToStatePanel(
-                title: 'Products unavailable',
-                message: message!,
-                actionLabel: 'Retry search',
-                onAction: () => unawaited(load()),
-              )))
-            else if (products.isEmpty)
-              const Expanded(
-                  child: Center(
-                      child: BuildToStatePanel(
-                title: 'No matching materials',
-                message: 'Try another search or an approved category.',
-              )))
-            else
-              Expanded(
-                  child: ListView.builder(
-                key: const Key('catalog-product-results'),
-                itemCount: products.length + (nextCursor == null ? 0 : 1),
-                itemBuilder: (context, index) {
-                  if (index == products.length) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: OutlinedButton.icon(
-                        onPressed:
-                            loading ? null : () => unawaited(load(more: true)),
-                        icon: const Icon(Icons.expand_more_rounded),
-                        label: const Text('Load more materials'),
-                      ),
-                    );
-                  }
-                  final product = products[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: BuildToCard(
-                      padding: EdgeInsets.zero,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.fromLTRB(16, 9, 12, 9),
-                        leading: const CircleAvatar(
-                          backgroundColor: BuildToPalette.sky,
-                          foregroundColor: BuildToPalette.navy,
-                          child: Icon(Icons.construction_rounded),
-                        ),
-                        title: Text(product.name,
-                            style: Theme.of(context).textTheme.titleMedium),
-                        subtitle: Text(
-                          [
-                            product.categoryName,
-                            product.brandName,
-                            product.code
-                          ].whereType<String>().join(' · '),
-                          maxLines: 2,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        trailing: const Icon(Icons.add_circle_outline_rounded,
-                            color: BuildToPalette.blue),
-                        onTap: () => Navigator.pop(context, product),
-                      ),
-                    ),
-                  );
-                },
-              )),
-          ]),
-        ),
-      );
-}
-
-/// Draft/editor form is deliberately supplier-scoped. Immutable SKU/product
-/// and unit identity are only chosen when creating a new listing.
+/// Supplier product form. A verified supplier publishes immediately.
+/// Product and selling unit are chosen only when adding a product.
 class SupplierListingEditor extends StatefulWidget {
   const SupplierListingEditor(
       {super.key,
@@ -236,8 +59,9 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
           : catalogRupeesFromPaise(widget.original!.mrpPaise!));
   late final taxBps = TextEditingController(
       text: catalogPercentFromBps(widget.original?.taxRateBps ?? 1800));
-  CatalogProduct? product;
-  String? unit, error;
+  late final productName = TextEditingController();
+  String? categoryId, unit, error, uploadedImageUrl;
+  Uint8List? photoBytes;
   late bool inclusive = widget.original?.taxInclusive ?? true;
   bool busy = false, uncertain = false;
   // A single immutable key is retained for the entire create intent, including
@@ -268,7 +92,17 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
 
   @override
   void dispose() {
-    for (final c in [sku, pack, minimum, step, maximum, price, mrp, taxBps]) {
+    for (final c in [
+      sku,
+      productName,
+      pack,
+      minimum,
+      step,
+      maximum,
+      price,
+      mrp,
+      taxBps
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -288,7 +122,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       catalogPrice((text ?? '').trim());
       return null;
     } on FormatException {
-      return 'Use a positive INR amount (up to 4 places).';
+      return 'Enter the price, such as 315 or 315.50.';
     }
   }
 
@@ -298,12 +132,14 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
     String? Function(String?)? validator,
     TextInputType? type,
     bool optional = false,
+    TextStyle? style,
   }) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 13),
         child: TextFormField(
           key: ValueKey('catalog-field-$label'),
           controller: controller,
+          style: style,
           keyboardType:
               type ?? const TextInputType.numberWithOptions(decimal: true),
           autocorrect: false,
@@ -316,31 +152,92 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
         ),
       );
 
-  Future<void> chooseProduct() async {
-    final selected = await showModalBottomSheet<CatalogProduct>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (context) => FractionallySizedBox(
-        heightFactor: .85,
-        child: CatalogProductPicker(
-          repository: widget.repository,
-          categories: widget.masters.categories,
-        ),
-      ),
-    );
-    if (mounted && selected != null) {
-      setState(() {
-        product = selected;
-        error = null;
-      });
+  List<CatalogUnit> get sellingUnits => widget.masters.units.isEmpty
+      ? fallbackSellingUnits
+      : widget.masters.units;
+
+  static const _photoTooBig = 'Choose a photo of 8 MB or smaller.';
+  static const _photoTypeHint =
+      'Use a JPEG, PNG, WebP, GIF, BMP, HEIC, or AVIF photo.';
+
+  String? _photoType(Uint8List bytes) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xff &&
+        bytes[1] == 0xd8 &&
+        bytes[2] == 0xff) {
+      return 'image/jpeg';
     }
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4e &&
+        bytes[3] == 0x47) {
+      return 'image/png';
+    }
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return 'image/webp';
+    }
+    if (bytes.length >= 6 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46) {
+      return 'image/gif';
+    }
+    if (bytes.length >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4d) {
+      return 'image/bmp';
+    }
+    if (bytes.length >= 12 &&
+        String.fromCharCodes(bytes.sublist(4, 8)) == 'ftyp') {
+      final brand = String.fromCharCodes(bytes.sublist(8, 12)).toLowerCase();
+      if (brand == 'avif' || brand == 'avis') return 'image/avif';
+      if (const {'heic', 'heix', 'hevc', 'hevx', 'heim', 'heis'}
+          .contains(brand)) {
+        return 'image/heic';
+      }
+      if (const {'heif', 'mif1', 'msf1'}.contains(brand)) return 'image/heif';
+    }
+    return null;
+  }
+
+  Future<void> pickPhoto() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 80,
+    );
+    if (image == null || !mounted) return;
+    final bytes = await image.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > 8 * 1024 * 1024) {
+      setState(() => error = _photoTooBig);
+      return;
+    }
+    if (_photoType(bytes) == null) {
+      setState(() => error = _photoTypeHint);
+      return;
+    }
+    setState(() {
+      photoBytes = bytes;
+      uploadedImageUrl = null;
+      error = null;
+    });
   }
 
   CatalogListingInput _input() => CatalogListingInput(
-        productId: widget.original?.productId ?? product?.id ?? '',
+        productId: widget.original?.productId ?? '',
         sku: sku.text.trim(),
+        productName: widget.original == null ? productName.text : null,
+        categoryId: categoryId,
+        imageUrl: uploadedImageUrl,
         unitCode: unit ?? '',
         packSize: pack.text.trim(),
         minOrderQty: minimum.text.trim(),
@@ -354,39 +251,55 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       );
 
   Future<void> save() async {
-    if (busy || uncertain || form.currentState?.validate() != true) return;
-    if (widget.original == null && product == null) {
-      setState(
-          () => error = 'Choose a material from the approved product catalog.');
+    if (busy || uncertain) return;
+    if (form.currentState?.validate() != true) {
+      setState(() => error = 'Check the price, GST, and order quantities.');
+      return;
+    }
+    if (widget.original == null && productName.text.trim().isEmpty) {
+      setState(() =>
+          error = 'Enter the product you have in your warehouse.');
+      return;
+    }
+    if (widget.original == null &&
+        widget.masters.categories.isNotEmpty &&
+        categoryId == null) {
+      setState(() => error = 'Choose a category, such as cement or steel.');
       return;
     }
     CatalogListingInput input;
     try {
+      if (photoBytes != null && uploadedImageUrl == null) {
+        final contentType = _photoType(photoBytes!);
+        if (contentType == null) {
+          setState(() => error = _photoTypeHint);
+          return;
+        }
+        setState(() => busy = true);
+        uploadedImageUrl = await widget.repository.uploadProductPhoto(
+          supplierId: widget.supplierId,
+          bytes: photoBytes!,
+          contentType: contentType,
+        );
+      }
       input = _input();
       input.validate();
-    } catch (_) {
-      setState(() =>
-          error = 'Review SKU, quantity limits, tax rate and exact prices.');
+    } on SupplierV21Exception catch (e) {
+      setState(() {
+        busy = false;
+        error = e.code == 'PAYLOAD_TOO_LARGE'
+            ? _photoTooBig
+            : e.code == 'UNSUPPORTED_IMAGE'
+                ? _photoTypeHint
+                : 'The photo could not be saved. Try another photo.';
+      });
       return;
-    }
-    if (widget.original?.status == CatalogListingStatus.approved) {
-      final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-                title: const Text('Change an approved listing?'),
-                content: const Text(
-                    'Editing an approved listing removes it from the '
-                    'published catalog until Splyzo admin reviews the update.'),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel')),
-                  FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Continue editing')),
-                ],
-              ));
-      if (!mounted || confirmed != true) return;
+    } catch (_) {
+      setState(() {
+        busy = false;
+        error = 'Check the price, GST, and order quantities.';
+      });
+      return;
     }
     setState(() {
       busy = true;
@@ -416,7 +329,11 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
             'Your supplier access changed. Recheck permission before editing.',
           SupplierV21Problem.network => 'The save outcome is uncertain. '
               'Close and refresh before attempting again; never create a duplicate.',
-          _ => 'Could not save. Check all values and retry after review.',
+          _ => e.code == 'PAYLOAD_TOO_LARGE'
+              ? _photoTooBig
+              : e.code == 'UNSUPPORTED_IMAGE'
+                  ? _photoTypeHint
+                  : 'Could not save. Check all values and retry after review.',
         };
       });
     } catch (_) {
@@ -439,117 +356,203 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
             child: ListView(shrinkWrap: true, children: [
               BuildToSectionHeading(
                 title: widget.original == null
-                    ? 'Create supplier listing'
-                    : 'Edit listing',
-                subtitle: widget.original == null
-                    ? 'Select a Splyzo material, then configure a draft.'
-                    : 'Changes use optimistic version checks and admin moderation.',
+                    ? 'Add a product'
+                    : 'Update this product',
+                subtitle: 'Customers can see it as soon as you save.',
               ),
               const SizedBox(height: 18),
               if (widget.original == null) ...[
-                BuildToCard(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text('Material product',
-                            style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 10),
-                        Text(product?.name ?? 'No master product selected',
-                            style: Theme.of(context).textTheme.bodyMedium),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed:
-                              busy ? null : () => unawaited(chooseProduct()),
-                          icon: const Icon(Icons.search_rounded),
-                          label: const Text('Browse approved materials'),
-                        ),
-                      ]),
-                ),
-                const SizedBox(height: 16),
-                _field('Supplier SKU', sku, type: TextInputType.text,
-                    validator: (v) {
-                  try {
-                    catalogSku(v ?? '');
+                _field(
+                  'What do you have in the warehouse?',
+                  productName,
+                  type: TextInputType.text,
+                  validator: (value) {
+                    final text = (value ?? '').trim();
+                    if (text.isEmpty) return 'Enter the product name.';
+                    if (text.length > 240) return 'Use a shorter name.';
                     return null;
-                  } catch (_) {
-                    return 'Use a valid uppercase code, max 100 characters.';
+                  },
+                ),
+                if (widget.masters.categories.isNotEmpty) ...[
+                  Text('Category',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final category in widget.masters.categories)
+                        ChoiceChip(
+                          label: Text(category.name),
+                          selected: categoryId == category.id,
+                          onSelected: busy
+                              ? null
+                              : (_) => setState(() {
+                                    categoryId = category.id;
+                                    error = null;
+                                  }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Text('How do you sell it?',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                FormField<String>(
+                  key: const Key('catalog-unit'),
+                  validator: (_) =>
+                      unit == null ? 'Choose bag, kg, piece, or another unit.' : null,
+                  builder: (state) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final sellingUnit in sellingUnits)
+                            ChoiceChip(
+                              label: Text(sellingUnit.name),
+                              selected: unit == sellingUnit.code,
+                              onSelected: busy
+                                  ? null
+                                  : (_) => setState(() {
+                                        unit = sellingUnit.code;
+                                        error = null;
+                                      }),
+                            ),
+                        ],
+                      ),
+                      if (state.hasError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(state.errorText!,
+                              style: const TextStyle(
+                                  color: BuildToPalette.danger)),
+                        ),
+                    ],
+                  ),
+                ),
+              ] else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Sold as ${widget.original!.unitCode}. '
+                    'To use another unit, add it as a new product.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              const SizedBox(height: 8),
+              if (photoBytes != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.memory(
+                    photoBytes!,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(
+                      height: 180,
+                      child: Center(child: Text('Photo selected')),
+                    ),
+                  ),
+                )
+              else if (widget.original?.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    SupplierV21Config.origin
+                        .resolve(widget.original!.imageUrl!)
+                        .toString(),
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: busy ? null : () => unawaited(pickPhoto()),
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(photoBytes == null &&
+                          widget.original?.imageUrl == null
+                      ? 'Add a photo'
+                      : 'Change photo'),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'JPEG, PNG, WebP, GIF, BMP, HEIC, or AVIF, up to 8 MB. The product can still be saved without a photo.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              _field(
+                'Your price (₹)',
+                price,
+                validator: _price,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              Text('GST', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final rate in const ['0', '5', '12', '18', '28'])
+                    ChoiceChip(
+                      label: Text('$rate%'),
+                      selected: taxBps.text.trim() == rate,
+                      onSelected: busy
+                          ? null
+                          : (selected) {
+                              if (!selected) return;
+                              setState(() => taxBps.text = rate);
+                            },
+                    ),
+                ],
+              ),
+              if (!const ['0', '5', '12', '18', '28'].contains(taxBps.text.trim()))
+                _field('GST %', taxBps, validator: (value) {
+                  try {
+                    catalogTaxBasisPoints((value ?? '').trim());
+                    return null;
+                  } on FormatException {
+                    return 'Enter a GST rate from 0 to 100.';
                   }
                 }),
-                DropdownButtonFormField<String>(
-                  key: const Key('catalog-unit'),
-                  initialValue: unit,
-                  decoration: const InputDecoration(labelText: 'Selling unit'),
-                  items: widget.masters.units
-                      .map((u) => DropdownMenuItem(
-                          value: u.code, child: Text('${u.name} (${u.code})')))
-                      .toList(),
-                  onChanged:
-                      busy ? null : (value) => setState(() => unit = value),
-                  validator: (value) =>
-                      value == null ? 'Select a selling unit.' : null,
-                ),
-                const SizedBox(height: 15),
-              ] else ...[
-                BuildToCard(
-                    child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.original!.sku,
-                        style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 6),
-                    Text(
-                        'Selling unit: ${widget.original!.unitCode} · '
-                        'Version ${widget.original!.version}',
-                        style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 6),
-                    Text(
-                        'SKU, product and unit cannot be changed. Create a new listing '
-                        'to use a different identity.',
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                )),
-                const SizedBox(height: 16),
-              ],
-              const BuildToSectionHeading(title: 'Pack size & ordering'),
-              const SizedBox(height: 14),
-              _field('Pack size', pack, validator: _quantity),
-              _field('Minimum order quantity', minimum, validator: _quantity),
-              _field('Quantity step', step, validator: _quantity),
-              _field('Maximum order quantity', maximum,
-                  optional: true,
-                  validator: (v) =>
-                      (v ?? '').trim().isEmpty ? null : _quantity(v)),
-              const SizedBox(height: 10),
-              const BuildToSectionHeading(
-                  title: 'Prices & tax',
-                  subtitle: 'Precise INR values — not rounded or estimated.'),
-              const SizedBox(height: 14),
-              _field('Unit price (₹)', price, validator: _price),
-              _field('MRP (₹)', mrp, optional: true, validator: (v) {
-                if ((v ?? '').trim().isEmpty) return null;
-                try {
-                  catalogPaiseFromRupees(v!.trim());
-                  return null;
-                } on FormatException {
-                  return 'Enter rupees up to 2 decimal places.';
-                }
-              }),
-              _field('GST rate (%)', taxBps, validator: (v) {
-                try {
-                  catalogTaxBasisPoints((v ?? '').trim());
-                  return null;
-                } on FormatException {
-                  return 'Enter 0–100% (up to 2 decimals).';
-                }
-              }),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Price includes tax'),
-                subtitle: const Text(
-                    'Matches the tax-inclusive flag on this listing.'),
+                title: const Text('This price already includes GST'),
                 value: inclusive,
                 onChanged:
                     busy ? null : (value) => setState(() => inclusive = value),
+              ),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: const Text('More options'),
+                subtitle: const Text(
+                    'Pack size and order limits. Leave these as 1 for most products.'),
+                children: [
+                  _field('Pack size', pack, validator: _quantity),
+                  _field('Smallest order', minimum, validator: _quantity),
+                  _field('Order step', step, validator: _quantity),
+                  _field('Largest order', maximum,
+                      optional: true,
+                      validator: (value) => (value ?? '').trim().isEmpty
+                          ? null
+                          : _quantity(value)),
+                  _field('Printed price / MRP (₹)', mrp,
+                      optional: true, validator: (value) {
+                    if ((value ?? '').trim().isEmpty) return null;
+                    try {
+                      catalogPaiseFromRupees(value!.trim());
+                      return null;
+                    } on FormatException {
+                      return 'Enter rupees, such as 399 or 399.50.';
+                    }
+                  }),
+                ],
               ),
               if (error != null) ...[
                 const SizedBox(height: 6),
@@ -560,17 +563,12 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
               const SizedBox(height: 16),
               BuildToPrimaryButton(
                 label: widget.original == null
-                    ? 'Save draft listing'
+                    ? 'Show to customers'
                     : 'Save changes',
-                icon: Icons.save_outlined,
+                icon: Icons.check_rounded,
                 busy: busy,
                 onPressed: busy || uncertain ? null : () => unawaited(save()),
               ),
-              const SizedBox(height: 10),
-              Text(
-                  'A draft is not public. Submit it for independent admin review '
-                  'after checking quantity tiers.',
-                  style: Theme.of(context).textTheme.bodySmall),
             ]),
           ),
         ),

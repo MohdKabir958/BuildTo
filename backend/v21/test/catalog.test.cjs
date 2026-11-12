@@ -100,7 +100,9 @@ test('pricing rejects floats, missing keys, unsupported fields, cross supplier a
  const idempotency=key();
  const created=await send('post',url,'seller',base,{'Idempotency-Key':idempotency});
  assert.equal(created.status,201,JSON.stringify(created.body));
- assert.equal(created.body.data.status,'DRAFT');
+ assert.equal(created.body.data.status,'APPROVED');
+ assert.equal(created.body.data.active,true);
+ assert.ok(created.body.data.publishedAt);
  assert.equal(created.body.data.unitPrice,'315.25');
  assert.equal(created.body.data.mrpPaise,'39900');
  store.listingId=created.body.data.id;
@@ -118,9 +120,58 @@ test('pricing rejects floats, missing keys, unsupported fields, cross supplier a
  });
  assert.equal(outsiderEdit.status,404);
  const listingPublic=await http.get('/api/v2/catalog/listings?productId='+store.productId);
- assert.equal(listingPublic.status,200);assert.equal(listingPublic.body.data.length,0);
+ assert.equal(listingPublic.status,200);assert.equal(listingPublic.body.data.length,1);
 });
-test('supplier can replace tiers, submit; admin approves; exact prices only visible when published',async()=>{
+test('supplier names a warehouse product and customers can see it without an admin product',async()=>{
+ const url='/api/v2/suppliers/'+store.supplier.id+'/listings';
+ const created=await send('post',url,'seller',{
+  productName:'Warehouse Cement 53',unitCode:'BAG',unitPrice:'250.0000',
+  taxRateBps:1800,taxInclusive:true,
+ },{'Idempotency-Key':key()});
+ assert.equal(created.status,201,JSON.stringify(created.body));
+ assert.equal(created.body.data.status,'APPROVED');
+ assert.equal(created.body.data.active,true);
+ assert.equal(created.body.data.productName,'Warehouse Cement 53');
+ const visible=await http.get('/api/v2/catalog/products?search=Warehouse%20Cement');
+ assert.equal(visible.status,200);
+ assert(visible.body.data.items.some(item=>item.name==='Warehouse Cement 53'));
+});
+test('supplier photo is saved with the product and can be opened',async()=>{
+ const jpeg=Buffer.from([0xff,0xd8,0xff,0xd9]);
+ const uploaded=await http.post('/api/v2/suppliers/'+store.supplier.id+'/product-photos')
+  .set(H('seller')).set('Content-Type','image/jpeg').send(jpeg);
+ assert.equal(uploaded.status,201,JSON.stringify(uploaded.body));
+ const imageUrl=uploaded.body.data.imageUrl;
+ const created=await send('post','/api/v2/suppliers/'+store.supplier.id+'/listings','seller',{
+  productName:'Photo Cement',unitCode:'BAG',unitPrice:'10.0000',
+  taxRateBps:1800,taxInclusive:true,imageUrl,
+ },{'Idempotency-Key':key()});
+ assert.equal(created.status,201,JSON.stringify(created.body));
+ assert.equal(created.body.data.imageUrl,imageUrl);
+ const file=await http.get(imageUrl);
+ assert.equal(file.status,200);
+ assert.equal(file.headers['content-type'],'image/jpeg');
+ const found=await http.get('/api/v2/catalog/products?search=Photo%20Cement');
+ assert(found.body.data.items.some(item=>item.name==='Photo Cement'&&item.imageUrl===imageUrl));
+ const gif=Buffer.concat([Buffer.from('GIF89a','ascii'),Buffer.from([0,0])]);
+ const gifUpload=await http.post('/api/v2/suppliers/'+store.supplier.id+'/product-photos')
+  .set(H('seller')).set('Content-Type','image/gif').send(gif);
+ assert.equal(gifUpload.status,201,JSON.stringify(gifUpload.body));
+ const heic=Buffer.alloc(16);
+ heic.writeUInt32BE(16,0);heic.write('ftyp',4);heic.write('heic',8);
+ const heicUpload=await http.post('/api/v2/suppliers/'+store.supplier.id+'/product-photos')
+  .set(H('seller')).set('Content-Type','image/heic').send(heic);
+ assert.equal(heicUpload.status,201,JSON.stringify(heicUpload.body));
+ const junk=await http.post('/api/v2/suppliers/'+store.supplier.id+'/product-photos')
+  .set(H('seller')).set('Content-Type','image/gif').send(Buffer.from('not-a-photo'));
+ assert.equal(junk.status,415);
+ const huge=Buffer.alloc(8*1024*1024+1,0);
+ huge[0]=0xff;huge[1]=0xd8;huge[2]=0xff;
+ const tooBig=await http.post('/api/v2/suppliers/'+store.supplier.id+'/product-photos')
+  .set(H('seller')).set('Content-Type','image/jpeg').send(huge);
+ assert.equal(tooBig.status,413);
+});
+test('verified supplier listings stay public through tier changes',async()=>{
  const url='/api/v2/suppliers/'+store.supplier.id+'/listings/'+store.listingId;
  let price=await send('put',url+'/price-tiers','seller',{
   expectedVersion:0,
@@ -128,18 +179,13 @@ test('supplier can replace tiers, submit; admin approves; exact prices only visi
  });
  assert.equal(price.status,200,JSON.stringify(price.body));
  assert.equal(price.body.data.version,1);
+ assert.equal(price.body.data.status,'APPROVED');
  assert.equal(price.body.data.priceTiers.length,2);
  const submit=await send('post',url+'/submit','seller',{expectedVersion:1});
- assert.equal(submit.status,200);assert.equal(submit.body.data.status,'PENDING');
- const pre=await http.get('/api/v2/catalog/listings?productId='+store.productId);
- assert.equal(pre.body.data.length,0);
+ assert.equal(submit.status,409);
  const pending=await send('get','/api/v2/admin/catalog/listings/pending','admin');
  assert.equal(pending.status,200);
- assert(pending.body.data.some(x=>x.id===store.listingId));
- const approve=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{decision:'APPROVE',expectedVersion:2});
- assert.equal(approve.status,200,JSON.stringify(approve.body));
- assert.equal(approve.body.data.version,3);
- assert.equal(approve.body.data.status,'APPROVED');
+ assert.equal(pending.body.data.some(x=>x.id===store.listingId),false);
  const publicItems=await http.get('/api/v2/catalog/listings?productId='+store.productId);
  assert.equal(publicItems.status,200);
  const item=publicItems.body.data.find(x=>x.id===store.listingId);
@@ -148,56 +194,46 @@ test('supplier can replace tiers, submit; admin approves; exact prices only visi
  assert.equal(item.mrpPaise,'39900');
  assert.equal(item.unitPrice,'315.25');
  const audited=await db.auditEvent.count({where:{entityType:'SupplierListing',entityId:store.listingId}});
- assert(audited>=3);
+ assert(audited>=2);
 });
-test('optimistic version conflict and repricing unpublish approved listing',async()=>{
+test('optimistic version conflict keeps an edited price public',async()=>{
  const url='/api/v2/suppliers/'+store.supplier.id+'/listings/'+store.listingId;
- const stale=await send('patch',url,'seller',{expectedVersion:2,unitPrice:'310.0000'});
+ const stale=await send('patch',url,'seller',{expectedVersion:0,unitPrice:'310.0000'});
  assert.equal(stale.status,409);assert.equal(stale.body.error.code,'LISTING_VERSION_CONFLICT');
- const change=await send('patch',url,'seller',{expectedVersion:3,unitPrice:'305.0000'});
+ const change=await send('patch',url,'seller',{expectedVersion:1,unitPrice:'305.0000'});
  assert.equal(change.status,200,JSON.stringify(change.body));
- assert.equal(change.body.data.status,'PENDING');assert.equal(change.body.data.active,false);
- assert.equal(change.body.data.version,4);
- const invisible=await http.get('/api/v2/catalog/listings?productId='+store.productId);
- assert.equal(invisible.body.data.length,0);
- const invalid=await send('post',url+'/submit','seller',{expectedVersion:4});
- assert.equal(invalid.status,409);
- const approve=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{
-  decision:'APPROVE',expectedVersion:4
- });
- assert.equal(approve.status,200);
+ assert.equal(change.body.data.status,'APPROVED');assert.equal(change.body.data.active,true);
+ assert.equal(change.body.data.version,2);
  const visible=await http.get('/api/v2/catalog/listings?productId='+store.productId);
  assert.equal(visible.body.data.length,1);
  assert.equal(visible.body.data[0].unitPrice,'305');
+ const invalid=await send('post',url+'/submit','seller',{expectedVersion:2});
+ assert.equal(invalid.status,409);
 });
-test('a lower base price cannot be approved with stale higher tiers; re-tier while pending',async()=>{
+test('a selling price below existing quantity prices is rejected until those prices are lowered',async()=>{
  const url='/api/v2/suppliers/'+store.supplier.id+'/listings/'+store.listingId;
  const current=await db.supplierListing.findUniqueOrThrow({where:{id:store.listingId}});
- const changed=await send('patch',url,'seller',{
+ const blocked=await send('patch',url,'seller',{
    expectedVersion:current.version,unitPrice:'280.0000'
  });
- assert.equal(changed.status,200);
- assert.equal(changed.body.data.status,'PENDING');
- const rejected=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{
-   expectedVersion:changed.body.data.version,decision:'APPROVE'
- });
- assert.equal(rejected.status,422);
- assert.equal(rejected.body.error.code,'INVALID_PRICE_TIERS');
+ assert.equal(blocked.status,422);
+ assert.equal(blocked.body.error.code,'INVALID_PRICE_TIERS');
  const revised=await send('put',url+'/price-tiers','seller',{
-   expectedVersion:changed.body.data.version,
+   expectedVersion:current.version,
    tiers:[{minQty:'5.000',pricePerUnit:'270.0000'},{minQty:'10.000',pricePerUnit:'260.0000'}]
  });
  assert.equal(revised.status,200,JSON.stringify(revised.body));
- assert.equal(revised.body.data.status,'PENDING');
- assert.equal(revised.body.data.version,changed.body.data.version+1);
+ assert.equal(revised.body.data.status,'APPROVED');
+ assert.equal(revised.body.data.version,current.version+1);
  const oldEdit=await send('patch',url,'seller',{
-   expectedVersion:changed.body.data.version,unitPrice:'280.0000'
+   expectedVersion:current.version,unitPrice:'280.0000'
  });
  assert.equal(oldEdit.status,409);
- const approved=await send('post','/api/v2/admin/catalog/listings/'+store.listingId+'/review','admin',{
-   expectedVersion:revised.body.data.version,decision:'APPROVE'
+ const changed=await send('patch',url,'seller',{
+   expectedVersion:revised.body.data.version,unitPrice:'280.0000'
  });
- assert.equal(approved.status,200,JSON.stringify(approved.body));
+ assert.equal(changed.status,200,JSON.stringify(changed.body));
+ assert.equal(changed.body.data.status,'APPROVED');
  const visible=await http.get('/api/v2/catalog/listings?productId='+store.productId);
  const listing=visible.body.data.find(x=>x.id===store.listingId);
  assert(listing);

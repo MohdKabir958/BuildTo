@@ -3,7 +3,7 @@ import {ApiError} from './errors';
 import {uuid} from './catalog-validation';
 
 const productSelect={
- id:true,code:true,name:true,description:true,hsnCode:true,specification:true,
+ id:true,code:true,name:true,description:true,hsnCode:true,specification:true,imageUrl:true,
  category:{select:{id:true,name:true,slug:true}},brand:{select:{id:true,name:true,slug:true}},
 } as const;
 const LISTING_DISCOVERED={
@@ -27,6 +27,8 @@ function listingDTO(listing:any) {
    unitPrice:listing.unitPrice.toString(),mrpPaise:listing.mrpPaise?.toString()??null,
    taxRateBps:listing.taxRateBps,taxInclusive:listing.taxInclusive,
    status:listing.status,active:listing.active,version:listing.version,
+   productName:listing.product?.name??null,
+   imageUrl:listing.product?.imageUrl??null,
    publishedAt:listing.publishedAt?.toISOString()??null,
    priceTiers:tiers,
  };

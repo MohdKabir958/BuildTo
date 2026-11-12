@@ -7,16 +7,17 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const source = fileURLToPath(new URL('../../../architecture/buildto-schema-v2.1/', import.meta.url));
-const read = rel => readFileSync(resolve(root, rel), 'utf8');
-const canonical = readFileSync(resolve(source, 'prisma/schema.prisma'), 'utf8');
+const norm = s => s.replace(/\r\n/g, '\n');
+const read = rel => norm(readFileSync(resolve(root, rel), 'utf8'));
+const canonical = norm(readFileSync(resolve(source, 'prisma/schema.prisma'), 'utf8'));
 const active = read('prisma/v21/schema.prisma');
 const generatorLine = '  output   = "../../generated/buildto-v21"\n';
 if (!active.includes(generatorLine) || active.replace(generatorLine,'') !== canonical) {
   throw new Error('V2.1 backend Prisma schema drifted from approved architecture schema.');
 }
-const DDL = readFileSync(resolve(source,'sql/greenfield-ddl.sql'),'utf8');
-const guards = readFileSync(resolve(source,'sql/integrity-guards.sql'),'utf8');
-const hardening = readFileSync(resolve(source,'sql/v2_1-hardening.sql'),'utf8');
+const DDL = norm(readFileSync(resolve(source,'sql/greenfield-ddl.sql'),'utf8'));
+const guards = norm(readFileSync(resolve(source,'sql/integrity-guards.sql'),'utf8'));
+const hardening = norm(readFileSync(resolve(source,'sql/v2_1-hardening.sql'),'utf8'));
 const strip = x=>x.replace(/^BEGIN;\s*\r?\n/m,'').replace(/^\s*COMMIT;\s*$/m,'').trim();
 const migration = `-- Buildto V2.1 GREENFIELD baseline. Source: architecture/buildto-schema-v2.1/sql/*
 -- Never run this migration against an already populated V2.1 branch.
@@ -42,5 +43,5 @@ const applied = read('prisma/v21/migrations/20261103_buildto_v21_initial/migrati
 if (migration!==applied) throw new Error('V2.1 migration SQL differs from reviewed source contract.');
 const models=[...canonical.matchAll(/^model\s+\w+\s*\{/gm)].length;
 const enums=[...canonical.matchAll(/^enum\s+\w+\s*\{/gm)].length;
-if(models!==72 || enums!==35)throw new Error('V2.1 model/enum count has unexpectedly changed.');
-console.log('PASS: canonical V2.1 schema, immutable migration composition, 72 models, 35 enums.');
+if(models!==73 || enums!==35)throw new Error('V2.1 model/enum count has unexpectedly changed.');
+console.log('PASS: canonical V2.1 schema, immutable migration composition, 73 models, 35 enums.');

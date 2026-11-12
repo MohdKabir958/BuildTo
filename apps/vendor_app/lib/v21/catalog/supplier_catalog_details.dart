@@ -71,16 +71,16 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Submit for Splyzo review?'),
-        content: const Text('This sends your listing to the admin moderation '
-            'queue. Submitting does not approve or publish it.'),
+        title: const Text('Show this product to customers?'),
+        content: const Text(
+            'Customers will see it right away. You can still change the price later.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Back')),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Submit draft')),
+              child: const Text('Show to customers')),
         ],
       ),
     );
@@ -146,9 +146,22 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
       children: [
         const BuildToSectionHeading(
           title: 'Listing details',
-          subtitle: 'Own construction material · backend-verified scope.',
+          subtitle: 'Your product and the price customers see.',
         ),
         const SizedBox(height: 16),
+        if (listing.imageUrl != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              SupplierV21Config.origin.resolve(listing.imageUrl!).toString(),
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Container(
           decoration: BoxDecoration(
             color: BuildToPalette.navy,
@@ -162,7 +175,7 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
                   color: BuildToPalette.orange, size: 26),
               const SizedBox(width: 12),
               Expanded(
-                  child: Text(listing.sku,
+                  child: Text(listing.productName ?? listing.sku,
                       style: const TextStyle(
                           color: Colors.white,
                           fontSize: 23,
@@ -217,22 +230,15 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
         const SizedBox(height: 16),
         if (listing.status == CatalogListingStatus.pending)
           const BuildToStatePanel(
-              title: 'Awaiting independent review',
-              message: 'This listing is not published. A Splyzo catalog '
-                  'administrator must approve the submitted version.',
+              title: 'Not visible to customers yet',
+              message: 'This product was saved before suppliers could publish '
+                  'on their own. Show it to customers when the price looks right.',
               icon: Icons.fact_check_outlined),
-        if (listing.status == CatalogListingStatus.approved)
-          const Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                  'Editing or replacing price tiers will unpublish '
-                  'this version until an admin reviews the changes.',
-                  style: TextStyle(color: BuildToPalette.warning))),
         if (widget.canWrite) ...[
           const SizedBox(height: 16),
           if (listing.status.canEdit)
             BuildToPrimaryButton(
-                label: 'Edit listing',
+                label: 'Change price',
                 icon: Icons.edit_outlined,
                 onPressed: busy ? null : () => unawaited(edit())),
           if (listing.status.canPrice) ...[
@@ -248,7 +254,7 @@ class _SupplierListingDetailsState extends State<SupplierListingDetails> {
             FilledButton.icon(
               onPressed: busy ? null : () => unawaited(submit()),
               icon: const Icon(Icons.send_outlined),
-              label: const Text('Submit for admin review'),
+              label: const Text('Show to customers'),
             ),
           ],
         ],
@@ -318,25 +324,6 @@ class _SupplierTierEditorState extends State<SupplierTierEditor> {
       setState(() => error = 'Check exact quantity and price values: '
           'minimums must rise and unit prices cannot increase.');
       return;
-    }
-    if (widget.listing.status == CatalogListingStatus.approved) {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Replace approved pricing?'),
-          content: const Text('This unpublishes the listing until admin '
-              'approval of the new pricing version.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Replace prices')),
-          ],
-        ),
-      );
-      if (!mounted || ok != true) return;
     }
     setState(() {
       busy = true;

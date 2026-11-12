@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -110,6 +111,58 @@ class SupplierV21Api {
   Future<SupplierV21Response> get(String path,
           {bool requiresAuth = true, Map<String, String>? query}) =>
       request('GET', path, requiresAuth: requiresAuth, query: query);
+
+  Future<SupplierV21Response> sendBytes(
+      String path, Uint8List bytes, String contentType) async {
+    if (_closed) {
+      throw const SupplierV21Exception(SupplierV21Problem.configuration,
+          code: 'CLIENT_CLOSED');
+    }
+    if (!path.startsWith('/api/v2/') || path.contains('..')) {
+      throw ArgumentError.value(path, 'path', 'Use a canonical V2.1 path');
+    }
+    final token = await _token();
+    if (token == null || token.trim().isEmpty) {
+      throw const SupplierV21Exception(SupplierV21Problem.authentication,
+          code: 'NO_SESSION');
+    }
+    try {
+      final response = await _client
+          .send(http.Request('POST', _origin.resolve(path))
+            ..headers.addAll({
+              'Accept': 'application/json',
+              'Content-Type': contentType,
+              'Authorization': 'Bearer ${token.trim()}',
+            })
+            ..bodyBytes = bytes)
+          .timeout(const Duration(seconds: 60));
+      final payload =
+          await http.Response.fromStream(response).timeout(timeout);
+      final decoded = jsonDecode(payload.body);
+      if (decoded is! Map<String, dynamic> || payload.statusCode >= 300) {
+        final err = decoded is Map<String, dynamic> ? decoded['error'] : null;
+        final code = err is Map && err['code'] is String
+            ? err['code'] as String
+            : null;
+        throw SupplierV21Exception(
+          payload.statusCode == 413 || payload.statusCode == 415
+              ? SupplierV21Problem.validation
+              : SupplierV21Problem.server,
+          code: code,
+          statusCode: payload.statusCode,
+        );
+      }
+      return SupplierV21Response(data: decoded['data']);
+    } on SupplierV21Exception {
+      rethrow;
+    } on TimeoutException {
+      throw const SupplierV21Exception(SupplierV21Problem.network,
+          code: 'TIMEOUT_UNKNOWN_OUTCOME');
+    } catch (_) {
+      throw const SupplierV21Exception(SupplierV21Problem.network,
+          code: 'NETWORK_UNAVAILABLE');
+    }
+  }
 
   Future<SupplierV21Response> request(
     String method,

@@ -117,7 +117,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
     );
     if (mounted && result != null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Draft saved. Send it separately for admin review.'),
+        content: Text('Customers can see this product now.'),
       ));
       await refresh();
     }
@@ -185,7 +185,9 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
     final shown = listings
         .where((x) =>
             (filter == null || x.status == filter) &&
-            (keyword.isEmpty || x.sku.contains(keyword)))
+            (keyword.isEmpty ||
+                x.sku.contains(keyword) ||
+                (x.productName ?? '').toUpperCase().contains(keyword)))
         .toList();
     return RefreshIndicator(
       color: BuildToPalette.navy,
@@ -202,7 +204,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                     children: [
                   Text('Material catalog',
                       style: Theme.of(context).textTheme.headlineMedium),
-                  Text('Construction materials, prices and approvals.',
+                  Text('Your products and the prices customers pay.',
                       style: Theme.of(context).textTheme.bodyMedium),
                 ])),
             IconButton(
@@ -227,7 +229,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                 Icon(Icons.inventory_2_outlined, color: BuildToPalette.orange),
                 SizedBox(width: 8),
                 Expanded(
-                    child: Text('BUILDTO • PRODUCT WORKSPACE',
+                    child: Text('SPLYZO • YOUR PRODUCTS',
                         style: TextStyle(
                             color: Colors.white,
                             letterSpacing: 1,
@@ -244,7 +246,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                       fontWeight: FontWeight.w900,
                       fontSize: 26)),
               const SizedBox(height: 8),
-              const Text('Draft → Review → Admin approval',
+              const Text('Customers see a product as soon as you save it.',
                   style: TextStyle(color: Color(0xFFE5F2FE), fontSize: 13)),
               if (widget.canWrite) ...[
                 const SizedBox(height: 16),
@@ -255,7 +257,7 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                         foregroundColor: BuildToPalette.navyDeep),
                     onPressed: () => unawaited(create()),
                     icon: const Icon(Icons.add_circle_outline_rounded),
-                    label: const Text('Add material listing')),
+                    label: const Text('Add a product')),
               ],
             ]),
           ),
@@ -291,8 +293,8 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
               controller: search,
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.search_rounded),
-                  labelText: 'Search your SKU',
-                  hintText: 'e.g. CEMENT-43'),
+                  labelText: 'Search your products',
+                  hintText: 'e.g. cement, steel, sand'),
               onChanged: (_) => setState(() {})),
           const SizedBox(height: 10),
           SizedBox(
@@ -322,8 +324,8 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                     ? 'No supplier listings yet'
                     : 'No matching listings',
                 message: listings.isEmpty
-                    ? 'Choose an approved Splyzo material to start a draft.'
-                    : 'Try another SKU or approval-status filter.',
+                    ? 'Add a product you keep in your warehouse.'
+                    : 'Try another product name.',
                 icon: Icons.category_outlined)
           else
             for (final listing in shown) ...[
@@ -332,11 +334,25 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
                 child: ListTile(
                     key: Key('catalog-listing-${listing.id}'),
                     contentPadding: const EdgeInsets.all(14),
-                    leading: const CircleAvatar(
-                        backgroundColor: BuildToPalette.sky,
-                        foregroundColor: BuildToPalette.navy,
-                        child: Icon(Icons.construction_rounded)),
-                    title: Text(listing.sku,
+                    leading: listing.imageUrl == null
+                        ? const CircleAvatar(
+                            backgroundColor: BuildToPalette.sky,
+                            foregroundColor: BuildToPalette.navy,
+                            child: Icon(Icons.construction_rounded))
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              SupplierV21Config.origin
+                                  .resolve(listing.imageUrl!)
+                                  .toString(),
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.image_not_supported_outlined),
+                            ),
+                          ),
+                    title: Text(listing.productName ?? listing.sku,
                         style: Theme.of(context).textTheme.titleMedium),
                     subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

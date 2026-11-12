@@ -243,6 +243,19 @@ class SupplierRegistrationDraft {
         : null;
   }
 
+  /// Builds the private business id from a name the supplier already typed.
+  static String slugFromName(String? value) {
+    var slug = (value ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    if (slug.length > 100) {
+      slug = slug.substring(0, 100).replaceAll(RegExp(r'-+$'), '');
+    }
+    return validateSlug(slug) == null ? slug : '';
+  }
+
   static String? validateRequired(String? value, String label,
       {int min = 3, int max = 200}) {
     final text = (value ?? '').trim();
