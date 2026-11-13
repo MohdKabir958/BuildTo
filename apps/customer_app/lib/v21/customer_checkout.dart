@@ -79,8 +79,9 @@ class _CartContentsState extends State<_CartContents> {
       setState(() => error = problem.message);
       if (problem.code == 'CART_VERSION_CONFLICT') widget.reload();
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => error = 'Couldn’t update your cart. Try again.');
+      }
     } finally {
       if (mounted) setState(() => pending = null);
     }
@@ -434,8 +435,9 @@ class _QuantitySheetState extends State<_QuantitySheet> {
                 validator: (value) {
                   try {
                     final amount = scaled(value?.trim() ?? '', 3);
-                    if (amount <= BigInt.zero)
+                    if (amount <= BigInt.zero) {
                       return 'Enter a quantity greater than zero.';
+                    }
                     if (minimum != null && amount < scaled(minimum, 3)) {
                       return 'Minimum order is $minimum $unit.';
                     }
@@ -673,7 +675,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           promotion: promo.text.trim(),
                         );
                       } on CustomerProblem catch (problem) {
-                        if (!mounted || requestedKey != previewKey) return;
+                        if (!context.mounted || requestedKey != previewKey)
+                          return;
                         if (!kReleaseMode &&
                             s.api.origin.origin ==
                                 'https://buildto-v21-staging.onrender.com' &&
