@@ -416,6 +416,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Restrict products and displayed offer prices to this approved supplier storefront."
           }
         ],
         "responses": {
@@ -439,7 +449,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Products include nullable fromPrice (exact rupee decimal), fromUnit and fromPriceTaxInclusive for the first available selling unit. Final tax, stock and delivery are checked at checkout."
       }
     },
     "/api/v2/catalog/listings": {
@@ -13055,6 +13066,35 @@
             }
           }
         ]
+      }
+    },
+    "/api/v2/catalog/suppliers": {
+      "get": {
+        "operationId": "listPublicSupplierStorefronts",
+        "summary": "List approved suppliers with published active offers",
+        "security": [],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public display names only, 20 items per page. data: {items: [{id,displayName}], nextCursor}. No contacts, KYC, warehouses or bank fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

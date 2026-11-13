@@ -6,9 +6,9 @@ import {uuid,cartChange,cartVersion,checkedQuantity} from './checkout-validation
 type Tx=Prisma.TransactionClient;
 const itemsSelect={id:true,version:true,updatedAt:true,lines:{
  select:{listingId:true,quantity:true,listing:{
- select:{sku:true,unitCode:true,unitPrice:true,active:true,status:true,deletedAt:true,
+ select:{sku:true,unitCode:true,unitPrice:true,minOrderQty:true,stepQty:true,maxOrderQty:true,active:true,status:true,deletedAt:true,
   supplier:{select:{id:true,displayName:true,approval:true,suspendedAt:true}},
-  product:{select:{name:true,active:true,category:{select:{active:true}}}},
+  product:{select:{name:true,imageUrl:true,active:true,category:{select:{active:true}}}},
  }}},orderBy:{listingId:'asc' as const}
 }} as const;
 function dto(cart:any){
@@ -17,7 +17,8 @@ function dto(cart:any){
    listingId:x.listingId,quantity:x.quantity.toString(),sku:x.listing.sku,
    unitCode:x.listing.unitCode,displayName:x.listing.product.name,
    supplierId:x.listing.supplier.id,supplierName:x.listing.supplier.displayName,
-   unitPrice:x.listing.unitPrice.toString(),
+   unitPrice:x.listing.unitPrice.toString(),imageUrl:x.listing.product.imageUrl,
+   minOrderQty:x.listing.minOrderQty.toString(),stepQty:x.listing.stepQty.toString(),maxOrderQty:x.listing.maxOrderQty?.toString()??null,
    available:x.listing.active&&x.listing.status==='APPROVED'&&!x.listing.deletedAt&&
     x.listing.product.active&&x.listing.product.category.active&&
     x.listing.supplier.approval==='APPROVED'&&!x.listing.supplier.suspendedAt
