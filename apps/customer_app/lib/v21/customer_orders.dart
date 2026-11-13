@@ -273,7 +273,8 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: method,
-                decoration: const InputDecoration(labelText: 'Payment method'),
+                decoration: const InputDecoration(
+                    label: RequiredLabel('Payment method')),
                 items: const [
                   DropdownMenuItem(value: 'UPI', child: Text('UPI')),
                   DropdownMenuItem(value: 'CARD', child: Text('Card')),
@@ -901,7 +902,7 @@ class _ReturnEditorState extends State<ReturnEditor> {
             maxLines: 4,
             maxLength: 300,
             decoration: const InputDecoration(
-              labelText: 'What went wrong? (12+ characters)',
+              label: RequiredLabel('What went wrong? (12+ characters)'),
             ),
           ),
           const SizedBox(height: 20),
@@ -1034,8 +1035,8 @@ class _ReviewPageState extends State<ReviewPage> {
           const SizedBox(height: 18),
           DropdownButtonFormField<String>(
               isExpanded: true,
-              decoration:
-                  const InputDecoration(labelText: 'Delivered supplier order'),
+              decoration: const InputDecoration(
+                  label: RequiredLabel('Delivered supplier order')),
               items: widget.suppliers
                   .asMap()
                   .entries

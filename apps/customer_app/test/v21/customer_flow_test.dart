@@ -118,6 +118,107 @@ void main() {
     },
   );
   testWidgets(
+      'cart steppers persist quantity and use the returned cart version',
+      (t) async {
+    final f = CustomerFixture();
+    addTearDown(f.dispose);
+    await f.api.setLine(id(12), '10', 3);
+    await page(t, f, const CartPage(), size: const Size(320, 740), scale: 1.4);
+    await t.ensureVisible(find.byTooltip('Increase quantity'));
+    await t.tap(find.byTooltip('Increase quantity'));
+    await t.pumpAndSettle();
+    expect(f.cartItems.single['quantity'], '15');
+    expect(find.text('15 bag'), findsOneWidget);
+    await t.ensureVisible(find.text('15 bag'));
+    await t.tap(find.text('15 bag'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextFormField), '17');
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.text('Save quantity'));
+    await t.tap(find.text('Save quantity'));
+    await t.pumpAndSettle();
+    expect(f.version, 5);
+    expect(find.text('Start at 10 and add 5 bag at a time.'), findsOneWidget);
+    await t.enterText(find.byType(TextFormField), '25');
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.text('Save quantity'));
+    await t.tap(find.text('Save quantity'));
+    await t.pumpAndSettle();
+    expect(f.cartItems.single['quantity'], '25');
+    expect(f.version, 6);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets(
+      'staging commission error previews confirmation without placing an order',
+      (t) async {
+    final f = CustomerFixture(
+      origin: 'https://buildto-v21-staging.onrender.com',
+      commissionBlocked: true,
+    );
+    addTearDown(f.dispose);
+    await page(t, f, const CheckoutPage(cartVersion: 3));
+    await t.tap(find.text('New home site'));
+    await t.pumpAndSettle();
+    final check = find.text('Check delivery & final price');
+    await t.ensureVisible(check);
+    await t.tap(check);
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 400));
+    expect(find.text('STAGING PREVIEW'), findsOneWidget);
+    expect(find.text('Order placed'), findsOneWidget);
+    expect(f.requests.where((request) => request.url.path.endsWith('/place')),
+        isEmpty);
+    await t.tap(find.widgetWithText(FilledButton, 'Back'));
+    await t.pumpAndSettle();
+    expect(find.text('Checkout'), findsOneWidget);
+  });
+
+  testWidgets('address form submits an Indian number without coordinates',
+      (t) async {
+    final f = CustomerFixture();
+    addTearDown(f.dispose);
+    await page(t, f, const AddressEditor());
+    expect(find.textContaining('Latitude'), findsNothing);
+    await t.tap(find.text('Delivery city *'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Hyderabad').last);
+    await t.pumpAndSettle();
+    final labels = {
+      'Address label': 'Home site',
+      'Recipient name': 'Customer Test',
+      'Mobile number': '98765 43210',
+      'Building, plot or street': '12 Market Street',
+      'Area or locality': 'Kondapur',
+      'PIN code': '500084',
+    };
+    for (final entry in labels.entries) {
+      final input = find.ancestor(
+        of: find.widgetWithText(RequiredLabel, '${entry.key} *'),
+        matching: find.byType(TextFormField),
+      );
+      if (input.evaluate().isEmpty) {
+        await t.scrollUntilVisible(input, 110,
+            scrollable: find.byType(Scrollable).first);
+      }
+      await t.ensureVisible(input);
+      await t.enterText(input, entry.value);
+      await t.pump();
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    await t.pumpAndSettle();
+    final save = find.text('Save address');
+    await t.ensureVisible(save);
+    await t.tap(save);
+    await t.pumpAndSettle();
+    final request = f.requests.lastWhere((request) => request.method == 'POST');
+    final body = jsonDecode(request.body) as Map;
+    expect(body['phoneE164'], '+919876543210');
+    expect(body.containsKey('latitude'), isFalse);
+    expect(body.containsKey('longitude'), isFalse);
+  });
+
+  testWidgets(
     'cart checkout previews server total and places once with an idempotency key',
     (t) async {
       final f = CustomerFixture();

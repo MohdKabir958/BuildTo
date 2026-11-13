@@ -43,6 +43,7 @@ class FixtureIdentity implements CustomerIdentity {
 
 class CustomerFixture {
   final requests = <http.Request>[];
+  final bool commissionBlocked;
   int version = 3;
   List<Data> cartItems = [];
   Data? rfq;
@@ -115,9 +116,12 @@ class CustomerFixture {
       },
     ],
   };
-  CustomerFixture() {
+  CustomerFixture({
+    String origin = 'https://api.splyzo.test',
+    this.commissionBlocked = false,
+  }) {
     api = CustomerApi(
-      origin: Uri.parse('https://api.splyzo.test'),
+      origin: Uri.parse(origin),
       token: auth.token,
       client: MockClient(handle),
     );
@@ -192,6 +196,9 @@ class CustomerFixture {
             'unitCode': 'BAG',
             'unitPrice': '390.00',
             'available': true,
+            'minOrderQty': '10',
+            'stepQty': '5',
+            'maxOrderQty': '1000',
           },
         ];
       }
@@ -209,6 +216,12 @@ class CustomerFixture {
     } else if (path == '/api/v2/orders/${id(9)}') {
       data = order;
     } else if (path == '/api/v2/checkouts') {
+      if (commissionBlocked) {
+        return http.Response(
+          '{"error":{"code":"COMMISSION_POLICY_NOT_CONFIGURED"}}',
+          409,
+        );
+      }
       data = {
         'id': id(15),
         'totalPaise': '395000',

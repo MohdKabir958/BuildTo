@@ -327,13 +327,13 @@ class CustomerApi {
           body: {'quantity': quantity, 'expectedVersion': version},
         ),
       );
-  Future<void> removeLine(String id, int version) async {
-    await call(
-      '/api/v2/cart/lines/$id',
-      method: 'DELETE',
-      body: {'expectedVersion': version},
-    );
-  }
+  Future<Data> removeLine(String id, int version) async => object(
+        await call(
+          '/api/v2/cart/lines/$id',
+          method: 'DELETE',
+          body: {'expectedVersion': version},
+        ),
+      );
 
   Future<List<Data>> addresses() async =>
       rows(await call('/api/v2/me/addresses'));

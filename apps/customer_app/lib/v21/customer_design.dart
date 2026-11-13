@@ -209,6 +209,25 @@ class Panel extends StatelessWidget {
       );
 }
 
+class RequiredLabel extends StatelessWidget {
+  const RequiredLabel(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text.rich(
+        TextSpan(children: [
+          TextSpan(text: text),
+          TextSpan(
+            text: ' *',
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontWeight: FontWeight.w800),
+          ),
+        ]),
+        semanticsLabel: '$text, required',
+      );
+}
+
 class Section extends StatelessWidget {
   const Section(this.title, {super.key, this.action, this.onTap});
   final String title;
