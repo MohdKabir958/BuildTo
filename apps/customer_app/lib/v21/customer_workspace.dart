@@ -347,127 +347,131 @@ class _AddressEditorState extends State<AddressEditor> {
       builder: (cities, reload) => Form(
         key: form,
         autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: ListView(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(22),
-          children: [
-            const Text(
-              'Where should we deliver?',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            const Text('Add the site address and a contact for the delivery.',
-                style: TextStyle(color: muted)),
-            const SizedBox(height: 20),
-            DropdownButtonFormField<String>(
-              initialValue: cities.any((e) => e['id'] == city) ? city : null,
-              isExpanded: true,
-              decoration:
-                  const InputDecoration(label: RequiredLabel('Delivery city')),
-              items: cities
-                  .map(
-                    (a) => DropdownMenuItem(
-                      value: field(a, 'id'),
-                      child: Text(field(a, 'name')),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => city = v,
-              validator: (v) =>
-                  v == null ? 'Choose an active delivery city' : null,
-            ),
-            if (cities.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text(
-                  'Delivery is not available in any city yet. Please contact support.',
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Where should we deliver?',
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
               ),
-            const SizedBox(height: 14),
-            ...controls.entries.map(
-              (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: TextFormField(
-                  controller: e.value,
-                  textInputAction: e.key == 'postalCode'
-                      ? TextInputAction.done
-                      : TextInputAction.next,
-                  textCapitalization:
-                      const ['phoneE164', 'postalCode'].contains(e.key)
-                          ? TextCapitalization.none
-                          : TextCapitalization.words,
-                  keyboardType: e.key == 'postalCode'
-                      ? TextInputType.number
-                      : e.key == 'phoneE164'
-                          ? TextInputType.phone
-                          : TextInputType.streetAddress,
-                  decoration: InputDecoration(
-                    label: e.key == 'line2'
-                        ? const Text('Landmark (optional)')
-                        : RequiredLabel(const {
-                            'label': 'Address label',
-                            'recipientName': 'Recipient name',
-                            'phoneE164': 'Mobile number',
-                            'line1': 'Building, plot or street',
-                            'locality': 'Area or locality',
-                            'postalCode': 'PIN code',
-                          }[e.key]!),
-                    prefixText: e.key == 'phoneE164' ? '+91  ' : null,
-                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                    hintText: const {
-                      'label': 'e.g. New home',
-                      'phoneE164': '10-digit number',
-                      'postalCode': '6-digit PIN code',
-                    }[e.key],
+              const SizedBox(height: 8),
+              const Text('Add the site address and a contact for the delivery.',
+                  style: TextStyle(color: muted)),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                initialValue: cities.any((e) => e['id'] == city) ? city : null,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                    label: RequiredLabel('Delivery city')),
+                items: cities
+                    .map(
+                      (a) => DropdownMenuItem(
+                        value: field(a, 'id'),
+                        child: Text(field(a, 'name')),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => city = v,
+                validator: (v) =>
+                    v == null ? 'Choose an active delivery city' : null,
+              ),
+              if (cities.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'Delivery is not available in any city yet. Please contact support.',
                   ),
-                  validator: (value) {
-                    final v = value?.trim() ?? '';
-                    if (e.key == 'line2') return null;
-                    if (v.isEmpty) return 'This field is required';
-                    if (e.key == 'postalCode' &&
-                        !RegExp(r'^\d{6}$').hasMatch(v)) {
-                      return 'Enter a 6-digit PIN code';
-                    }
-                    if (e.key == 'phoneE164' &&
-                        !RegExp(r'^[6-9]\d{9}$')
-                            .hasMatch(indianMobileDigits(v))) {
-                      return 'Enter a valid 10-digit mobile number';
-                    }
-                    return null;
-                  },
+                ),
+              const SizedBox(height: 14),
+              ...controls.entries.map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: TextFormField(
+                    controller: e.value,
+                    textInputAction: e.key == 'postalCode'
+                        ? TextInputAction.done
+                        : TextInputAction.next,
+                    textCapitalization:
+                        const ['phoneE164', 'postalCode'].contains(e.key)
+                            ? TextCapitalization.none
+                            : TextCapitalization.words,
+                    keyboardType: e.key == 'postalCode'
+                        ? TextInputType.number
+                        : e.key == 'phoneE164'
+                            ? TextInputType.phone
+                            : TextInputType.streetAddress,
+                    decoration: InputDecoration(
+                      label: e.key == 'line2'
+                          ? const Text('Landmark (optional)')
+                          : RequiredLabel(const {
+                              'label': 'Address label',
+                              'recipientName': 'Recipient name',
+                              'phoneE164': 'Mobile number',
+                              'line1': 'Building, plot or street',
+                              'locality': 'Area or locality',
+                              'postalCode': 'PIN code',
+                            }[e.key]!),
+                      prefixText: e.key == 'phoneE164' ? '+91  ' : null,
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      hintText: const {
+                        'label': 'e.g. New home',
+                        'phoneE164': '10-digit number',
+                        'postalCode': '6-digit PIN code',
+                      }[e.key],
+                    ),
+                    validator: (value) {
+                      final v = value?.trim() ?? '';
+                      if (e.key == 'line2') return null;
+                      if (v.isEmpty) return 'This field is required';
+                      if (e.key == 'postalCode' &&
+                          !RegExp(r'^\d{6}$').hasMatch(v)) {
+                        return 'Enter a 6-digit PIN code';
+                      }
+                      if (e.key == 'phoneE164' &&
+                          !RegExp(r'^[6-9]\d{9}$')
+                              .hasMatch(indianMobileDigits(v))) {
+                        return 'Enter a valid 10-digit mobile number';
+                      }
+                      return null;
+                    },
+                  ),
                 ),
               ),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Default delivery address'),
-              value: defaultAddress,
-              onChanged: (v) => setState(() => defaultAddress = v),
-            ),
-            const SizedBox(height: 14),
-            ActionButton('Save address', () async {
-              if (!form.currentState!.validate()) return;
-              final body = <String, dynamic>{
-                'cityId': city,
-                'isDefault': defaultAddress,
-                for (final e in controls.entries)
-                  if (e.key != 'phoneE164' && e.value.text.trim().isNotEmpty)
-                    e.key: e.value.text.trim(),
-                'phoneE164':
-                    '+91${indianMobileDigits(controls['phoneE164']!.text)}',
-              };
-              final id = widget.address?['id'];
-              final result = object(
-                await s.api.call(
-                  '/api/v2/me/addresses${id == null ? '' : '/$id'}',
-                  method: id == null ? 'POST' : 'PATCH',
-                  body: body,
-                ),
-              );
-              s.chooseAddress(result);
-              if (c.mounted) Navigator.pop(c);
-            }),
-            const SizedBox(height: 20),
-          ],
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Default delivery address'),
+                value: defaultAddress,
+                onChanged: (v) => setState(() => defaultAddress = v),
+              ),
+              const SizedBox(height: 14),
+              ActionButton('Save address', () async {
+                if (!form.currentState!.validate()) return;
+                final body = <String, dynamic>{
+                  'cityId': city,
+                  'isDefault': defaultAddress,
+                  for (final e in controls.entries)
+                    if (e.key != 'phoneE164' && e.value.text.trim().isNotEmpty)
+                      e.key: e.value.text.trim(),
+                  'phoneE164':
+                      '+91${indianMobileDigits(controls['phoneE164']!.text)}',
+                };
+                final id = widget.address?['id'];
+                final result = object(
+                  await s.api.call(
+                    '/api/v2/me/addresses${id == null ? '' : '/$id'}',
+                    method: id == null ? 'POST' : 'PATCH',
+                    body: body,
+                  ),
+                );
+                s.chooseAddress(result);
+                if (c.mounted) Navigator.pop(c);
+              }),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

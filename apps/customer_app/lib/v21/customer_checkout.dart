@@ -338,10 +338,13 @@ class _CartItem extends StatelessWidget {
                         : null,
                     icon: const Icon(Icons.remove_rounded, size: 18),
                   ),
-                  TextButton(
-                    onPressed: enabled && available ? onEdit : null,
-                    child: Text('$quantity $unit',
-                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: enabled && available ? onEdit : null,
+                      child: Text('$quantity $unit',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Increase quantity',

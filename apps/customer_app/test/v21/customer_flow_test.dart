@@ -388,7 +388,7 @@ void main() {
     await t.pump(const Duration(milliseconds: 400));
     await t.tap(find.text('Continue'));
     await t.pumpAndSettle();
-    await t.tap(find.text('Saved delivery address'));
+    await t.tap(find.text('Saved delivery address *'));
     await t.pumpAndSettle();
     await t.tap(find.text('New home site · 500033').last);
     await t.pumpAndSettle();
