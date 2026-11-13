@@ -6,8 +6,9 @@ import 'customer_workspace.dart';
 
 IconData materialIcon(String name) {
   final n = name.toLowerCase();
-  if (n.contains('plumbing') || n.contains('pipe'))
+  if (n.contains('plumbing') || n.contains('pipe')) {
     return Icons.plumbing_rounded;
+  }
   if (n.contains('waterproof')) return Icons.water_drop_outlined;
   if (n.contains('electrical')) return Icons.electrical_services_outlined;
   if (n.contains('hardware')) return Icons.handyman_outlined;
