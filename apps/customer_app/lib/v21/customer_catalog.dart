@@ -6,17 +6,23 @@ import 'customer_workspace.dart';
 
 IconData materialIcon(String name) {
   final n = name.toLowerCase();
+  if (n.contains('plumbing') || n.contains('pipe'))
+    return Icons.plumbing_rounded;
+  if (n.contains('waterproof')) return Icons.water_drop_outlined;
+  if (n.contains('electrical')) return Icons.electrical_services_outlined;
+  if (n.contains('hardware')) return Icons.handyman_outlined;
+  if (n.contains('ready-mix')) return Icons.foundation_outlined;
   return n.contains('cement')
       ? Icons.foundation_outlined
       : n.contains('steel')
-          ? Icons.view_week_outlined
-          : n.contains('brick')
-              ? Icons.grid_view_rounded
-              : n.contains('sand')
-                  ? Icons.landscape_outlined
-                  : n.contains('paint')
-                      ? Icons.format_paint_outlined
-                      : Icons.category_outlined;
+      ? Icons.view_week_outlined
+      : n.contains('brick')
+      ? Icons.grid_view_rounded
+      : n.contains('sand')
+      ? Icons.landscape_outlined
+      : n.contains('paint')
+      ? Icons.format_paint_outlined
+      : Icons.category_outlined;
 }
 
 class CustomerHome extends StatefulWidget {
@@ -120,7 +126,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                 textInputAction: TextInputAction.search,
                 onSubmitted: (v) => setState(() => search = v.trim()),
                 decoration: InputDecoration(
-                  hintText: 'Search cement, steel, bricks…',
+                  hintText: 'Search materials',
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: IconButton(
                     tooltip: 'Clear search',
@@ -261,7 +267,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                           search.isEmpty &&
                           category == null) ...[
                         const Section('Your material partners'),
-                        const SupplierStrip()
+                        const SupplierStrip(),
                       ],
                       Section(
                         widget.categoriesOnly
@@ -273,28 +279,10 @@ class _CustomerHomeState extends State<CustomerHome> {
                           'Categories will appear when the catalog is published.',
                           style: TextStyle(color: muted),
                         ),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('All materials'),
-                            selected: category == null,
-                            onSelected: (_) => setState(() => category = null),
-                          ),
-                          ...categories.map(
-                            (c) => ChoiceChip(
-                              avatar: Icon(
-                                materialIcon(field(c, 'name')),
-                                size: 18,
-                              ),
-                              label: Text(field(c, 'name')),
-                              selected: category == c['id'],
-                              onSelected: (_) =>
-                                  setState(() => category = field(c, 'id')),
-                            ),
-                          ),
-                        ],
+                      CategoryGrid(
+                        categories: categories,
+                        selected: category,
+                        onChanged: (value) => setState(() => category = value),
                       ),
                       Section(
                         search.isNotEmpty
@@ -372,6 +360,163 @@ class _CustomerHomeState extends State<CustomerHome> {
   }
 }
 
+// Older staging imports use several slugs for the same shopping department.
+String categoryDepartment(Data category) {
+  final name = field(category, 'name');
+  final slug = field(category, 'slug');
+  if (slug.contains('steel')) return 'Steel & rebar';
+  if (slug.startsWith('plumbing')) return 'Plumbing';
+  if (slug.startsWith('paints')) return 'Paint & finishes';
+  return switch (slug) {
+    'cement-concrete' => 'Cement',
+    'ready-mix-concrete' => 'Ready-mix concrete',
+    _ => name,
+  };
+}
+
+class CategoryGrid extends StatelessWidget {
+  const CategoryGrid({
+    super.key,
+    required this.categories,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<Data> categories;
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  Future<void> select(BuildContext context, List<Data> options) async {
+    if (options.length < 2) {
+      onChanged(options.isEmpty ? null : field(options.single, 'id'));
+      return;
+    }
+    final value = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Text(
+                categoryDepartment(options.first),
+                style: Theme.of(sheet).textTheme.titleLarge,
+              ),
+            ),
+            for (final option in options)
+              ListTile(
+                title: Text(field(option, 'name')),
+                selected: selected == option['id'],
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.pop(sheet, field(option, 'id')),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (value != null && context.mounted) onChanged(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final departments = <String, List<Data>>{'All materials': []};
+    for (final category in categories) {
+      (departments[categoryDepartment(category)] ??= []).add(category);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final columns = (constraints.maxWidth / (115 * scale)).floor().clamp(
+          2,
+          5,
+        );
+        const gap = 10.0;
+        final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final entry in departments.entries)
+              SizedBox(
+                width: width,
+                child: Builder(
+                  builder: (context) {
+                    final active = entry.value.isEmpty
+                        ? selected == null
+                        : entry.value.any(
+                            (category) => category['id'] == selected,
+                          );
+                    return Semantics(
+                      button: true,
+                      selected: active,
+                      child: Material(
+                        color: active ? const Color(0xFFFFEEE2) : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: active ? accent : line),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => select(context, entry.value),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 13,
+                            ),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: 44 + 30 * scale,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: active
+                                          ? const Color(0xFFFFDBC4)
+                                          : const Color(0xFFEFF3F0),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      entry.value.isEmpty
+                                          ? Icons.grid_view_rounded
+                                          : materialIcon(entry.key),
+                                      size: 19,
+                                      color: ink,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    entry.key,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class ProductGrid extends StatelessWidget {
   const ProductGrid({super.key, required this.products, required this.empty});
   final List<Data> products;
@@ -380,19 +525,41 @@ class ProductGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     if (products.isEmpty) return EmptyState('Nothing here yet', empty);
     return LayoutBuilder(
-      builder: (c, size) => GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: products.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: size.maxWidth > 700 ? 3 : 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          mainAxisExtent:
-              265 + (MediaQuery.textScalerOf(context).scale(1) - 1) * 95,
-        ),
-        itemBuilder: (c, i) => ProductCard(products[i]),
-      ),
+      builder: (context, constraints) {
+        final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final columns = (constraints.maxWidth / (142 * scale)).floor().clamp(
+          1,
+          4,
+        );
+        const gap = 12.0;
+        final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
+        return Column(
+          children: [
+            for (var index = 0; index < products.length; index += columns)
+              Padding(
+                padding: EdgeInsets.only(top: index == 0 ? 0 : gap),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (
+                        var column = 0;
+                        column < columns && index + column < products.length;
+                        column++
+                      ) ...[
+                        if (column > 0) const SizedBox(width: gap),
+                        SizedBox(
+                          width: width,
+                          child: ProductCard(products[index + column]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -444,81 +611,101 @@ class ProductCard extends StatelessWidget {
   final Data product;
   @override
   Widget build(BuildContext context) => Material(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: line),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => push(context, ProductPage(product)),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ProductPhoto(product),
-                const SizedBox(height: 12),
-                Text(
-                  field(
-                      object(product['category']), 'name', 'BUILDING MATERIAL'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    color: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
+      side: const BorderSide(color: line),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: () => push(context, ProductPage(product)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(aspectRatio: 1.28, child: ProductPhoto(product)),
+            const SizedBox(height: 12),
+            Text(
+              field(object(product['category']), 'name', 'BUILDING MATERIAL'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: muted,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: .4,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              field(product, 'name'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const Spacer(),
+            const SizedBox(height: 10),
+            if (product['fromPrice'] != null)
+              Text.rich(
+                TextSpan(
+                  text: price(product['fromPrice']),
                   style: const TextStyle(
-                    color: muted,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: .4,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  field(product, 'name'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const Spacer(),
-                if (product['fromPrice'] != null) ...[
-                  Text(
-                      'From ${price(product['fromPrice'])} / ${product['fromUnit']}',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 15)),
-                  const SizedBox(height: 6)
-                ],
-                const Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        'View supplier offers',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: green,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    TextSpan(
+                      text: ' / ${field(product, 'fromUnit').toLowerCase()}',
+                      style: const TextStyle(
+                        color: muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(Icons.arrow_forward_rounded, size: 17, color: green),
                   ],
                 ),
+              )
+            else
+              const Text(
+                'Price unavailable',
+                style: TextStyle(color: muted, fontSize: 11),
+              ),
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'View offers',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: green,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_forward_rounded, size: 17, color: green),
               ],
             ),
-          ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class CatalogPage extends StatefulWidget {
-  const CatalogPage(
-      {super.key,
-      this.category,
-      this.search,
-      this.supplier,
-      this.supplierName});
+  const CatalogPage({
+    super.key,
+    this.category,
+    this.search,
+    this.supplier,
+    this.supplierName,
+  });
   final String? category, search, supplier, supplierName;
   @override
   State<CatalogPage> createState() => _CatalogPageState();
@@ -614,8 +801,7 @@ class ProductPage extends StatelessWidget {
             const Section('Specifications'),
             Panel(
               child: Column(
-                children: object(product['specification'])
-                    .entries
+                children: object(product['specification']).entries
                     .map(
                       (e) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -837,71 +1023,89 @@ class _SupplierStripState extends State<SupplierStrip> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    future ??= CustomerScope.of(context)
-        .api
-        .call('/api/v2/catalog/suppliers', authenticated: false);
+    future ??= CustomerScope.of(
+      context,
+    ).api.call('/api/v2/catalog/suppliers', authenticated: false);
   }
 
   @override
   Widget build(BuildContext c) => FutureBuilder<dynamic>(
-      future: future,
-      builder: (c, s) {
-        if (s.connectionState != ConnectionState.done) {
-          return const SizedBox(
-              height: 70, child: Center(child: CircularProgressIndicator()));
-        }
-        if (s.hasError) {
-          return const Text('Supplier directory is temporarily unavailable.',
-              style: TextStyle(color: muted, fontSize: 12));
-        }
-        final list = rows(s.data);
-        if (list.isEmpty) {
-          return const Text(
-              'Supplier storefronts will appear as materials become available.',
-              style: TextStyle(color: muted, fontSize: 12));
-        }
-        return SizedBox(
-            height: 120,
-            child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: list.length,
-                separatorBuilder: (_, i) => const SizedBox(width: 10),
-                itemBuilder: (c, i) {
-                  final p = list[i];
-                  return SizedBox(
-                      width: 170,
-                      child: Material(
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              side: const BorderSide(color: line)),
-                          child: InkWell(
-                              borderRadius: BorderRadius.circular(18),
-                              onTap: () => push(
-                                  c,
-                                  CatalogPage(
-                                      supplier: field(p, 'id'),
-                                      supplierName: field(p, 'displayName'))),
-                              child: Padding(
-                                  padding: const EdgeInsets.all(15),
-                                  child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Icon(Icons.storefront_outlined,
-                                            color: green),
-                                        const SizedBox(height: 12),
-                                        Text(field(p, 'displayName'),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 12)),
-                                        const Spacer(),
-                                        const Text('View materials  ↗',
-                                            style: TextStyle(
-                                                fontSize: 10, color: muted))
-                                      ])))));
-                }));
-      });
+    future: future,
+    builder: (c, s) {
+      if (s.connectionState != ConnectionState.done) {
+        return const SizedBox(
+          height: 70,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (s.hasError) {
+        return const Text(
+          'Supplier directory is temporarily unavailable.',
+          style: TextStyle(color: muted, fontSize: 12),
+        );
+      }
+      final list = rows(s.data);
+      if (list.isEmpty) {
+        return const Text(
+          'Supplier storefronts will appear as materials become available.',
+          style: TextStyle(color: muted, fontSize: 12),
+        );
+      }
+      return SizedBox(
+        height: 108 + MediaQuery.textScalerOf(c).scale(36),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: list.length,
+          separatorBuilder: (_, i) => const SizedBox(width: 10),
+          itemBuilder: (c, i) {
+            final p = list[i];
+            return SizedBox(
+              width: 170,
+              child: Material(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: const BorderSide(color: line),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => push(
+                    c,
+                    CatalogPage(
+                      supplier: field(p, 'id'),
+                      supplierName: field(p, 'displayName'),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.storefront_outlined, color: green),
+                        const SizedBox(height: 12),
+                        Text(
+                          field(p, 'displayName'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Spacer(),
+                        const Text(
+                          'View materials  ↗',
+                          style: TextStyle(fontSize: 10, color: muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
 }

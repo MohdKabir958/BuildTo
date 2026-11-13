@@ -10,8 +10,8 @@ Data object(Object? value) =>
 List<Data> rows(Object? value) => value is List
     ? value.map(object).toList()
     : value is Map && value['items'] is List
-        ? rows(value['items'])
-        : <Data>[];
+    ? rows(value['items'])
+    : <Data>[];
 String field(Data value, String key, [String fallback = '']) =>
     value[key]?.toString() ?? fallback;
 String label(Object? value) => (value ?? '')
@@ -104,12 +104,17 @@ class CustomerProblem implements Exception {
 }
 
 class CustomerApi {
-  CustomerApi({required this.origin, required this.token, http.Client? client})
-      : client = client ?? http.Client() {
+  CustomerApi({
+    required this.origin,
+    required this.token,
+    this.refreshToken,
+    http.Client? client,
+  }) : client = client ?? http.Client() {
     parseOrigin(origin.toString());
   }
   final Uri origin;
   final Future<String?> Function() token;
+  final Future<String?> Function()? refreshToken;
   final http.Client client;
   VoidCallback? onUnauthorized;
   int _scope = 0;
@@ -143,6 +148,14 @@ class CustomerApi {
         : null;
   }
 
+  static String errorCode(String body) {
+    try {
+      return field(object(object(jsonDecode(body))['error']), 'code');
+    } on FormatException {
+      return '';
+    }
+  }
+
   Future<dynamic> call(
     String path, {
     String method = 'GET',
@@ -150,6 +163,7 @@ class CustomerApi {
     Map<String, String>? query,
     bool authenticated = true,
     String? key,
+    bool clearSessionOnUnauthorized = true,
   }) async {
     if (!path.startsWith('/api/v2/') ||
         path.contains('..') ||
@@ -162,18 +176,14 @@ class CustomerApi {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
-    if (authenticated) {
-      final t = await token();
-      if (t == null || t.isEmpty) {
-        throw const CustomerProblem('Sign in to continue.', status: 401);
+    void checkScope() {
+      if (scope != _scope) {
+        throw const CustomerProblem('Your account changed. Please try again.');
       }
-      headers['Authorization'] = 'Bearer $t';
     }
-    if (scope != _scope) {
-      throw const CustomerProblem('Your account changed. Please try again.');
-    }
-    if (key != null) headers['Idempotency-Key'] = key;
-    try {
+
+    Future<http.Response> send() {
+      checkScope();
       final req = http.Request(
         method,
         origin.resolve(path).replace(queryParameters: query),
@@ -181,12 +191,37 @@ class CustomerApi {
       req.headers.addAll(headers);
       if (body != null) req.body = jsonEncode(body);
       req.followRedirects = false;
-      final res = await client
+      return client
           .send(req)
           .then(http.Response.fromStream)
-          .timeout(const Duration(seconds: 25));
-      if (scope != _scope) {
-        throw const CustomerProblem('Your account changed. Please try again.');
+          .timeout(const Duration(seconds: 55));
+    }
+
+    try {
+      if (authenticated) {
+        final t = await token();
+        checkScope();
+        if (t == null || t.isEmpty) {
+          throw const CustomerProblem('Sign in to continue.', status: 401);
+        }
+        headers['Authorization'] = 'Bearer $t';
+      }
+      if (key != null) headers['Idempotency-Key'] = key;
+      var res = await send();
+      checkScope();
+      // INVALID_SESSION is emitted by the identity guard before a write runs.
+      // Preserve the original request and idempotency key on the single retry.
+      if (authenticated &&
+          res.statusCode == 401 &&
+          errorCode(res.body) == 'INVALID_SESSION' &&
+          refreshToken != null) {
+        final refreshed = await refreshToken!();
+        checkScope();
+        if (refreshed != null && refreshed.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $refreshed';
+          res = await send();
+          checkScope();
+        }
       }
       dynamic decoded;
       try {
@@ -198,7 +233,9 @@ class CustomerApi {
       }
       if (res.statusCode < 200 || res.statusCode >= 300) {
         final error = object(object(decoded)['error']);
-        if (res.statusCode == 401) {
+        if (authenticated &&
+            clearSessionOnUnauthorized &&
+            res.statusCode == 401) {
           invalidate();
           onUnauthorized?.call();
         }
@@ -220,18 +257,18 @@ class CustomerApi {
               (res.statusCode == 401
                   ? 'Your session expired. Sign in again.'
                   : res.statusCode == 403
-                      ? 'This action is not available for your account.'
-                      : res.statusCode == 404
-                          ? 'This item or service is unavailable.'
-                          : res.statusCode == 429
-                              ? 'Too many requests. Please wait and retry.'
-                              : res.statusCode >= 500
-                                  ? 'The service is temporarily unavailable. Please retry.'
-                                  : field(
-                                      error,
-                                      'message',
-                                      'Please check the details and try again.',
-                                    )),
+                  ? 'This action is not available for your account.'
+                  : res.statusCode == 404
+                  ? 'This item or service is unavailable.'
+                  : res.statusCode == 429
+                  ? 'Too many requests. Please wait and retry.'
+                  : res.statusCode >= 500
+                  ? 'The service is temporarily unavailable. Please retry.'
+                  : field(
+                      error,
+                      'message',
+                      'Please check the details and try again.',
+                    )),
           status: res.statusCode,
           code: code,
         );
@@ -253,7 +290,8 @@ class CustomerApi {
     }
   }
 
-  Future<Data> me() async => object(await call('/api/v2/me'));
+  Future<Data> me() async =>
+      object(await call('/api/v2/me', clearSessionOnUnauthorized: false));
   Future<List<Data>> categories() async =>
       rows(await call('/api/v2/catalog/categories', authenticated: false));
   Future<Data> products({
@@ -261,34 +299,33 @@ class CustomerApi {
     String? search,
     String? cursor,
     String? supplier,
-  }) async =>
-      object(
-        await call(
-          '/api/v2/catalog/products',
-          authenticated: false,
-          query: {
-            if (category != null) 'categoryId': category,
-            if (supplier != null) 'supplierId': supplier,
-            if (search != null && search.isNotEmpty) 'search': search,
-            if (cursor != null) 'cursor': cursor,
-          },
-        ),
-      );
+  }) async => object(
+    await call(
+      '/api/v2/catalog/products',
+      authenticated: false,
+      query: {
+        if (category != null) 'categoryId': category,
+        if (supplier != null) 'supplierId': supplier,
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (cursor != null) 'cursor': cursor,
+      },
+    ),
+  );
   Future<List<Data>> offers(String id) async => rows(
-        await call(
-          '/api/v2/catalog/listings',
-          authenticated: false,
-          query: {'productId': id},
-        ),
-      );
+    await call(
+      '/api/v2/catalog/listings',
+      authenticated: false,
+      query: {'productId': id},
+    ),
+  );
   Future<Data> cart() async => object(await call('/api/v2/cart'));
   Future<Data> setLine(String id, String quantity, int version) async => object(
-        await call(
-          '/api/v2/cart/lines/$id',
-          method: 'PUT',
-          body: {'quantity': quantity, 'expectedVersion': version},
-        ),
-      );
+    await call(
+      '/api/v2/cart/lines/$id',
+      method: 'PUT',
+      body: {'quantity': quantity, 'expectedVersion': version},
+    ),
+  );
   Future<void> removeLine(String id, int version) async {
     await call(
       '/api/v2/cart/lines/$id',
@@ -308,29 +345,28 @@ class CustomerApi {
     String key, {
     String? site,
     String? promotion,
-  }) async =>
-      object(
-        await call(
-          '/api/v2/checkouts',
-          method: 'POST',
-          key: key,
-          body: {
-            'addressId': address,
-            'expectedCartVersion': version,
-            if (site != null) 'siteId': site,
-            if (promotion != null && promotion.isNotEmpty)
-              'promotionCode': promotion,
-          },
-        ),
-      );
+  }) async => object(
+    await call(
+      '/api/v2/checkouts',
+      method: 'POST',
+      key: key,
+      body: {
+        'addressId': address,
+        'expectedCartVersion': version,
+        if (site != null) 'siteId': site,
+        if (promotion != null && promotion.isNotEmpty)
+          'promotionCode': promotion,
+      },
+    ),
+  );
   Future<Data> place(String quote, String key) async => object(
-        await call(
-          '/api/v2/checkouts/$quote/place',
-          method: 'POST',
-          key: key,
-          body: {'clientRequestId': key},
-        ),
-      );
+    await call(
+      '/api/v2/checkouts/$quote/place',
+      method: 'POST',
+      key: key,
+      body: {'clientRequestId': key},
+    ),
+  );
   void close() => client.close();
 }
 
