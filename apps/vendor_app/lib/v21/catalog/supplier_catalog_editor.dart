@@ -25,12 +25,13 @@ const fallbackSellingUnits = [
 /// Supplier product form. A verified supplier publishes immediately.
 /// Product and selling unit are chosen only when adding a product.
 class SupplierListingEditor extends StatefulWidget {
-  const SupplierListingEditor(
-      {super.key,
-      required this.repository,
-      required this.supplierId,
-      required this.masters,
-      this.original});
+  const SupplierListingEditor({
+    super.key,
+    required this.repository,
+    required this.supplierId,
+    required this.masters,
+    this.original,
+  });
   final SupplierCatalogRepository repository;
   final String supplierId;
   final CatalogMasters masters;
@@ -42,22 +43,29 @@ class SupplierListingEditor extends StatefulWidget {
 class _SupplierListingEditorState extends State<SupplierListingEditor> {
   final form = GlobalKey<FormState>();
   late final sku = TextEditingController(text: widget.original?.sku ?? '');
-  late final pack =
-      TextEditingController(text: widget.original?.packSize ?? '1');
-  late final minimum =
-      TextEditingController(text: widget.original?.minOrderQty ?? '1');
-  late final step =
-      TextEditingController(text: widget.original?.stepQty ?? '1');
-  late final maximum =
-      TextEditingController(text: widget.original?.maxOrderQty ?? '');
-  late final price =
-      TextEditingController(text: widget.original?.unitPrice ?? '');
+  late final pack = TextEditingController(
+    text: widget.original?.packSize ?? '1',
+  );
+  late final minimum = TextEditingController(
+    text: widget.original?.minOrderQty ?? '1',
+  );
+  late final step = TextEditingController(
+    text: widget.original?.stepQty ?? '1',
+  );
+  late final maximum = TextEditingController(
+    text: widget.original?.maxOrderQty ?? '',
+  );
+  late final price = TextEditingController(
+    text: widget.original?.unitPrice ?? '',
+  );
   late final mrp = TextEditingController(
-      text: widget.original?.mrpPaise == null
-          ? ''
-          : catalogRupeesFromPaise(widget.original!.mrpPaise!));
+    text: widget.original?.mrpPaise == null
+        ? ''
+        : catalogRupeesFromPaise(widget.original!.mrpPaise!),
+  );
   late final taxBps = TextEditingController(
-      text: catalogPercentFromBps(widget.original?.taxRateBps ?? 1800));
+    text: catalogPercentFromBps(widget.original?.taxRateBps ?? 1800),
+  );
   late final productName = TextEditingController();
   String? categoryId, unit, error, uploadedImageUrl;
   Uint8List? photoBytes;
@@ -100,7 +108,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       maximum,
       price,
       mrp,
-      taxBps
+      taxBps,
     ]) {
       c.dispose();
     }
@@ -197,8 +205,14 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
         String.fromCharCodes(bytes.sublist(4, 8)) == 'ftyp') {
       final brand = String.fromCharCodes(bytes.sublist(8, 12)).toLowerCase();
       if (brand == 'avif' || brand == 'avis') return 'image/avif';
-      if (const {'heic', 'heix', 'hevc', 'hevx', 'heim', 'heis'}
-          .contains(brand)) {
+      if (const {
+        'heic',
+        'heix',
+        'hevc',
+        'hevx',
+        'heim',
+        'heis',
+      }.contains(brand)) {
         return 'image/heic';
       }
       if (const {'heif', 'mif1', 'msf1'}.contains(brand)) return 'image/heif';
@@ -252,17 +266,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
   Future<void> save() async {
     if (busy || uncertain) return;
     if (form.currentState?.validate() != true) {
-      setState(() => error = 'Check the price, GST, and order quantities.');
-      return;
-    }
-    if (widget.original == null && productName.text.trim().isEmpty) {
-      setState(() => error = 'Enter the product you have in your warehouse.');
-      return;
-    }
-    if (widget.original == null &&
-        widget.masters.categories.isNotEmpty &&
-        categoryId == null) {
-      setState(() => error = 'Choose a category, such as cement or steel.');
+      setState(() => error = 'Check the highlighted fields.');
       return;
     }
     CatalogListingInput input;
@@ -308,11 +312,13 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
           ? await widget.repository.create(
               supplierId: widget.supplierId,
               input: input,
-              idempotencyKey: intent)
+              idempotencyKey: intent,
+            )
           : await widget.repository.update(
               supplierId: widget.supplierId,
               original: widget.original!,
-              input: input);
+              input: input,
+            );
       if (!mounted) return;
       Navigator.pop(context, listing);
     } on SupplierV21Exception catch (e) {
@@ -336,241 +342,452 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       });
     } catch (_) {
       if (mounted) {
-        setState(() =>
-            error = 'Unable to validate this listing. Check the form values.');
+        setState(
+          () =>
+              error = 'Unable to validate this listing. Check the form values.',
+        );
       }
     } finally {
       if (mounted) setState(() => busy = false);
     }
   }
 
+  Widget _productPhoto() {
+    final bytes = photoBytes;
+    final saved = widget.original?.imageUrl;
+    const emptyPhoto = Center(
+      child: Icon(
+        Icons.add_photo_alternate_outlined,
+        color: BuildToPalette.navy,
+        size: 27,
+      ),
+    );
+    return Material(
+      color: BuildToPalette.canvas,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: BuildToPalette.outline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: busy ? null : () => unawaited(pickPhoto()),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ColoredBox(
+                  color: Colors.white,
+                  child: SizedBox.square(
+                    dimension: 68,
+                    child: bytes != null
+                        ? Image.memory(
+                            bytes,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => emptyPhoto,
+                          )
+                        : saved != null
+                            ? Image.network(
+                                SupplierV21Config.origin
+                                    .resolve(saved)
+                                    .toString(),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => emptyPhoto,
+                              )
+                            : emptyPhoto,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bytes == null && saved == null
+                          ? 'Add a photo'
+                          : 'Change photo',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Optional · Up to 8 MB',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: BuildToPalette.navy),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(
-              20, 12, 20, MediaQuery.viewInsetsOf(context).bottom + 18),
+            20,
+            12,
+            20,
+            MediaQuery.viewInsetsOf(context).bottom + 18,
+          ),
           child: Form(
             key: form,
-            child: ListView(shrinkWrap: true, children: [
-              BuildToSectionHeading(
-                title: widget.original == null
-                    ? 'Add a product'
-                    : 'Update this product',
-                subtitle: 'Customers can see it as soon as you save.',
-              ),
-              const SizedBox(height: 18),
-              if (widget.original == null) ...[
-                _field(
-                  'What do you have in the warehouse?',
-                  productName,
-                  type: TextInputType.text,
-                  validator: (value) {
-                    final text = (value ?? '').trim();
-                    if (text.isEmpty) return 'Enter the product name.';
-                    if (text.length > 240) return 'Use a shorter name.';
-                    return null;
-                  },
-                ),
-                if (widget.masters.categories.isNotEmpty) ...[
-                  Text('Category',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ListView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     children: [
-                      for (final category in widget.masters.categories)
-                        ChoiceChip(
-                          label: Text(category.name),
-                          selected: categoryId == category.id,
-                          onSelected: busy
-                              ? null
-                              : (_) => setState(() {
-                                    categoryId = category.id;
-                                    error = null;
-                                  }),
+                      BuildToSectionHeading(
+                        title: widget.original == null
+                            ? 'Add a product'
+                            : 'Update this product',
+                        subtitle: 'Customers can see it as soon as you save.',
+                      ),
+                      const SizedBox(height: 18),
+                      _productPhoto(),
+                      const SizedBox(height: 20),
+                      if (widget.original == null) ...[
+                        Text(
+                          'Material details',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                Text('How do you sell it?',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                FormField<String>(
-                  key: const Key('catalog-unit'),
-                  validator: (_) => unit == null
-                      ? 'Choose bag, kg, piece, or another unit.'
-                      : null,
-                  builder: (state) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                        const SizedBox(height: 10),
+                        _field(
+                          'Product name',
+                          productName,
+                          type: TextInputType.text,
+                          validator: (value) {
+                            final text = (value ?? '').trim();
+                            if (text.isEmpty) return 'Enter the product name.';
+                            if (text.length > 240) return 'Use a shorter name.';
+                            return null;
+                          },
+                        ),
+                        if (widget.masters.categories.isNotEmpty)
+                          _SearchableListingField(
+                            label: 'Category',
+                            placeholder: 'Choose a category',
+                            searchLabel: 'Search categories',
+                            icon: Icons.category_outlined,
+                            options: {
+                              for (final category in widget.masters.categories)
+                                category.id: category.name,
+                            },
+                            value: categoryId,
+                            enabled: !busy,
+                            onChanged: (value) => setState(() {
+                              categoryId = value;
+                              error = null;
+                            }),
+                          ),
+                        _SearchableListingField(
+                          key: const Key('catalog-unit'),
+                          label: 'How do you sell it?',
+                          placeholder: 'Choose a selling unit',
+                          searchLabel: 'Search selling units',
+                          icon: Icons.straighten_outlined,
+                          options: {
+                            for (final sellingUnit in sellingUnits)
+                              sellingUnit.code: sellingUnit.name,
+                          },
+                          value: unit,
+                          enabled: !busy,
+                          onChanged: (value) => setState(() {
+                            unit = value;
+                            error = null;
+                          }),
+                        ),
+                      ] else
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Sold as ${widget.original!.unitCode}. '
+                            'To use another unit, add it as a new product.',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Pricing & tax',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      _field(
+                        'Your price (₹)',
+                        price,
+                        validator: _price,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      Text('GST',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          for (final sellingUnit in sellingUnits)
+                          for (final rate in const ['0', '5', '12', '18', '28'])
                             ChoiceChip(
-                              label: Text(sellingUnit.name),
-                              selected: unit == sellingUnit.code,
+                              label: Text('$rate%'),
+                              selected: taxBps.text.trim() == rate,
                               onSelected: busy
                                   ? null
-                                  : (_) => setState(() {
-                                        unit = sellingUnit.code;
-                                        error = null;
-                                      }),
+                                  : (selected) {
+                                      if (!selected) return;
+                                      setState(() => taxBps.text = rate);
+                                    },
                             ),
                         ],
                       ),
-                      if (state.hasError)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(state.errorText!,
-                              style: const TextStyle(
-                                  color: BuildToPalette.danger)),
+                      if (!const [
+                        '0',
+                        '5',
+                        '12',
+                        '18',
+                        '28',
+                      ].contains(taxBps.text.trim()))
+                        _field(
+                          'GST %',
+                          taxBps,
+                          validator: (value) {
+                            try {
+                              catalogTaxBasisPoints((value ?? '').trim());
+                              return null;
+                            } on FormatException {
+                              return 'Enter a GST rate from 0 to 100.';
+                            }
+                          },
                         ),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('This price already includes GST'),
+                        value: inclusive,
+                        onChanged: busy
+                            ? null
+                            : (value) => setState(() => inclusive = value),
+                      ),
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: const Text('More options'),
+                        subtitle: const Text(
+                          'Pack size and order limits. Leave these as 1 for most products.',
+                        ),
+                        children: [
+                          _field('Pack size', pack, validator: _quantity),
+                          _field('Smallest order', minimum,
+                              validator: _quantity),
+                          _field('Order step', step, validator: _quantity),
+                          _field(
+                            'Largest order',
+                            maximum,
+                            optional: true,
+                            validator: (value) => (value ?? '').trim().isEmpty
+                                ? null
+                                : _quantity(value),
+                          ),
+                          _field(
+                            'Printed price / MRP (₹)',
+                            mrp,
+                            optional: true,
+                            validator: (value) {
+                              if ((value ?? '').trim().isEmpty) return null;
+                              try {
+                                catalogPaiseFromRupees(value!.trim());
+                                return null;
+                              } on FormatException {
+                                return 'Enter rupees, such as 399 or 399.50.';
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-              ] else
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Sold as ${widget.original!.unitCode}. '
-                    'To use another unit, add it as a new product.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              const SizedBox(height: 8),
-              if (photoBytes != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(
-                    photoBytes!,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(
-                      height: 180,
-                      child: Center(child: Text('Photo selected')),
-                    ),
-                  ),
-                )
-              else if (widget.original?.imageUrl != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    SupplierV21Config.origin
-                        .resolve(widget.original!.imageUrl!)
-                        .toString(),
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: busy ? null : () => unawaited(pickPhoto()),
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(
-                      photoBytes == null && widget.original?.imageUrl == null
-                          ? 'Add a photo'
-                          : 'Change photo'),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'JPEG, PNG, WebP, GIF, BMP, HEIC, or AVIF, up to 8 MB. The product can still be saved without a photo.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 12),
-              _field(
-                'Your price (₹)',
-                price,
-                validator: _price,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              Text('GST', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final rate in const ['0', '5', '12', '18', '28'])
-                    ChoiceChip(
-                      label: Text('$rate%'),
-                      selected: taxBps.text.trim() == rate,
-                      onSelected: busy
-                          ? null
-                          : (selected) {
-                              if (!selected) return;
-                              setState(() => taxBps.text = rate);
-                            },
-                    ),
-                ],
-              ),
-              if (!const ['0', '5', '12', '18', '28']
-                  .contains(taxBps.text.trim()))
-                _field('GST %', taxBps, validator: (value) {
-                  try {
-                    catalogTaxBasisPoints((value ?? '').trim());
-                    return null;
-                  } on FormatException {
-                    return 'Enter a GST rate from 0 to 100.';
-                  }
-                }),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('This price already includes GST'),
-                value: inclusive,
-                onChanged:
-                    busy ? null : (value) => setState(() => inclusive = value),
-              ),
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: const Text('More options'),
-                subtitle: const Text(
-                    'Pack size and order limits. Leave these as 1 for most products.'),
-                children: [
-                  _field('Pack size', pack, validator: _quantity),
-                  _field('Smallest order', minimum, validator: _quantity),
-                  _field('Order step', step, validator: _quantity),
-                  _field('Largest order', maximum,
-                      optional: true,
-                      validator: (value) => (value ?? '').trim().isEmpty
-                          ? null
-                          : _quantity(value)),
-                  _field('Printed price / MRP (₹)', mrp, optional: true,
-                      validator: (value) {
-                    if ((value ?? '').trim().isEmpty) return null;
-                    try {
-                      catalogPaiseFromRupees(value!.trim());
-                      return null;
-                    } on FormatException {
-                      return 'Enter rupees, such as 399 or 399.50.';
-                    }
-                  }),
-                ],
-              ),
-              if (error != null) ...[
-                const SizedBox(height: 6),
-                Text(error!,
+                const Divider(height: 14, color: BuildToPalette.outline),
+                if (error != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    error!,
                     key: const Key('catalog-editor-error'),
-                    style: const TextStyle(color: BuildToPalette.danger)),
+                    style: const TextStyle(color: BuildToPalette.danger),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                BuildToPrimaryButton(
+                  label: widget.original == null
+                      ? 'Show to customers'
+                      : 'Save changes',
+                  icon: Icons.check_rounded,
+                  busy: busy,
+                  onPressed: busy || uncertain ? null : () => unawaited(save()),
+                ),
               ],
-              const SizedBox(height: 16),
-              BuildToPrimaryButton(
-                label: widget.original == null
-                    ? 'Show to customers'
-                    : 'Save changes',
-                icon: Icons.check_rounded,
-                busy: busy,
-                onPressed: busy || uncertain ? null : () => unawaited(save()),
-              ),
-            ]),
+            ),
           ),
         ),
       );
+}
+
+class _SearchableListingField extends StatelessWidget {
+  const _SearchableListingField({
+    super.key,
+    required this.label,
+    required this.placeholder,
+    required this.searchLabel,
+    required this.icon,
+    required this.options,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String label, placeholder, searchLabel;
+  final IconData icon;
+  final Map<String, String> options;
+  final String? value;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 13),
+        child: FormField<String>(
+          initialValue: value,
+          enabled: enabled,
+          validator: (value) => value == null ? placeholder : null,
+          builder: (field) => Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: !enabled
+                  ? null
+                  : () async {
+                      final selection = await showModalBottomSheet<String>(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        showDragHandle: true,
+                        builder: (_) => _ListingOptionsSheet(
+                          title: placeholder,
+                          searchLabel: searchLabel,
+                          options: options,
+                          selected: value,
+                        ),
+                      );
+                      if (selection == null || !context.mounted) return;
+                      field.didChange(selection);
+                      onChanged(selection);
+                    },
+              child: InputDecorator(
+                isEmpty: value == null,
+                decoration: InputDecoration(
+                  labelText: label,
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  prefixIcon: Icon(icon),
+                  suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+                  errorText: field.errorText,
+                  enabled: enabled,
+                ),
+                child: Text(options[value] ?? placeholder),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _ListingOptionsSheet extends StatefulWidget {
+  const _ListingOptionsSheet({
+    required this.title,
+    required this.searchLabel,
+    required this.options,
+    required this.selected,
+  });
+
+  final String title, searchLabel;
+  final Map<String, String> options;
+  final String? selected;
+
+  @override
+  State<_ListingOptionsSheet> createState() => _ListingOptionsSheetState();
+}
+
+class _ListingOptionsSheetState extends State<_ListingOptionsSheet> {
+  String query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final matches = widget.options.entries
+        .where(
+          (option) =>
+              option.key.toLowerCase().contains(query) ||
+              option.value.toLowerCase().contains(query),
+        )
+        .toList();
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: FractionallySizedBox(
+        heightFactor: .78,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  widget.title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  onChanged: (text) =>
+                      setState(() => query = text.trim().toLowerCase()),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    labelText: widget.searchLabel,
+                    prefixIcon: const Icon(Icons.search_rounded),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: matches.isEmpty
+                      ? const Center(
+                          child: Text('No matches. Try a different search.'),
+                        )
+                      : ListView.builder(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          itemCount: matches.length,
+                          itemBuilder: (context, i) {
+                            final option = matches[i];
+                            final selected = option.key == widget.selected;
+                            return ListTile(
+                              title: Text(option.value),
+                              selected: selected,
+                              trailing: selected
+                                  ? const Icon(Icons.check_rounded)
+                                  : null,
+                              onTap: () => Navigator.pop(context, option.key),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

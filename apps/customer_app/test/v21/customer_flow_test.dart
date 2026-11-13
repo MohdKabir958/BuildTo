@@ -107,8 +107,6 @@ void main() {
             .first,
       );
       expect(find.text('10'), findsOneWidget);
-      await t.drag(find.byType(ListView).last, const Offset(0, -700));
-      await t.pumpAndSettle();
       await t.ensureVisible(find.text('Add to cart'));
       await t.pumpAndSettle();
       await t.tap(find.text('Add to cart'));
@@ -120,64 +118,109 @@ void main() {
     },
   );
   testWidgets(
-      'cart steppers persist quantity and use the returned cart version',
-      (t) async {
-    final f = CustomerFixture();
-    addTearDown(f.dispose);
-    await f.api.setLine(id(12), '10', 3);
-    await page(t, f, const CartPage(), size: const Size(320, 740), scale: 1.4);
-    await t.ensureVisible(find.byTooltip('Increase quantity'));
-    await t.tap(find.byTooltip('Increase quantity'));
-    await t.pumpAndSettle();
-    expect(f.cartItems.single['quantity'], '15');
-    expect(find.text('15 bag'), findsOneWidget);
-    await t.ensureVisible(find.text('15 bag'));
-    await t.tap(find.text('15 bag'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextFormField), '17');
-    await t.pumpAndSettle();
-    await t.ensureVisible(find.text('Save quantity'));
-    await t.tap(find.text('Save quantity'));
-    await t.pumpAndSettle();
-    expect(f.version, 5);
-    expect(find.text('Start at 10 and add 5 bag at a time.'), findsOneWidget);
-    await t.enterText(find.byType(TextFormField), '25');
-    await t.pumpAndSettle();
-    await t.ensureVisible(find.text('Save quantity'));
-    await t.tap(find.text('Save quantity'));
-    await t.pumpAndSettle();
-    expect(f.cartItems.single['quantity'], '25');
-    expect(f.version, 6);
-    expect(t.takeException(), isNull);
-  });
+    'material details keep purchase controls reachable with large text',
+    (t) async {
+      final f = CustomerFixture();
+      addTearDown(f.dispose);
+      await page(
+        t,
+        f,
+        ProductPage({
+          'id': id(11),
+          'name': 'UltraTech Portland Pozzolana Cement (50 kg bag)',
+          'category': const {'name': 'Cement & Concrete'},
+        }),
+        size: const Size(320, 700),
+        scale: 2,
+      );
+      expect(find.text('Add to cart').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('Decrease quantity'), findsOneWidget);
+      await t.tap(find.byTooltip('Increase quantity'));
+      await t.pumpAndSettle();
+      expect(find.text('15'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    },
+  );
 
   testWidgets(
-      'staging commission error previews confirmation without placing an order',
-      (t) async {
-    final f = CustomerFixture(
-      origin: 'https://buildto-v21-staging.onrender.com',
-      commissionBlocked: true,
-    );
-    addTearDown(f.dispose);
-    await page(t, f, const CheckoutPage(cartVersion: 3));
-    await t.tap(find.text('New home site'));
-    await t.pumpAndSettle();
-    final check = find.text('Check delivery & final price');
-    await t.ensureVisible(check);
-    await t.tap(check);
-    await t.pump();
-    await t.pump(const Duration(milliseconds: 400));
-    expect(find.text('STAGING PREVIEW'), findsOneWidget);
-    expect(find.text('Order placed'), findsOneWidget);
-    expect(f.requests.where((request) => request.url.path.endsWith('/place')),
-        isEmpty);
-    await t.tap(find.widgetWithText(FilledButton, 'Back'));
-    await t.pumpAndSettle();
-    expect(find.text('Checkout'), findsOneWidget);
-  });
+    'cart steppers persist quantity and use the returned cart version',
+    (t) async {
+      final f = CustomerFixture();
+      addTearDown(f.dispose);
+      await f.api.setLine(id(12), '10', 3);
+      await page(
+        t,
+        f,
+        const CartPage(),
+        size: const Size(320, 740),
+        scale: 1.4,
+      );
+      await t.ensureVisible(find.byTooltip('Increase quantity'));
+      await t.tap(find.byTooltip('Increase quantity'));
+      await t.pumpAndSettle();
+      expect(f.cartItems.single['quantity'], '15');
+      expect(find.text('15 bag'), findsOneWidget);
+      await t.ensureVisible(find.text('15 bag'));
+      await t.tap(find.text('15 bag'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextFormField), '17');
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Save quantity'));
+      await t.tap(find.text('Save quantity'));
+      await t.pumpAndSettle();
+      expect(f.version, 5);
+      expect(find.text('Start at 10 and add 5 bag at a time.'), findsOneWidget);
+      await t.enterText(find.byType(TextFormField), '25');
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Save quantity'));
+      await t.tap(find.text('Save quantity'));
+      await t.pumpAndSettle();
+      expect(f.cartItems.single['quantity'], '25');
+      expect(f.version, 6);
+      expect(t.takeException(), isNull);
+    },
+  );
 
-  testWidgets('address form submits an Indian number without coordinates',
-      (t) async {
+  testWidgets(
+    'staging preview clears the checked-out cart without placing an order',
+    (t) async {
+      final f = CustomerFixture(
+        origin: 'https://buildto-v21-staging.onrender.com',
+        commissionBlocked: true,
+      );
+      addTearDown(f.dispose);
+      await f.api.setLine(id(12), '10', 3);
+      await page(t, f, const CartPage());
+      await t.tap(find.text('Review checkout'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('New home site'));
+      await t.pumpAndSettle();
+      final check = find.text('Check delivery & final price');
+      await t.ensureVisible(check);
+      await t.tap(check);
+      await t.pumpAndSettle();
+      expect(f.cartItems, hasLength(1));
+      final place = find.text('Place demo order');
+      await t.ensureVisible(place);
+      await t.tap(place);
+      await t.pumpAndSettle();
+      expect(find.text('STAGING PREVIEW'), findsOneWidget);
+      expect(find.text('Order placed'), findsOneWidget);
+      expect(
+        f.requests.where((request) => request.url.path.endsWith('/place')),
+        isEmpty,
+      );
+      await t.tap(find.widgetWithText(FilledButton, 'Back'));
+      await t.pumpAndSettle();
+      expect(find.text('Your cart is empty'), findsOneWidget);
+      expect(f.cartItems, isEmpty);
+      expect(f.version, 5);
+    },
+  );
+
+  testWidgets('address form submits an Indian number without coordinates', (
+    t,
+  ) async {
     final f = CustomerFixture();
     addTearDown(f.dispose);
     await page(t, f, const AddressEditor());
@@ -200,8 +243,11 @@ void main() {
         matching: find.byType(TextFormField),
       );
       if (input.evaluate().isEmpty) {
-        await t.scrollUntilVisible(input, 110,
-            scrollable: find.byType(Scrollable).first);
+        await t.scrollUntilVisible(
+          input,
+          110,
+          scrollable: find.byType(Scrollable).first,
+        );
       }
       await t.ensureVisible(input);
       await t.enterText(input, entry.value);
@@ -259,6 +305,13 @@ void main() {
       expect(placement.single.headers['idempotency-key'], isNotEmpty);
       expect(find.text('SP-2026-1042'), findsOneWidget);
       expect(find.text('Pending'), findsWidgets);
+      await t.pageBack();
+      await t.pumpAndSettle();
+      expect(find.text('Your cart is empty'), findsOneWidget);
+      expect(
+        f.requests.where((r) => r.url.path == '/api/v2/cart/clear'),
+        isEmpty,
+      );
       expect(t.takeException(), isNull);
     },
   );
@@ -426,6 +479,7 @@ void main() {
     await f.api.setLine(id(12), '10', 3);
     for (final entry in <String, Widget>{
       'customer-home': const CustomerShell(),
+      'customer-material-detail': ProductPage(f.products.first),
       'customer-cart': const CartPage(),
       'customer-order': OrderPage(id(9)),
     }.entries) {

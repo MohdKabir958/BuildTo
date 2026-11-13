@@ -335,6 +335,14 @@ class CustomerApi {
         ),
       );
 
+  Future<Data> clearCart(int version) async => object(
+        await call(
+          '/api/v2/cart/clear',
+          method: 'POST',
+          body: {'expectedVersion': version},
+        ),
+      );
+
   Future<List<Data>> addresses() async =>
       rows(await call('/api/v2/me/addresses'));
   Future<List<Data>> orders() async => rows(await call('/api/v2/orders'));

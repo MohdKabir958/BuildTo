@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:vendor_app/v21/api/supplier_v21_api.dart';
 import 'package:vendor_app/v21/api/supplier_v21_models.dart';
+import 'package:vendor_app/v21/catalog/supplier_catalog_editor.dart';
 import 'package:vendor_app/v21/catalog/supplier_catalog_repository.dart';
 import 'package:vendor_app/v21/design/buildto_theme.dart';
 import 'package:vendor_app/v21/screens/supplier_shell.dart';
@@ -47,20 +48,17 @@ class CatalogServer {
             'active': false,
             'version': 0,
             'priceTiers': [],
-          }
+          },
         ]);
       }
       if (req.url.path.endsWith('/categories')) {
         return data([
-          {
-            'id': '123e4567-e89b-12d3-a456-426614174030',
-            'name': 'Cement',
-          }
+          {'id': '123e4567-e89b-12d3-a456-426614174030', 'name': 'Cement'},
         ]);
       }
       if (req.url.path.endsWith('/units')) {
         return data([
-          {'code': 'BAG', 'name': 'Bag'}
+          {'code': 'BAG', 'name': 'Bag'},
         ]);
       }
       return http.Response('{"error":{"code":"NOT_FOUND"}}', 404);
@@ -70,27 +68,37 @@ class CatalogServer {
 }
 
 Future<void> buildShell(
-    WidgetTester tester, CatalogServer server, SupplierV21Role role,
-    {Size size = const Size(393, 852), double scale = 1}) async {
+  WidgetTester tester,
+  CatalogServer server,
+  SupplierV21Role role, {
+  Size size = const Size(393, 852),
+  double scale = 1,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
-  await tester.pumpWidget(MaterialApp(
-    theme: BuildToTheme.light(),
-    builder: (context, child) => MediaQuery(
-      data:
-          MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
-      child: child!,
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: BuildToTheme.light(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(scale)),
+        child: child!,
+      ),
+      home: BuildToSupplierShell(
+        verifiedSupplier: SupplierV21Membership(
+          supplierId: supplier,
+          role: role,
+        ),
+        catalogRepository: server.repo,
+        displayName: 'BuildTo Material Supplier',
+      ),
     ),
-    home: BuildToSupplierShell(
-      verifiedSupplier: SupplierV21Membership(supplierId: supplier, role: role),
-      catalogRepository: server.repo,
-      displayName: 'BuildTo Material Supplier',
-    ),
-  ));
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Catalog').last);
   await tester.pumpAndSettle();
@@ -113,8 +121,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('professional owner catalog shows real rows and create control',
-      (tester) async {
+  testWidgets('professional owner catalog shows real rows and create control', (
+    tester,
+  ) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.owner);
     expect(find.text('Material catalog'), findsOneWidget);
@@ -127,8 +136,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('viewer catalog has no create, edit or submission privileges',
-      (tester) async {
+  testWidgets('listing form puts the photo first and filters both dropdowns', (
+    tester,
+  ) async {
+    final server = CatalogServer();
+    final masters = await server.repo.masters();
+    tester.view.physicalSize = const Size(320, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(
+      theme: BuildToTheme.light(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: const TextScaler.linear(1.5)),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: SupplierListingEditor(
+          repository: server.repo,
+          supplierId: supplier,
+          masters: masters,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    final photo = find.text('Add a photo');
+    final category = find.text('Choose a category');
+    expect(photo.hitTestable(), findsOneWidget);
+    await tester.ensureVisible(category);
+    await tester.tap(category);
+    await tester.pumpAndSettle();
+    final search = find.widgetWithText(TextField, 'Search categories');
+    await tester.enterText(search, 'unmatched');
+    await tester.pumpAndSettle();
+    expect(find.text('No matches. Try a different search.'), findsOneWidget);
+    await tester.enterText(search, 'cem');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cement').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Cement'), findsOneWidget);
+
+    final unit = find.text('Choose a selling unit');
+    await tester.ensureVisible(unit);
+    await tester.tap(unit);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Search selling units'),
+      'bag',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bag'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bag'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('viewer catalog has no create, edit or submission privileges', (
+    tester,
+  ) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.viewer);
     expect(find.text('Add a product'), findsNothing);
@@ -143,8 +209,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('403 on refresh hides previously loaded listing immediately',
-      (tester) async {
+  testWidgets('403 on refresh hides previously loaded listing immediately', (
+    tester,
+  ) async {
     final server = CatalogServer();
     await buildShell(tester, server, SupplierV21Role.catalog);
     await showFirstListing(tester);
@@ -169,11 +236,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('320px phone and larger text keep catalog readable',
-      (tester) async {
+  testWidgets('320px phone and larger text keep catalog readable', (
+    tester,
+  ) async {
     final server = CatalogServer();
-    await buildShell(tester, server, SupplierV21Role.viewer,
-        size: const Size(320, 800), scale: 1.5);
+    await buildShell(
+      tester,
+      server,
+      SupplierV21Role.viewer,
+      size: const Size(320, 800),
+      scale: 1.5,
+    );
     expect(find.text('Material catalog'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

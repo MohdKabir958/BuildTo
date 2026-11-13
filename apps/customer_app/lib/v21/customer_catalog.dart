@@ -272,12 +272,14 @@ class _CustomerHomeState extends State<CustomerHome> {
                             : 'Shop by category',
                         action: widget.categoriesOnly ? null : 'View all',
                         onTap: () => push(
-                            context,
-                            Scaffold(
-                              appBar: AppBar(title: const Text('Categories')),
-                              body: const SafeArea(
-                                  child: CustomerHome(categoriesOnly: true)),
-                            )),
+                          context,
+                          Scaffold(
+                            appBar: AppBar(title: const Text('Categories')),
+                            body: const SafeArea(
+                              child: CustomerHome(categoriesOnly: true),
+                            ),
+                          ),
+                        ),
                       ),
                       if (categories.isEmpty)
                         const Text(
@@ -487,14 +489,17 @@ class CategoryGrid extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 7),
-                    Text(entry.key,
-                        textAlign: TextAlign.center,
-                        maxLines: horizontal ? 2 : null,
-                        overflow: horizontal ? TextOverflow.ellipsis : null,
-                        style: const TextStyle(
-                            fontSize: 12,
-                            height: 1.25,
-                            fontWeight: FontWeight.w800)),
+                    Text(
+                      entry.key,
+                      textAlign: TextAlign.center,
+                      maxLines: horizontal ? 2 : null,
+                      overflow: horizontal ? TextOverflow.ellipsis : null,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -517,31 +522,33 @@ class CategoryGrid extends StatelessWidget {
         ),
       );
     }
-    return LayoutBuilder(builder: (context, constraints) {
-      const gap = 10.0;
-      final width = (constraints.maxWidth - gap) / 2;
-      final entries = departments.entries.toList();
-      return Column(
-        children: [
-          for (var i = 0; i < entries.length; i += 2)
-            Padding(
-              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    tile(entries[i], width),
-                    if (i + 1 < entries.length) ...[
-                      const SizedBox(width: gap),
-                      tile(entries[i + 1], width),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final width = (constraints.maxWidth - gap) / 2;
+        final entries = departments.entries.toList();
+        return Column(
+          children: [
+            for (var i = 0; i < entries.length; i += 2)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      tile(entries[i], width),
+                      if (i + 1 < entries.length) ...[
+                        const SizedBox(width: gap),
+                        tile(entries[i + 1], width),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -789,253 +796,401 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 }
 
+const _detailCanvas = Color(0xFFF7F9FC);
+const _detailNavy = Color(0xFF001328);
+const _detailOutline = Color(0xFFDCE3EC);
+const _detailOrange = Color(0xFFFD761A);
+
 class ProductPage extends StatelessWidget {
   const ProductPage(this.product, {super.key});
   final Data product;
+
   @override
   Widget build(BuildContext context) {
-    final s = CustomerScope.of(context);
-    return RemotePage<List<Data>>(
-      title: 'Material details',
-      load: () => s.api.offers(field(product, 'id')),
-      builder: (offers, reload) => ListView(
-        padding: const EdgeInsets.all(22),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          ProductPhoto(product, height: 240),
-          const SizedBox(height: 22),
-          Text(
-            field(object(product['category']), 'name').toUpperCase(),
-            style: const TextStyle(
-              color: accent,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1,
-            ),
+    final api = CustomerScope.of(context).api;
+    return Scaffold(
+      backgroundColor: _detailCanvas,
+      appBar: AppBar(
+        backgroundColor: _detailCanvas,
+        title: const Text('Material details'),
+        actions: [
+          IconButton(
+            tooltip: 'Open cart',
+            onPressed: () => push(context, const CartPage()),
+            icon: const Icon(Icons.shopping_bag_outlined),
           ),
-          const SizedBox(height: 8),
-          Text(
-            field(product, 'name'),
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          if (product['description'] != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              field(product, 'description'),
-              style: const TextStyle(color: muted),
-            ),
-          ],
-          if (object(product['specification']).isNotEmpty) ...[
-            const Section('Specifications'),
-            Panel(
-              child: Column(
-                children: object(product['specification'])
-                    .entries
-                    .map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                label(e.key),
-                                style: const TextStyle(color: muted),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                '${e.value}',
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
-          const Section('Choose a supplier offer'),
-          const Text(
-            'Prices and quantities are specific to each supplier. Stock and delivery are confirmed at checkout.',
-            style: TextStyle(color: muted, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-          if (offers.isEmpty)
-            const EmptyState(
-              'No offers available',
-              'Try again later or request a bulk quotation.',
-            ),
-          ...offers.map(
-            (o) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: OfferCard(o),
-            ),
-          ),
-          ActionButton(
-            'Request a bulk quote',
-            () async => push(context, NewRfqPage(product: product)),
-            tonal: true,
-          ),
+          const SizedBox(width: 8),
         ],
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: RemotePage<List<Data>>(
+              load: () => api.offers(field(product, 'id')),
+              builder: (offers, _) =>
+                  _MaterialDetails(product: product, offers: offers),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class OfferCard extends StatefulWidget {
-  const OfferCard(this.offer, {super.key});
-  final Data offer;
+class _MaterialDetails extends StatefulWidget {
+  const _MaterialDetails({required this.product, required this.offers});
+  final Data product;
+  final List<Data> offers;
+
   @override
-  State<OfferCard> createState() => _OfferCardState();
+  State<_MaterialDetails> createState() => _MaterialDetailsState();
 }
 
-class _OfferCardState extends State<OfferCard> {
-  late String quantity;
-  @override
-  void initState() {
-    super.initState();
-    quantity = field(widget.offer, 'minOrderQty', '1');
+class _MaterialDetailsState extends State<_MaterialDetails> {
+  String? selectedId;
+  final quantities = <String, String>{};
+
+  Data? get selectedOffer {
+    for (final offer in widget.offers) {
+      if (field(offer, 'id') == selectedId) return offer;
+    }
+    return widget.offers.firstOrNull;
   }
 
   @override
   Widget build(BuildContext context) {
-    final o = widget.offer;
-    final s = CustomerScope.of(context);
-    return Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final product = widget.product;
+    final offers = widget.offers;
+    final selected = selectedOffer;
+    final category = field(object(product['category']), 'name');
+    final description = field(product, 'description');
+    final specs = object(product['specification']);
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
             children: [
-              const Icon(Icons.storefront_outlined, size: 20, color: green),
-              const SizedBox(width: 8),
+              Material(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: _detailOutline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                      child: ProductPhoto(product, height: 144),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (category.isNotEmpty) ...[
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEEE3),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 4,
+                                ),
+                                child: Text(
+                                  category,
+                                  style: const TextStyle(
+                                    color: Color(0xFF783200),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          Text(
+                            field(product, 'name'),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: _detailNavy,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text('Supplier offers', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 3),
+              Text(
+                'Stock and delivery are confirmed at checkout.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              if (offers.isEmpty)
+                const EmptyState(
+                  'No offers available',
+                  'Try again later or request a bulk quotation.',
+                ),
+              if (selected != null)
+                RadioGroup<String>(
+                  groupValue: field(selected, 'id'),
+                  onChanged: (id) => setState(() => selectedId = id),
+                  child: Column(
+                    children: [
+                      for (final offer in offers)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _SupplierOffer(
+                            offer,
+                            selected: identical(selected, offer),
+                            onSelect: () =>
+                                setState(() => selectedId = field(offer, 'id')),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              if (description.isNotEmpty || specs.isNotEmpty)
+                Panel(
+                  padding: 4,
+                  child: ExpansionTile(
+                    shape: const Border(),
+                    title: const Text('Material specifications'),
+                    expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+                    childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                    children: [
+                      if (description.isNotEmpty) Text(description),
+                      for (final spec in specs.entries)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: Text('${label(spec.key)} · ${spec.value}'),
+                        ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 12),
+              ActionButton(
+                'Request a bulk quote',
+                () async => push(context, NewRfqPage(product: product)),
+                icon: Icons.request_quote_outlined,
+                tonal: true,
+              ),
+            ],
+          ),
+        ),
+        if (selected != null) purchaseBar(context, selected),
+      ],
+    );
+  }
+
+  Widget purchaseBar(BuildContext context, Data offer) {
+    final id = field(offer, 'id');
+    final minimum = field(offer, 'minOrderQty', '1');
+    final step = field(offer, 'stepQty', '1');
+    final maximum = offer['maxOrderQty']?.toString();
+    final quantity = quantities[id] ?? decimal(scaled(minimum, 3), 3);
+    final minus = quantityStep(quantity, minimum, step, maximum, -1);
+    final plus = quantityStep(quantity, minimum, step, maximum, 1);
+    final session = CustomerScope.of(context);
+    final stepper = DecoratedBox(
+      decoration: BoxDecoration(
+        color: _detailCanvas,
+        border: Border.all(color: _detailOutline),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Decrease quantity',
+            onPressed: minus == quantity
+                ? null
+                : () => setState(() => quantities[id] = minus),
+            icon: const Icon(Icons.remove, size: 18),
+          ),
+          Flexible(
+            child: Text(
+              quantity,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Increase quantity',
+            onPressed: plus == quantity
+                ? null
+                : () => setState(() => quantities[id] = plus),
+            icon: const Icon(Icons.add, size: 18),
+          ),
+        ],
+      ),
+    );
+    final add = FilledButtonTheme(
+      data: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: _detailOrange,
+          foregroundColor: _detailNavy,
+          minimumSize: const Size(48, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+      child: ActionButton('Add to cart', () async {
+        if (!session.signedIn) await session.signIn();
+        if (!session.signedIn || !context.mounted) return;
+        final cart = await session.api.cart();
+        await session.api.setLine(id, quantity, cart['version'] as int);
+        if (context.mounted) {
+          notice(context, 'Added to your cart');
+          push(context, const CartPage());
+        }
+      }, icon: Icons.shopping_bag_outlined),
+    );
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final scaled = MediaQuery.textScalerOf(context).scale(14);
+            if (constraints.maxWidth < 280 ||
+                scaled > 21 ||
+                quantity.length > 6) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(child: stepper),
+                  const SizedBox(height: 8),
+                  add,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Flexible(child: stepper),
+                const SizedBox(width: 10),
+                Expanded(flex: 2, child: add),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SupplierOffer extends StatelessWidget {
+  const _SupplierOffer(
+    this.offer, {
+    required this.selected,
+    required this.onSelect,
+  });
+  final Data offer;
+  final bool selected;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = CustomerScope.of(context);
+    final theme = Theme.of(context);
+    final unit = field(offer, 'unitCode').toLowerCase();
+    return Material(
+      color: selected ? const Color(0xFFFFF7F0) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: selected ? _detailOrange : _detailOutline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onSelect,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 6, 4, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Radio<String>(
+                value: field(offer, 'id'),
+                activeColor: const Color(0xFF9D4300),
+              ),
               Expanded(
-                child: Text(
-                  field(o, 'supplierName', 'Approved supplier'),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        field(offer, 'supplierName', 'Approved supplier'),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${price(offer['unitPrice'])} / $unit',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      Text(
+                        'Minimum ${field(offer, 'minOrderQty', '1')} $unit · '
+                        'Add in multiples of ${field(offer, 'stepQty', '1')}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      Text(
+                        offer['taxInclusive'] == true
+                            ? 'Tax included'
+                            : 'Tax calculated at checkout',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      for (final tier in rows(offer['priceTiers']))
+                        Text(
+                          '${tier['minQty']}+ $unit · ${price(tier['pricePerUnit'])} each',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: green,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               IconButton(
                 tooltip: 'Save offer',
+                icon: const Icon(Icons.favorite_border_rounded, size: 20),
                 onPressed: () async {
                   try {
-                    if (!s.signedIn) await s.signIn();
-                    if (!s.signedIn) return;
-                    await s.api.call(
-                      '/api/v2/me/wishlist/${o['id']}',
+                    if (!session.signedIn) await session.signIn();
+                    if (!session.signedIn) return;
+                    await session.api.call(
+                      '/api/v2/me/wishlist/${offer['id']}',
                       method: 'PUT',
                       body: {},
                     );
                     if (context.mounted) {
                       notice(context, 'Saved to your wishlist');
                     }
-                  } catch (e) {
+                  } catch (error) {
                     if (context.mounted) {
                       notice(
                         context,
-                        e is CustomerProblem
-                            ? e.message
+                        error is CustomerProblem
+                            ? error.message
                             : 'Unable to save this offer.',
                       );
                     }
                   }
                 },
-                icon: const Icon(Icons.favorite_border_rounded, size: 20),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            '${price(o['unitPrice'])} / ${o['unitCode']}',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            'Minimum ${o['minOrderQty']} ${o['unitCode']} · increments of ${o['stepQty']}',
-            style: const TextStyle(fontSize: 11, color: muted),
-          ),
-          Text(
-            o['taxInclusive'] == true
-                ? 'Tax included'
-                : 'Tax calculated at checkout',
-            style: const TextStyle(fontSize: 11, color: muted),
-          ),
-          if (rows(o['priceTiers']).isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ...rows(o['priceTiers']).map(
-              (t) => Text(
-                '${t['minQty']}+ ${o['unitCode']}: ${price(t['pricePerUnit'])} per unit',
-                style: const TextStyle(fontSize: 11, color: green),
-              ),
-            ),
-          ],
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: line),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'Decrease quantity',
-                      onPressed: () => setState(
-                        () => quantity = quantityStep(
-                          quantity,
-                          field(o, 'minOrderQty', '1'),
-                          field(o, 'stepQty', '1'),
-                          o['maxOrderQty']?.toString(),
-                          -1,
-                        ),
-                      ),
-                      icon: const Icon(Icons.remove, size: 18),
-                    ),
-                    Text(
-                      quantity,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    IconButton(
-                      tooltip: 'Increase quantity',
-                      onPressed: () => setState(
-                        () => quantity = quantityStep(
-                          quantity,
-                          field(o, 'minOrderQty', '1'),
-                          field(o, 'stepQty', '1'),
-                          o['maxOrderQty']?.toString(),
-                          1,
-                        ),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                    ),
-                  ],
-                ),
-              ),
-              ActionButton('Add to cart', () async {
-                if (!s.signedIn) await s.signIn();
-                if (!s.signedIn) return;
-                final cart = await s.api.cart();
-                await s.api.setLine(
-                  field(o, 'id'),
-                  quantity,
-                  cart['version'] as int,
-                );
-                if (context.mounted) {
-                  notice(context, 'Added to your cart');
-                  push(context, const CartPage());
-                }
-              }, icon: Icons.shopping_bag_outlined),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

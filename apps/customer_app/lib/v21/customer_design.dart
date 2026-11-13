@@ -346,7 +346,9 @@ class _RemotePageState<T> extends State<RemotePage<T>> {
     future = widget.load();
   }
 
-  void reload() => setState(() => future = widget.load());
+  void reload() => setState(() {
+        future = widget.load();
+      });
   @override
   Widget build(BuildContext context) {
     final content = FutureBuilder<T>(

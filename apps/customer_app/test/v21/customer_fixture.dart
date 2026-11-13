@@ -170,6 +170,13 @@ class CustomerFixture {
       ];
     } else if (path == '/api/v2/cart') {
       data = {'version': version, 'items': cartItems};
+    } else if (path == '/api/v2/cart/clear') {
+      if (body['expectedVersion'] != version) {
+        return http.Response('{"error":{"code":"CART_VERSION_CONFLICT"}}', 409);
+      }
+      version++;
+      cartItems = [];
+      data = {'version': version, 'items': cartItems};
     } else if (path.startsWith('/api/v2/cart/lines/')) {
       if (body['expectedVersion'] != version) {
         return http.Response(
@@ -235,6 +242,8 @@ class CustomerFixture {
             .toIso8601String(),
       };
     } else if (path == '/api/v2/checkouts/${id(15)}/place') {
+      version++;
+      cartItems = [];
       data = order;
     } else if (path == '/api/v2/me/wishlist') {
       data = [];
