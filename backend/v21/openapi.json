@@ -9624,8 +9624,8 @@
     },
     "/api/v2/orders/{orderId}/refunds": {
       "get": {
-        "operationId": "listCustomerRefunds",
-        "summary": "Read refund reconciliation status for an owned order",
+        "operationId": "customerOrderRefunds",
+        "summary": "Customer-owned refund statuses. SUCCEEDED = read-only provider processed, not bank credit verified.",
         "security": [
           {
             "clerkBearer": []
@@ -9644,17 +9644,44 @@
         ],
         "responses": {
           "200": {
-            "description": "Exact refund amount, status, reason, reference and timestamps only. No payment credentials or execution capability.",
+            "description": "Authorized refund/credit result",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogEnvelope"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VerifiedRefundRequest"
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
           },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Permission or independent reviewer required"
+          },
           "404": {
-            "description": "Order does not belong to this customer or does not exist."
+            "description": "Resource unavailable or not owned"
+          },
+          "409": {
+            "description": "Financial state or provider evidence conflict"
+          },
+          "503": {
+            "description": "Read-only refund provider unavailable"
           }
         }
       }

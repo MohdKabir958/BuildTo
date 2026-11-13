@@ -1121,11 +1121,14 @@ class RefundsPage extends StatelessWidget {
                             style: Theme.of(c).textTheme.headlineSmall),
                         const SizedBox(height: 10),
                         Text(field(r, 'reason')),
-                        if (r['reference'] != null)
-                          SelectableText('Reference: ${r['reference']}'),
-                        if (r['completedAt'] != null)
+                        if (r['customerBankCredit'] == 'NOT_VERIFIED')
+                          const Text('Bank credit awaiting confirmation',
+                              style: TextStyle(fontSize: 12, color: muted)),
+                        if (r['providerRefundId'] != null)
+                          SelectableText('Reference: ${r['providerRefundId']}'),
+                        if (r['providerCompletedAt'] != null)
                           Text(
-                              'Completed: ${field(r, 'completedAt').split('T').first}',
+                              'Processed by payment provider: ${field(r, 'providerCompletedAt').split('T').first}',
                               style:
                                   const TextStyle(fontSize: 12, color: muted))
                       ])))),

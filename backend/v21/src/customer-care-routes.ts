@@ -1,4 +1,3 @@
-import {customerRefunds} from './customer-refunds';
 import type {Express,Request,Response,RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
@@ -27,8 +26,6 @@ const go=(job:Job,created=false):RequestHandler=>async(req,res,next)=>{
  }catch(e){next(e);}
 };
 export function registerReturnsSupportReviews(app:Express,db:PrismaClient,auth:RequestHandler){
- app.get('/api/v2/orders/:orderId/refunds',auth,go((req,res)=>customerRefunds(db,actor(res),req.params.orderId)));
-
  app.post('/api/v2/orders/:orderId/returns',auth,async(req,res,next)=>{
   try{
    const result=await createReturn(db,actor(res),req.params.orderId,idem(req),req.body);

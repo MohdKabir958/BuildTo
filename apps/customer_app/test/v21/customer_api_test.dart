@@ -10,6 +10,9 @@ void main() {
   test('exact money, unit quantities and empty envelopes', () {
     expect(money('123456789012345'), '₹12,34,56,78,90,123.45');
     expect(price('390.50'), '₹390.50');
+    expect(price('1.2345'), '₹1.2345');
+    expect(estimatedLinePaise({'unitPrice': '1.2345', 'quantity': '10.125'}),
+        BigInt.from(1250));
     expect(decimal(scaled('10.125', 3), 3), '10.125');
     expect(quantityStep('10', '10', '0.125', null, 1), '10.125');
     expect(quantityStep('10', '10', '5', null, -1), '10');

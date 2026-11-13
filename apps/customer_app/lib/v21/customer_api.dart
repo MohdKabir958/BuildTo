@@ -70,7 +70,11 @@ String money(Object? paise) {
 
 String price(Object? rupees) {
   try {
-    return money(scaled('$rupees', 2));
+    final unitPrice = scaled('$rupees', 4);
+    if (unitPrice % BigInt.from(100) != BigInt.zero) {
+      return '₹${decimal(unitPrice, 4)}';
+    }
+    return money(unitPrice ~/ BigInt.from(100));
   } catch (_) {
     return 'Price unavailable';
   }
@@ -176,9 +180,11 @@ class CustomerApi {
       );
       req.headers.addAll(headers);
       if (body != null) req.body = jsonEncode(body);
-      final res = await http.Response.fromStream(
-        await client.send(req),
-      ).timeout(const Duration(seconds: 25));
+      req.followRedirects = false;
+      final res = await client
+          .send(req)
+          .then(http.Response.fromStream)
+          .timeout(const Duration(seconds: 25));
       if (scope != _scope) {
         throw const CustomerProblem('Your account changed. Please try again.');
       }
@@ -329,8 +335,8 @@ class CustomerApi {
 }
 
 BigInt estimatedLinePaise(Data line) {
-  return (scaled(field(line, 'unitPrice', '0'), 2) *
+  return (scaled(field(line, 'unitPrice', '0'), 4) *
               scaled(field(line, 'quantity', '0'), 3) +
-          BigInt.from(500)) ~/
-      BigInt.from(1000);
+          BigInt.from(50000)) ~/
+      BigInt.from(100000);
 }

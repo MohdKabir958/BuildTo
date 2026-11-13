@@ -18,10 +18,3 @@ test('supplier offers expose display name and preserve approved-only publication
  let query;const db={supplierListing:{findMany:async input=>{query=input;return [{id,productId:id,supplierId:id,supplier:{displayName:'Local Materials'},sku:'CEM',unitCode:'BAG',packSize:'1',minOrderQty:'10',stepQty:'5',maxOrderQty:null,unitPrice:'390.00',mrpPaise:null,taxRateBps:1800,taxInclusive:true,status:'APPROVED',active:true,version:1,publishedAt:new Date(),priceTiers:[]}];}}};
  const offers=await publicListings(db,id);assert.equal(offers[0].supplierName,'Local Materials');assert.equal(offers[0].supplier,undefined);assert.equal(query.where.supplier.suspendedAt,null);assert.deepEqual(query.select.supplier,{select:{displayName:true}});
 });
-
-test('refund reads are owned, exact and exclude administrative and payment credentials',async()=>{
- const {customerRefunds}=require('../dist/customer-refunds');let query;
- const db={purchaseOrder:{findFirst:async()=>({id})},refundRequest:{findMany:async q=>{query=q;return [{id,returnRequestId:null,amountPaise:12345n,status:'REQUESTED',reason:'Damaged materials',providerRefundRef:null,completedAt:null,createdAt:new Date('2026-11-13T00:00:00Z')}];}}};
- const data=await customerRefunds(db,'customer-id',id);assert.equal(data[0].amountPaise,'12345');assert.equal(query.where.purchaseOrder.customerId,'customer-id');assert.equal(query.select.paymentAttemptId,undefined);assert.equal(query.select.approvedById,undefined);
- db.purchaseOrder.findFirst=async()=>null;await assert.rejects(customerRefunds(db,'other-customer',id),e=>e.status===404);
-});

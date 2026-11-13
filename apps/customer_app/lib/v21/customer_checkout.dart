@@ -444,14 +444,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
               addressId == null
                   ? null
                   : () async {
+                      final requestedKey = previewKey;
                       final result = await s.api.preview(
                         addressId!,
                         widget.cartVersion,
-                        previewKey,
+                        requestedKey,
                         site: siteId,
                         promotion: promo.text.trim(),
                       );
-                      if (mounted) {
+                      if (mounted && requestedKey == previewKey) {
                         setState(() {
                           if (quote?['id'] != result['id']) {
                             placeKey = requestKey();

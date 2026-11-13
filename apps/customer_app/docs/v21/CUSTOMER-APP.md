@@ -63,8 +63,7 @@ exact address/clientRequestId contract.
   `fromPrice`, `fromUnit` and `fromPriceTaxInclusive`; prices belong to the first
   available selling unit and never replace a checkout quote.
 - Offers include public supplier display names.
-- Customers can read their own refund reconciliation status, without gaining
-  refund execution or administrative authority.
+
 
 Deploy these API changes before accepting the new app against a hosted backend.
 No Prisma migration is needed. Existing supplier and admin financial execution

@@ -6,8 +6,6 @@ on:
       - 'backend/v21/src/cart-service.ts'
       - 'backend/v21/src/catalog-read.ts'
       - 'backend/v21/src/catalog-routes.ts'
-      - 'backend/v21/src/customer-refunds.ts'
-      - 'backend/v21/src/customer-care-routes.ts'
       - 'backend/v21/test/customer-catalog.test.cjs'
       - '.github/workflows/buildto-v21-customer.yml'
   workflow_dispatch:
