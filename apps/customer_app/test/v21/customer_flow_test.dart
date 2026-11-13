@@ -93,6 +93,8 @@ void main() {
             )
             .first,
       );
+      await t.ensureVisible(find.text('UltraTech Cement 50 kg'));
+      await t.pumpAndSettle();
       await t.tap(find.text('UltraTech Cement 50 kg'));
       await t.pumpAndSettle();
       await t.scrollUntilVisible(
