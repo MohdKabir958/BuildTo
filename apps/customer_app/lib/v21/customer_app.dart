@@ -33,9 +33,8 @@ class _SplyzoCustomerAppState extends State<SplyzoCustomerApp>
       } else {
         const configured = String.fromEnvironment(
           'BUILDTO_V21_API_BASE_URL',
-          defaultValue: kReleaseMode
-              ? ''
-              : 'https://buildto-v21-staging.onrender.com',
+          defaultValue:
+              kReleaseMode ? '' : 'https://buildto-v21-staging.onrender.com',
         );
         final origin = CustomerApi.parseOrigin(configured);
         if (kReleaseMode) {
@@ -134,49 +133,49 @@ class _CustomerShellState extends State<CustomerShell> {
   int tab = 0;
   @override
   Widget build(BuildContext c) => Scaffold(
-    body: SafeArea(
-      bottom: false,
-      child: KeyedSubtree(
-        key: ValueKey(tab),
-        child: [
-          const CustomerHome(),
-          const CustomerHome(categoriesOnly: true),
-          const CartPage(embedded: true),
-          const OrdersPage(),
-          const ProfilePage(),
-        ][tab],
-      ),
-    ),
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: tab,
-      onDestinationSelected: (i) => setState(() => tab = i),
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home_rounded),
-          label: 'Home',
+        body: SafeArea(
+          bottom: false,
+          child: KeyedSubtree(
+            key: ValueKey(tab),
+            child: [
+              const CustomerHome(),
+              const CustomerHome(categoriesOnly: true),
+              const CartPage(embedded: true),
+              const OrdersPage(),
+              const ProfilePage(),
+            ][tab],
+          ),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.grid_view_outlined),
-          selectedIcon: Icon(Icons.grid_view_rounded),
-          label: 'Categories',
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: tab,
+          onDestinationSelected: (i) => setState(() => tab = i),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.grid_view_outlined),
+              selectedIcon: Icon(Icons.grid_view_rounded),
+              label: 'Categories',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.shopping_bag_outlined),
+              selectedIcon: Icon(Icons.shopping_bag),
+              label: 'Cart',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.inventory_2_outlined),
+              selectedIcon: Icon(Icons.inventory_2),
+              label: 'Orders',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
         ),
-        NavigationDestination(
-          icon: Icon(Icons.shopping_bag_outlined),
-          selectedIcon: Icon(Icons.shopping_bag),
-          label: 'Cart',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.inventory_2_outlined),
-          selectedIcon: Icon(Icons.inventory_2),
-          label: 'Orders',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-    ),
-  );
+      );
 }

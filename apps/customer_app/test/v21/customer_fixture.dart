@@ -128,9 +128,8 @@ class CustomerFixture {
     requests.add(r);
     dynamic data;
     final path = r.url.path;
-    final body = r.body.isEmpty
-        ? <String, dynamic>{}
-        : object(jsonDecode(r.body));
+    final body =
+        r.body.isEmpty ? <String, dynamic>{} : object(jsonDecode(r.body));
     if (path == '/api/v2/me') {
       data = {'id': id(1), 'displayName': 'Kabir'};
     } else if (path == '/api/v2/catalog/categories') {
@@ -229,9 +228,8 @@ class CustomerFixture {
     } else if (path == '/api/v2/me/notifications') {
       data = {'items': [], 'nextCursor': null};
     } else if (path == '/api/v2/support/cases') {
-      data = r.method == 'GET'
-          ? []
-          : {'id': id(16), 'subject': body['subject']};
+      data =
+          r.method == 'GET' ? [] : {'id': id(16), 'subject': body['subject']};
     } else if (path == '/api/v2/support/cases/${id(16)}') {
       data = {
         'id': id(16),

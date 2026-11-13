@@ -10,8 +10,8 @@ Data object(Object? value) =>
 List<Data> rows(Object? value) => value is List
     ? value.map(object).toList()
     : value is Map && value['items'] is List
-    ? rows(value['items'])
-    : <Data>[];
+        ? rows(value['items'])
+        : <Data>[];
 String field(Data value, String key, [String fallback = '']) =>
     value[key]?.toString() ?? fallback;
 String label(Object? value) => (value ?? '')
@@ -257,18 +257,18 @@ class CustomerApi {
               (res.statusCode == 401
                   ? 'Your session expired. Sign in again.'
                   : res.statusCode == 403
-                  ? 'This action is not available for your account.'
-                  : res.statusCode == 404
-                  ? 'This item or service is unavailable.'
-                  : res.statusCode == 429
-                  ? 'Too many requests. Please wait and retry.'
-                  : res.statusCode >= 500
-                  ? 'The service is temporarily unavailable. Please retry.'
-                  : field(
-                      error,
-                      'message',
-                      'Please check the details and try again.',
-                    )),
+                      ? 'This action is not available for your account.'
+                      : res.statusCode == 404
+                          ? 'This item or service is unavailable.'
+                          : res.statusCode == 429
+                              ? 'Too many requests. Please wait and retry.'
+                              : res.statusCode >= 500
+                                  ? 'The service is temporarily unavailable. Please retry.'
+                                  : field(
+                                      error,
+                                      'message',
+                                      'Please check the details and try again.',
+                                    )),
           status: res.statusCode,
           code: code,
         );
@@ -299,33 +299,34 @@ class CustomerApi {
     String? search,
     String? cursor,
     String? supplier,
-  }) async => object(
-    await call(
-      '/api/v2/catalog/products',
-      authenticated: false,
-      query: {
-        if (category != null) 'categoryId': category,
-        if (supplier != null) 'supplierId': supplier,
-        if (search != null && search.isNotEmpty) 'search': search,
-        if (cursor != null) 'cursor': cursor,
-      },
-    ),
-  );
+  }) async =>
+      object(
+        await call(
+          '/api/v2/catalog/products',
+          authenticated: false,
+          query: {
+            if (category != null) 'categoryId': category,
+            if (supplier != null) 'supplierId': supplier,
+            if (search != null && search.isNotEmpty) 'search': search,
+            if (cursor != null) 'cursor': cursor,
+          },
+        ),
+      );
   Future<List<Data>> offers(String id) async => rows(
-    await call(
-      '/api/v2/catalog/listings',
-      authenticated: false,
-      query: {'productId': id},
-    ),
-  );
+        await call(
+          '/api/v2/catalog/listings',
+          authenticated: false,
+          query: {'productId': id},
+        ),
+      );
   Future<Data> cart() async => object(await call('/api/v2/cart'));
   Future<Data> setLine(String id, String quantity, int version) async => object(
-    await call(
-      '/api/v2/cart/lines/$id',
-      method: 'PUT',
-      body: {'quantity': quantity, 'expectedVersion': version},
-    ),
-  );
+        await call(
+          '/api/v2/cart/lines/$id',
+          method: 'PUT',
+          body: {'quantity': quantity, 'expectedVersion': version},
+        ),
+      );
   Future<void> removeLine(String id, int version) async {
     await call(
       '/api/v2/cart/lines/$id',
@@ -345,28 +346,29 @@ class CustomerApi {
     String key, {
     String? site,
     String? promotion,
-  }) async => object(
-    await call(
-      '/api/v2/checkouts',
-      method: 'POST',
-      key: key,
-      body: {
-        'addressId': address,
-        'expectedCartVersion': version,
-        if (site != null) 'siteId': site,
-        if (promotion != null && promotion.isNotEmpty)
-          'promotionCode': promotion,
-      },
-    ),
-  );
+  }) async =>
+      object(
+        await call(
+          '/api/v2/checkouts',
+          method: 'POST',
+          key: key,
+          body: {
+            'addressId': address,
+            'expectedCartVersion': version,
+            if (site != null) 'siteId': site,
+            if (promotion != null && promotion.isNotEmpty)
+              'promotionCode': promotion,
+          },
+        ),
+      );
   Future<Data> place(String quote, String key) async => object(
-    await call(
-      '/api/v2/checkouts/$quote/place',
-      method: 'POST',
-      key: key,
-      body: {'clientRequestId': key},
-    ),
-  );
+        await call(
+          '/api/v2/checkouts/$quote/place',
+          method: 'POST',
+          key: key,
+          body: {'clientRequestId': key},
+        ),
+      );
   void close() => client.close();
 }
 

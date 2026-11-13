@@ -150,9 +150,8 @@ void main() {
       );
       await t.tap(find.text('Place order · ₹3,950'));
       await t.pumpAndSettle();
-      final placement = f.requests
-          .where((r) => r.url.path.endsWith('/place'))
-          .toList();
+      final placement =
+          f.requests.where((r) => r.url.path.endsWith('/place')).toList();
       expect(placement.length, 1);
       expect(placement.single.headers['idempotency-key'], isNotEmpty);
       expect(find.text('SP-2026-1042'), findsOneWidget);

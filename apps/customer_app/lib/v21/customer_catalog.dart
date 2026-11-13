@@ -15,14 +15,14 @@ IconData materialIcon(String name) {
   return n.contains('cement')
       ? Icons.foundation_outlined
       : n.contains('steel')
-      ? Icons.view_week_outlined
-      : n.contains('brick')
-      ? Icons.grid_view_rounded
-      : n.contains('sand')
-      ? Icons.landscape_outlined
-      : n.contains('paint')
-      ? Icons.format_paint_outlined
-      : Icons.category_outlined;
+          ? Icons.view_week_outlined
+          : n.contains('brick')
+              ? Icons.grid_view_rounded
+              : n.contains('sand')
+                  ? Icons.landscape_outlined
+                  : n.contains('paint')
+                      ? Icons.format_paint_outlined
+                      : Icons.category_outlined;
 }
 
 class CustomerHome extends StatefulWidget {
@@ -431,9 +431,9 @@ class CategoryGrid extends StatelessWidget {
       builder: (context, constraints) {
         final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
         final columns = (constraints.maxWidth / (115 * scale)).floor().clamp(
-          2,
-          5,
-        );
+              2,
+              5,
+            );
         const gap = 10.0;
         final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
         return Wrap(
@@ -528,9 +528,9 @@ class ProductGrid extends StatelessWidget {
       builder: (context, constraints) {
         final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
         final columns = (constraints.maxWidth / (142 * scale)).floor().clamp(
-          1,
-          4,
-        );
+              1,
+              4,
+            );
         const gap = 12.0;
         final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
         return Column(
@@ -542,11 +542,9 @@ class ProductGrid extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (
-                        var column = 0;
-                        column < columns && index + column < products.length;
-                        column++
-                      ) ...[
+                      for (var column = 0;
+                          column < columns && index + column < products.length;
+                          column++) ...[
                         if (column > 0) const SizedBox(width: gap),
                         SizedBox(
                           width: width,
@@ -611,91 +609,93 @@ class ProductCard extends StatelessWidget {
   final Data product;
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-      side: const BorderSide(color: line),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: () => push(context, ProductPage(product)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(aspectRatio: 1.28, child: ProductPhoto(product)),
-            const SizedBox(height: 12),
-            Text(
-              field(object(product['category']), 'name', 'BUILDING MATERIAL'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: muted,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: .4,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              field(product, 'name'),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const Spacer(),
-            const SizedBox(height: 10),
-            if (product['fromPrice'] != null)
-              Text.rich(
-                TextSpan(
-                  text: price(product['fromPrice']),
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: line),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => push(context, ProductPage(product)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(aspectRatio: 1.28, child: ProductPhoto(product)),
+                const SizedBox(height: 12),
+                Text(
+                  field(
+                      object(product['category']), 'name', 'BUILDING MATERIAL'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                    color: muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: .4,
                   ),
-                  children: [
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  field(product, 'name'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+                const Spacer(),
+                const SizedBox(height: 10),
+                if (product['fromPrice'] != null)
+                  Text.rich(
                     TextSpan(
-                      text: ' / ${field(product, 'fromUnit').toLowerCase()}',
+                      text: price(product['fromPrice']),
                       style: const TextStyle(
-                        color: muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                      children: [
+                        TextSpan(
+                          text:
+                              ' / ${field(product, 'fromUnit').toLowerCase()}',
+                          style: const TextStyle(
+                            color: muted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  const Text(
+                    'Price unavailable',
+                    style: TextStyle(color: muted, fontSize: 11),
+                  ),
+                const SizedBox(height: 8),
+                const Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'View offers',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: green,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
+                    Icon(Icons.arrow_forward_rounded, size: 17, color: green),
                   ],
                 ),
-              )
-            else
-              const Text(
-                'Price unavailable',
-                style: TextStyle(color: muted, fontSize: 11),
-              ),
-            const SizedBox(height: 8),
-            const Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'View offers',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: green,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Icon(Icons.arrow_forward_rounded, size: 17, color: green),
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class CatalogPage extends StatefulWidget {
@@ -801,7 +801,8 @@ class ProductPage extends StatelessWidget {
             const Section('Specifications'),
             Panel(
               child: Column(
-                children: object(product['specification']).entries
+                children: object(product['specification'])
+                    .entries
                     .map(
                       (e) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1030,82 +1031,82 @@ class _SupplierStripState extends State<SupplierStrip> {
 
   @override
   Widget build(BuildContext c) => FutureBuilder<dynamic>(
-    future: future,
-    builder: (c, s) {
-      if (s.connectionState != ConnectionState.done) {
-        return const SizedBox(
-          height: 70,
-          child: Center(child: CircularProgressIndicator()),
-        );
-      }
-      if (s.hasError) {
-        return const Text(
-          'Supplier directory is temporarily unavailable.',
-          style: TextStyle(color: muted, fontSize: 12),
-        );
-      }
-      final list = rows(s.data);
-      if (list.isEmpty) {
-        return const Text(
-          'Supplier storefronts will appear as materials become available.',
-          style: TextStyle(color: muted, fontSize: 12),
-        );
-      }
-      return SizedBox(
-        height: 108 + MediaQuery.textScalerOf(c).scale(36),
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: list.length,
-          separatorBuilder: (_, i) => const SizedBox(width: 10),
-          itemBuilder: (c, i) {
-            final p = list[i];
-            return SizedBox(
-              width: 170,
-              child: Material(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: const BorderSide(color: line),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () => push(
-                    c,
-                    CatalogPage(
-                      supplier: field(p, 'id'),
-                      supplierName: field(p, 'displayName'),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.storefront_outlined, color: green),
-                        const SizedBox(height: 12),
-                        Text(
-                          field(p, 'displayName'),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          'View materials  ↗',
-                          style: TextStyle(fontSize: 10, color: muted),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+        future: future,
+        builder: (c, s) {
+          if (s.connectionState != ConnectionState.done) {
+            return const SizedBox(
+              height: 70,
+              child: Center(child: CircularProgressIndicator()),
             );
-          },
-        ),
+          }
+          if (s.hasError) {
+            return const Text(
+              'Supplier directory is temporarily unavailable.',
+              style: TextStyle(color: muted, fontSize: 12),
+            );
+          }
+          final list = rows(s.data);
+          if (list.isEmpty) {
+            return const Text(
+              'Supplier storefronts will appear as materials become available.',
+              style: TextStyle(color: muted, fontSize: 12),
+            );
+          }
+          return SizedBox(
+            height: 108 + MediaQuery.textScalerOf(c).scale(36),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: list.length,
+              separatorBuilder: (_, i) => const SizedBox(width: 10),
+              itemBuilder: (c, i) {
+                final p = list[i];
+                return SizedBox(
+                  width: 170,
+                  child: Material(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: const BorderSide(color: line),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => push(
+                        c,
+                        CatalogPage(
+                          supplier: field(p, 'id'),
+                          supplierName: field(p, 'displayName'),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.storefront_outlined, color: green),
+                            const SizedBox(height: 12),
+                            Text(
+                              field(p, 'displayName'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Text(
+                              'View materials  ↗',
+                              style: TextStyle(fontSize: 10, color: muted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
       );
-    },
-  );
 }
