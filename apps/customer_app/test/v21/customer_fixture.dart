@@ -10,25 +10,29 @@ String id(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
 
 class FixtureIdentity implements CustomerIdentity {
   @override
-  final ValueNotifier<ClerkIdentity> identity = ValueNotifier(ClerkIdentity(
+  final ValueNotifier<ClerkIdentity> identity = ValueNotifier(
+    ClerkIdentity(
       ready: true,
       signedIn: true,
       userId: id(1),
-      sessionId: 'session_fixture'));
+      sessionId: 'session_fixture',
+    ),
+  );
   @override
   Future<void> initialize() async {}
   @override
   Future<bool> authenticate() async {
     identity.value = ClerkIdentity(
-        ready: true,
-        signedIn: true,
-        userId: id(1),
-        sessionId: 'session_fixture');
+      ready: true,
+      signedIn: true,
+      userId: id(1),
+      sessionId: 'session_fixture',
+    );
     return true;
   }
 
   @override
-  Future<String?> token() async =>
+  Future<String?> token({bool forceRefresh = false}) async =>
       identity.value.signedIn ? 'fixture-token' : null;
   @override
   Future<bool> signOut() async {
@@ -55,7 +59,7 @@ class CustomerFixture {
       'fromUnit': 'BAG',
       'description': 'OPC 43 grade cement for your next project.',
       'specification': {'grade': 'OPC 43', 'pack': '50 kg'},
-      'images': []
+      'images': [],
     },
     {
       'id': id(4),
@@ -63,8 +67,8 @@ class CustomerFixture {
       'category': {'id': id(5), 'name': 'Steel & TMT'},
       'fromPrice': '82.00',
       'fromUnit': 'KG',
-      'images': []
-    }
+      'images': [],
+    },
   ];
   late final address = <String, dynamic>{
     'id': id(7),
@@ -77,7 +81,7 @@ class CustomerFixture {
     'line1': 'Plot 24, Jubilee Hills',
     'locality': 'Jubilee Hills',
     'postalCode': '500033',
-    'isDefault': true
+    'isDefault': true,
   };
   late final order = <String, dynamic>{
     'id': id(9),
@@ -105,17 +109,18 @@ class CustomerFixture {
             'unitCode': 'BAG',
             'quantity': '10',
             'unitPrice': '390.00',
-            'lineTotalPaise': '390000'
-          }
-        ]
-      }
-    ]
+            'lineTotalPaise': '390000',
+          },
+        ],
+      },
+    ],
   };
   CustomerFixture() {
     api = CustomerApi(
-        origin: Uri.parse('https://api.splyzo.test'),
-        token: auth.token,
-        client: MockClient(handle));
+      origin: Uri.parse('https://api.splyzo.test'),
+      token: auth.token,
+      client: MockClient(handle),
+    );
     session = CustomerSession(api: api, auth: auth)
       ..user = {'id': id(1), 'displayName': 'Kabir'};
   }
@@ -131,7 +136,7 @@ class CustomerFixture {
       data = [
         {'id': id(3), 'name': 'Cement & concrete'},
         {'id': id(5), 'name': 'Steel & TMT'},
-        {'id': id(13), 'name': 'Bricks & blocks'}
+        {'id': id(13), 'name': 'Bricks & blocks'},
       ];
     } else if (path == '/api/v2/catalog/products') {
       data = {'items': products, 'nextCursor': null};
@@ -139,9 +144,9 @@ class CustomerFixture {
       data = {
         'items': [
           {'id': id(6), 'displayName': 'Shree Shyam Enterprises'},
-          {'id': id(14), 'displayName': 'ABC Building Materials'}
+          {'id': id(14), 'displayName': 'ABC Building Materials'},
         ],
-        'nextCursor': null
+        'nextCursor': null,
       };
     } else if (path == '/api/v2/catalog/listings') {
       data = [
@@ -156,21 +161,22 @@ class CustomerFixture {
           'stepQty': '5',
           'maxOrderQty': '1000',
           'taxInclusive': true,
-          'priceTiers': []
-        }
+          'priceTiers': [],
+        },
       ];
     } else if (path == '/api/v2/cart') {
       data = {'version': version, 'items': cartItems};
     } else if (path.startsWith('/api/v2/cart/lines/')) {
       if (body['expectedVersion'] != version) {
         return http.Response(
-            jsonEncode({
-              'error': {
-                'code': 'CART_VERSION_CONFLICT',
-                'message': 'Refresh cart.'
-              }
-            }),
-            409);
+          jsonEncode({
+            'error': {
+              'code': 'CART_VERSION_CONFLICT',
+              'message': 'Refresh cart.',
+            },
+          }),
+          409,
+        );
       }
       version++;
       if (r.method == 'DELETE') {
@@ -185,8 +191,8 @@ class CustomerFixture {
             'supplierName': 'Shree Shyam Enterprises',
             'unitCode': 'BAG',
             'unitPrice': '390.00',
-            'available': true
-          }
+            'available': true,
+          },
         ];
       }
       data = {'version': version, 'items': cartItems};
@@ -194,7 +200,7 @@ class CustomerFixture {
       data = r.method == 'GET' ? [address] : {...address, ...body};
     } else if (path == '/api/v2/delivery/cities') {
       data = [
-        {'id': id(8), 'name': 'Hyderabad'}
+        {'id': id(8), 'name': 'Hyderabad'},
       ];
     } else if (path == '/api/v2/me/sites' || path == '/api/v2/me/projects') {
       data = {'items': [], 'nextCursor': null};
@@ -213,7 +219,7 @@ class CustomerFixture {
         'expiresAt': DateTime.now()
             .add(const Duration(minutes: 10))
             .toUtc()
-            .toIso8601String()
+            .toIso8601String(),
       };
     } else if (path == '/api/v2/checkouts/${id(15)}/place') {
       data = order;
@@ -230,8 +236,8 @@ class CustomerFixture {
         'subject': 'Order delivery question',
         'status': 'OPEN',
         'messages': [
-          {'authorId': id(1), 'body': 'Please confirm site delivery.'}
-        ]
+          {'authorId': id(1), 'body': 'Please confirm site delivery.'},
+        ],
       };
     } else if (path.endsWith('/messages')) {
       data = {'id': id(17), 'body': body['message']};
@@ -241,7 +247,7 @@ class CustomerFixture {
           'id': id(18),
           'publicNumber': 'RFQ-104',
           'status': 'DRAFT',
-          ...body
+          ...body,
         };
         data = rfq;
       } else {
@@ -262,17 +268,20 @@ class CustomerFixture {
       data = [];
     } else {
       return http.Response(
-          jsonEncode({
-            'error': {
-              'code': 'FIXTURE_ROUTE_MISSING',
-              'message': 'Missing fixture route: $path'
-            }
-          }),
-          404);
+        jsonEncode({
+          'error': {
+            'code': 'FIXTURE_ROUTE_MISSING',
+            'message': 'Missing fixture route: $path',
+          },
+        }),
+        404,
+      );
     }
     return http.Response(
-        jsonEncode({'data': data, 'requestId': 'fixture'}), 200,
-        headers: {'content-type': 'application/json'});
+      jsonEncode({'data': data, 'requestId': 'fixture'}),
+      200,
+      headers: {'content-type': 'application/json'},
+    );
   }
 
   void dispose() {

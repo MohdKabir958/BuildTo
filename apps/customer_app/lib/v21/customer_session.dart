@@ -8,7 +8,7 @@ abstract class CustomerIdentity {
   ValueListenable<ClerkIdentity> get identity;
   Future<void> initialize();
   Future<bool> authenticate();
-  Future<String?> token();
+  Future<String?> token({bool forceRefresh = false});
   Future<bool> signOut();
 }
 
@@ -21,14 +21,18 @@ class NativeCustomerIdentity implements CustomerIdentity {
   @override
   Future<bool> authenticate() => sessions.authenticate();
   @override
-  Future<String?> token() => sessions.token();
+  Future<String?> token({bool forceRefresh = false}) =>
+      sessions.token(forceRefresh: forceRefresh);
   @override
   Future<bool> signOut() => sessions.signOut();
 }
 
 class CustomerSession extends ChangeNotifier {
   CustomerSession({required this.api, required this.auth}) {
-    api.onUnauthorized = _lostAccess;
+    api.onUnauthorized = () {
+      _reauthenticate = true;
+      _lostAccess();
+    };
     auth.identity.addListener(_identityChanged);
   }
   final CustomerApi api;
@@ -40,6 +44,9 @@ class CustomerSession extends ChangeNotifier {
   String? authNotice;
   String? _identityKey;
   bool _disposed = false;
+  bool _reauthenticate = false;
+  Future<void>? _restoring;
+  int? _restoreEpoch;
   bool get signedIn => user != null;
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -58,8 +65,9 @@ class CustomerSession extends ChangeNotifier {
     final key = '${i.userId}:${i.sessionId}:${i.signedIn}';
     if (key == _identityKey) return;
     _identityKey = key;
+    _reauthenticate = false;
     _lostAccess();
-    if (i.signedIn) unawaited(restore());
+    if (i.signedIn && !busy) unawaited(restore());
   }
 
   Future<void> start() async {
@@ -77,22 +85,35 @@ class CustomerSession extends ChangeNotifier {
     }
   }
 
-  Future<void> restore() async {
-    final e = epoch;
+  Future<void> restore() {
+    final current = _restoring;
+    if (_restoreEpoch == epoch && current != null) return current;
+    final requestedEpoch = epoch;
+    _restoreEpoch = requestedEpoch;
+    final request = _restore(requestedEpoch).whenComplete(() {
+      if (_restoreEpoch == requestedEpoch) _restoring = null;
+    });
+    return _restoring = request;
+  }
+
+  Future<void> _restore(int requestedEpoch) async {
     try {
       final me = await api.me();
-      if (e != epoch) return;
+      if (requestedEpoch != epoch) return;
       user = me;
       authNotice = null;
-      _notify();
-    } catch (e) {
-      if (e is CustomerProblem && [401, 403].contains(e.status)) {
+      _reauthenticate = false;
+    } catch (error) {
+      if (requestedEpoch != epoch) return;
+      if (error is CustomerProblem && [401, 403].contains(error.status)) {
+        _reauthenticate = error.status == 401;
         _lostAccess();
       }
-      authNotice =
-          e is CustomerProblem ? e.message : 'Sign-in could not connect.';
-      _notify();
+      authNotice = error is CustomerProblem
+          ? error.message
+          : 'Sign-in could not connect. Please retry.';
     }
+    _notify();
   }
 
   Future<void> signIn() async {
@@ -106,6 +127,13 @@ class CustomerSession extends ChangeNotifier {
         );
       }
       await auth.initialize();
+      if (_reauthenticate &&
+          auth.identity.value.signedIn &&
+          !await auth.signOut()) {
+        throw const CustomerProblem(
+          'Sign-out could not complete. Please retry.',
+        );
+      }
       if (!auth.identity.value.signedIn && !await auth.authenticate()) return;
       await restore();
       if (user == null) {

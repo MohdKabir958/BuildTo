@@ -60,7 +60,11 @@ class _SplyzoCustomerAppState extends State<SplyzoCustomerApp>
         }
         final auth = NativeCustomerIdentity();
         session = CustomerSession(
-          api: CustomerApi(origin: origin, token: auth.token),
+          api: CustomerApi(
+            origin: origin,
+            token: auth.token,
+            refreshToken: () => auth.token(forceRefresh: true),
+          ),
           auth: auth,
         );
       }
