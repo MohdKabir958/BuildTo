@@ -675,8 +675,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           promotion: promo.text.trim(),
                         );
                       } on CustomerProblem catch (problem) {
-                        if (!context.mounted || requestedKey != previewKey)
+                        if (!context.mounted || requestedKey != previewKey) {
                           return;
+                        }
                         if (!kReleaseMode &&
                             s.api.origin.origin ==
                                 'https://buildto-v21-staging.onrender.com' &&
