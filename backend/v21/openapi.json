@@ -416,6 +416,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "supplierId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Restrict products and displayed offer prices to this approved supplier storefront."
           }
         ],
         "responses": {
@@ -439,7 +449,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Products include nullable fromPrice (exact rupee decimal), fromUnit and fromPriceTaxInclusive for the first available selling unit. Final tax, stock and delivery are checked at checkout."
       }
     },
     "/api/v2/catalog/listings": {
@@ -9613,8 +9624,8 @@
     },
     "/api/v2/orders/{orderId}/refunds": {
       "get": {
-        "operationId": "customerOrderRefunds",
-        "summary": "Customer-owned refund statuses. SUCCEEDED = read-only provider processed, not bank credit verified.",
+        "operationId": "listCustomerRefunds",
+        "summary": "Read refund reconciliation status for an owned order",
         "security": [
           {
             "clerkBearer": []
@@ -9633,44 +9644,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Authorized refund/credit result",
+            "description": "Exact refund amount, status, reason, reference and timestamps only. No payment credentials or execution capability.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/VerifiedRefundRequest"
-                      }
-                    },
-                    "requestId": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/CatalogEnvelope"
                 }
               }
             }
           },
-          "401": {
-            "description": "Identity required"
-          },
-          "403": {
-            "description": "Permission or independent reviewer required"
-          },
           "404": {
-            "description": "Resource unavailable or not owned"
-          },
-          "409": {
-            "description": "Financial state or provider evidence conflict"
-          },
-          "503": {
-            "description": "Read-only refund provider unavailable"
+            "description": "Order does not belong to this customer or does not exist."
           }
         }
       }
@@ -13055,6 +13039,35 @@
             }
           }
         ]
+      }
+    },
+    "/api/v2/catalog/suppliers": {
+      "get": {
+        "operationId": "listPublicSupplierStorefronts",
+        "summary": "List approved suppliers with published active offers",
+        "security": [],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public display names only, 20 items per page. data: {items: [{id,displayName}], nextCursor}. No contacts, KYC, warehouses or bank fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

@@ -43,19 +43,19 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SplyzoColors.surfaceLight,
+      backgroundColor: BuildtoColors.surfaceLight,
       appBar: AppBar(
-        backgroundColor: SplyzoColors.bgWhite,
+        backgroundColor: BuildtoColors.bgWhite,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: SplyzoColors.primaryNavy),
+          icon: const Icon(LucideIcons.arrowLeft, color: BuildtoColors.primaryNavy),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Help & Support',
           style: TextStyle(
-            color: SplyzoColors.primaryNavy,
+            color: BuildtoColors.primaryNavy,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -71,20 +71,20 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: SplyzoColors.infoBg,
-                borderRadius: BorderRadius.circular(SplyzoRadius.md),
-                border: Border.all(color: SplyzoColors.infoBlue.withValues(alpha: 0.25)),
+                color: BuildtoColors.infoBg,
+                borderRadius: BorderRadius.circular(BuildtoRadius.md),
+                border: Border.all(color: BuildtoColors.infoBlue.withValues(alpha: 0.25)),
               ),
               child: const Row(
                 children: [
-                  Icon(LucideIcons.info, size: 18, color: SplyzoColors.infoBlue),
+                  Icon(LucideIcons.info, size: 18, color: BuildtoColors.infoBlue),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Demonstration Mode: Support channels demonstrate contractor workflows. In active production, live chat connects directly to regional depot dispatchers.',
                       style: TextStyle(
                         fontSize: 11,
-                        color: SplyzoColors.infoBlue,
+                        color: BuildtoColors.infoBlue,
                         fontWeight: FontWeight.w600,
                         height: 1.35,
                       ),
@@ -100,7 +100,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: SplyzoColors.textDark,
+                color: BuildtoColors.textDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -126,22 +126,22 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: SplyzoColors.textDark,
+                color: BuildtoColors.textDark,
               ),
             ),
             const SizedBox(height: 12),
 
             Container(
               decoration: BoxDecoration(
-                color: SplyzoColors.bgWhite,
-                borderRadius: BorderRadius.circular(SplyzoRadius.md),
-                border: Border.all(color: SplyzoColors.cardBorder),
+                color: BuildtoColors.bgWhite,
+                borderRadius: BorderRadius.circular(BuildtoRadius.md),
+                border: Border.all(color: BuildtoColors.cardBorder),
               ),
               child: ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _faqs.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: SplyzoColors.cardBorder),
+                separatorBuilder: (_, __) => const Divider(height: 1, color: BuildtoColors.cardBorder),
                 itemBuilder: (context, index) {
                   final faq = _faqs[index];
                   final isExpanded = _expandedIndices.contains(index);
@@ -169,14 +169,14 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: isExpanded ? FontWeight.bold : FontWeight.w600,
-                                    color: isExpanded ? SplyzoColors.primaryNavy : SplyzoColors.textDark,
+                                    color: isExpanded ? BuildtoColors.primaryNavy : BuildtoColors.textDark,
                                   ),
                                 ),
                               ),
                               Icon(
                                 isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                                 size: 16,
-                                color: SplyzoColors.textMuted,
+                                color: BuildtoColors.textMuted,
                               ),
                             ],
                           ),
@@ -186,7 +186,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                               faq['a']!,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: SplyzoColors.textMuted,
+                                color: BuildtoColors.textMuted,
                                 height: 1.4,
                               ),
                             ),
@@ -225,7 +225,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: SplyzoColors.primaryNavy,
+                    color: BuildtoColors.primaryNavy,
                     decoration: TextDecoration.underline,
                   ),
                 ),
@@ -246,14 +246,14 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(SplyzoRadius.md),
+      borderRadius: BorderRadius.circular(BuildtoRadius.md),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: SplyzoColors.bgWhite,
-          borderRadius: BorderRadius.circular(SplyzoRadius.md),
-          border: Border.all(color: SplyzoColors.cardBorder),
-          boxShadow: SplyzoShadows.card,
+          color: BuildtoColors.bgWhite,
+          borderRadius: BorderRadius.circular(BuildtoRadius.md),
+          border: Border.all(color: BuildtoColors.cardBorder),
+          boxShadow: BuildtoShadows.card,
         ),
         child: Row(
           children: [
@@ -261,10 +261,10 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: SplyzoColors.primaryNavy.withValues(alpha: 0.1),
+                color: BuildtoColors.primaryNavy.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: SplyzoColors.primaryNavy, size: 18),
+              child: Icon(icon, color: BuildtoColors.primaryNavy, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -276,13 +276,13 @@ class _SupportHelpScreenState extends State<SupportHelpScreen> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: SplyzoColors.textDark,
+                      color: BuildtoColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 11, color: SplyzoColors.textMuted),
+                    style: const TextStyle(fontSize: 11, color: BuildtoColors.textMuted),
                   ),
                 ],
               ),

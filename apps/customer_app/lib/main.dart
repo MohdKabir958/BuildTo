@@ -1,3 +1,4 @@
+import 'v21/customer_app.dart';
 import 'providers/demo_orders_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'providers/notifications_provider.dart';
@@ -26,6 +27,10 @@ const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', de
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (const bool.fromEnvironment('BUILDTO_CUSTOMER_V21', defaultValue: true)) {
+    runApp(const SplyzoCustomerApp());
+    return;
+  }
   // Push is an addition: the real Firebase layer starts after the first frame (AuthGate) and
   // can fail without affecting anything else.
   final push = PushService(

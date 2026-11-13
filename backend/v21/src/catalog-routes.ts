@@ -1,7 +1,7 @@
 import express, {type Express,type Request,type Response,type NextFunction,type RequestHandler} from 'express';
 import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
-import {publicCategories,publicBrands,publicProducts,publicUnits,publicListings} from './catalog-read';
+import {publicCategories,publicBrands,publicProducts,publicUnits,publicListings,publicSuppliers} from './catalog-read';
 import {createCategory,updateCategory,createBrand,createProduct,updateProduct,addProductConversion} from './catalog-admin';
 import {adminCategories,adminBrands,adminProducts} from './catalog-admin-read';
 import {createListing,ownListings,updateListing,submitListing,replacePriceTiers,pendingListings,reviewListing} from './catalog-listings';
@@ -30,10 +30,11 @@ const created=(fn:(req:Request,res:Response)=>Promise<unknown>):RequestHandler=>
 export function registerPublicCatalog(app:Express,db:PrismaClient) {
  app.get('/api/v2/catalog/categories',handlers(()=>publicCategories(db)));
  app.get('/api/v2/catalog/brands',handlers(()=>publicBrands(db)));
+ app.get('/api/v2/catalog/suppliers',handlers(req=>publicSuppliers(db,queryString(req.query.cursor,'cursor'))));
  app.get('/api/v2/catalog/units',handlers(()=>publicUnits(db)));
  app.get('/api/v2/catalog/products',handlers(req=>publicProducts(db,{
    categoryId:queryString(req.query.categoryId,'categoryId'),cursor:queryString(req.query.cursor,'cursor'),
-   search:queryString(req.query.search,'search'),
+   search:queryString(req.query.search,'search'),supplierId:queryString(req.query.supplierId,'supplierId'),
  })));
  app.get('/api/v2/catalog/images/:imageId',async(req,res,next)=>{
   try{
