@@ -214,7 +214,7 @@ class _NewRfqPageState extends State<NewRfqPage> {
                       initialValue: addressId,
                       isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText: 'Saved delivery address',
+                        label: RequiredLabel('Saved delivery address'),
                       ),
                       items: addresses
                           .map(

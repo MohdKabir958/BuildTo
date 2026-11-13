@@ -289,6 +289,11 @@ class AddressesPage extends StatelessWidget {
   }
 }
 
+String indianMobileDigits(String input) {
+  final compact = input.replaceAll(RegExp(r'[\s()-]'), '');
+  return compact.replaceFirst(RegExp(r'^(?:\+91|91|0)(?=\d{10}$)'), '');
+}
+
 class AddressEditor extends StatefulWidget {
   const AddressEditor({super.key, this.address});
   final Data? address;
@@ -312,10 +317,12 @@ class _AddressEditorState extends State<AddressEditor> {
       'line2',
       'locality',
       'postalCode',
-      'latitude',
-      'longitude',
     ]) {
-      controls[k] = TextEditingController(text: field(widget.address ?? {}, k));
+      final value = field(widget.address ?? {}, k);
+      controls[k] = TextEditingController(
+          text: k == 'phoneE164'
+              ? value.replaceFirst(RegExp(r'^\+91(?=\d{10}$)'), '')
+              : value);
     }
     city = widget.address?['cityId']?.toString();
     defaultAddress = widget.address?['isDefault'] == true;
@@ -339,129 +346,132 @@ class _AddressEditorState extends State<AddressEditor> {
       ),
       builder: (cities, reload) => Form(
         key: form,
-        child: ListView(
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(22),
-          children: [
-            const Text(
-              'Site details',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 20),
-            DropdownButtonFormField<String>(
-              initialValue: cities.any((e) => e['id'] == city) ? city : null,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Delivery city'),
-              items: cities
-                  .map(
-                    (a) => DropdownMenuItem(
-                      value: field(a, 'id'),
-                      child: Text(field(a, 'name')),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => city = v,
-              validator: (v) =>
-                  v == null ? 'Choose an active delivery city' : null,
-            ),
-            if (cities.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text(
-                  'Delivery is not available in any city yet. Please contact support.',
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Where should we deliver?',
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
               ),
-            const SizedBox(height: 14),
-            ...controls.entries.map(
-              (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: TextFormField(
-                  controller: e.value,
-                  keyboardType:
-                      ['postalCode', 'latitude', 'longitude'].contains(e.key)
-                          ? const TextInputType.numberWithOptions(
-                              decimal: true,
-                              signed: true,
-                            )
-                          : e.key == 'phoneE164'
-                              ? TextInputType.phone
-                              : TextInputType.text,
-                  decoration: InputDecoration(
-                    labelText: const {
-                      'label': 'Address label (e.g. New home)',
-                      'recipientName': 'Recipient name',
-                      'phoneE164': 'Phone with country code (+91…)',
-                      'line1': 'Building / plot / street',
-                      'line2': 'Landmark (optional)',
-                      'locality': 'Locality',
-                      'postalCode': 'Postal code',
-                      'latitude': 'Latitude (optional)',
-                      'longitude': 'Longitude (optional)',
-                    }[e.key],
+              const SizedBox(height: 8),
+              const Text('Add the site address and a contact for the delivery.',
+                  style: TextStyle(color: muted)),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                initialValue: cities.any((e) => e['id'] == city) ? city : null,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                    label: RequiredLabel('Delivery city')),
+                items: cities
+                    .map(
+                      (a) => DropdownMenuItem(
+                        value: field(a, 'id'),
+                        child: Text(field(a, 'name')),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => city = v,
+                validator: (v) =>
+                    v == null ? 'Choose an active delivery city' : null,
+              ),
+              if (cities.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'Delivery is not available in any city yet. Please contact support.',
                   ),
-                  validator: (value) {
-                    final v = value?.trim() ?? '';
-                    if (['line2', 'latitude', 'longitude'].contains(e.key)) {
+                ),
+              const SizedBox(height: 14),
+              ...controls.entries.map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: TextFormField(
+                    controller: e.value,
+                    textInputAction: e.key == 'postalCode'
+                        ? TextInputAction.done
+                        : TextInputAction.next,
+                    textCapitalization:
+                        const ['phoneE164', 'postalCode'].contains(e.key)
+                            ? TextCapitalization.none
+                            : TextCapitalization.words,
+                    keyboardType: e.key == 'postalCode'
+                        ? TextInputType.number
+                        : e.key == 'phoneE164'
+                            ? TextInputType.phone
+                            : TextInputType.streetAddress,
+                    decoration: InputDecoration(
+                      label: e.key == 'line2'
+                          ? const Text('Landmark (optional)')
+                          : RequiredLabel(const {
+                              'label': 'Address label',
+                              'recipientName': 'Recipient name',
+                              'phoneE164': 'Mobile number',
+                              'line1': 'Building, plot or street',
+                              'locality': 'Area or locality',
+                              'postalCode': 'PIN code',
+                            }[e.key]!),
+                      prefixText: e.key == 'phoneE164' ? '+91  ' : null,
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      hintText: const {
+                        'label': 'e.g. New home',
+                        'phoneE164': '10-digit number',
+                        'postalCode': '6-digit PIN code',
+                      }[e.key],
+                    ),
+                    validator: (value) {
+                      final v = value?.trim() ?? '';
+                      if (e.key == 'line2') return null;
+                      if (v.isEmpty) return 'This field is required';
+                      if (e.key == 'postalCode' &&
+                          !RegExp(r'^\d{6}$').hasMatch(v)) {
+                        return 'Enter a 6-digit PIN code';
+                      }
+                      if (e.key == 'phoneE164' &&
+                          !RegExp(r'^[6-9]\d{9}$')
+                              .hasMatch(indianMobileDigits(v))) {
+                        return 'Enter a valid 10-digit mobile number';
+                      }
                       return null;
-                    }
-                    if (v.isEmpty) return 'This field is required';
-                    if (e.key == 'postalCode' &&
-                        !RegExp(r'^\d{6}$').hasMatch(v)) {
-                      return 'Enter a 6-digit postal code';
-                    }
-                    if (e.key == 'phoneE164' &&
-                        !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(v)) {
-                      return 'Include country code, e.g. +919876543210';
-                    }
-                    return null;
-                  },
+                    },
+                  ),
                 ),
               ),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Default delivery address'),
-              value: defaultAddress,
-              onChanged: (v) => setState(() => defaultAddress = v),
-            ),
-            const SizedBox(height: 14),
-            ActionButton('Save address', () async {
-              if (!form.currentState!.validate()) return;
-              final lat = controls['latitude']!.text.trim(),
-                  lng = controls['longitude']!.text.trim();
-              if (lat.isEmpty != lng.isEmpty) {
-                throw const CustomerProblem(
-                  'Enter both latitude and longitude, or leave both empty.',
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Default delivery address'),
+                value: defaultAddress,
+                onChanged: (v) => setState(() => defaultAddress = v),
+              ),
+              const SizedBox(height: 14),
+              ActionButton('Save address', () async {
+                if (!form.currentState!.validate()) return;
+                final body = <String, dynamic>{
+                  'cityId': city,
+                  'isDefault': defaultAddress,
+                  for (final e in controls.entries)
+                    if (e.key != 'phoneE164' && e.value.text.trim().isNotEmpty)
+                      e.key: e.value.text.trim(),
+                  'phoneE164':
+                      '+91${indianMobileDigits(controls['phoneE164']!.text)}',
+                };
+                final id = widget.address?['id'];
+                final result = object(
+                  await s.api.call(
+                    '/api/v2/me/addresses${id == null ? '' : '/$id'}',
+                    method: id == null ? 'POST' : 'PATCH',
+                    body: body,
+                  ),
                 );
-              }
-              if (lat.isNotEmpty &&
-                  (double.tryParse(lat) == null ||
-                      double.tryParse(lng) == null ||
-                      double.parse(lat).abs() > 90 ||
-                      double.parse(lng).abs() > 180)) {
-                throw const CustomerProblem(
-                  'Enter valid latitude and longitude.',
-                );
-              }
-              final body = <String, dynamic>{
-                'cityId': city,
-                'isDefault': defaultAddress,
-                for (final e in controls.entries)
-                  if (e.value.text.trim().isNotEmpty)
-                    e.key: e.value.text.trim(),
-              };
-              final id = widget.address?['id'];
-              final result = object(
-                await s.api.call(
-                  '/api/v2/me/addresses${id == null ? '' : '/$id'}',
-                  method: id == null ? 'POST' : 'PATCH',
-                  body: body,
-                ),
-              );
-              s.chooseAddress(result);
-              if (c.mounted) Navigator.pop(c);
-            }),
-            const SizedBox(height: 20),
-          ],
+                s.chooseAddress(result);
+                if (c.mounted) Navigator.pop(c);
+              }),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -742,7 +752,7 @@ class _NewSupportPageState extends State<NewSupportPage> {
             controller: subject,
             maxLength: 250,
             decoration: const InputDecoration(
-              labelText: 'Subject (8+ characters)',
+              label: RequiredLabel('Subject (8+ characters)'),
             ),
           ),
           const SizedBox(height: 16),
@@ -751,7 +761,7 @@ class _NewSupportPageState extends State<NewSupportPage> {
             maxLines: 6,
             maxLength: 3000,
             decoration: const InputDecoration(
-              labelText: 'Tell us how we can help (8+ characters)',
+              label: RequiredLabel('Tell us how we can help (8+ characters)'),
             ),
           ),
           const SizedBox(height: 20),
@@ -837,7 +847,8 @@ class _ConversationPageState extends State<ConversationPage> {
               controller: text,
               maxLines: 3,
               maxLength: 3000,
-              decoration: const InputDecoration(labelText: 'Your reply'),
+              decoration:
+                  const InputDecoration(label: RequiredLabel('Your reply')),
             ),
             const SizedBox(height: 12),
             ActionButton('Send reply', () async {
@@ -1008,12 +1019,14 @@ class _NewSitePageState extends State<NewSitePage> {
           TextField(
             controller: name,
             maxLength: 200,
-            decoration: const InputDecoration(labelText: 'Site name'),
+            decoration:
+                const InputDecoration(label: RequiredLabel('Site name')),
           ),
           const SizedBox(height: 15),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Delivery address'),
+            decoration:
+                const InputDecoration(label: RequiredLabel('Delivery address')),
             items: list
                 .map(
                   (a) => DropdownMenuItem(

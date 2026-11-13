@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'customer_api.dart';
 import 'customer_design.dart';
@@ -5,245 +6,464 @@ import 'customer_orders.dart';
 import 'customer_workspace.dart';
 
 class CartPage extends StatelessWidget {
-  const CartPage({super.key, this.embedded = false});
+  const CartPage({super.key, this.embedded = false, this.onBrowse});
   final bool embedded;
+  final VoidCallback? onBrowse;
+
   @override
   Widget build(BuildContext context) {
-    final s = CustomerScope.of(context);
+    final session = CustomerScope.of(context);
     final body = SignedIn(
       child: RemotePage<Data>(
         title: embedded ? null : 'Your cart',
-        load: s.api.cart,
-        builder: (cart, reload) {
-          final items = rows(cart);
-          final groups = <String, List<Data>>{};
-          for (final item in items) {
-            groups.putIfAbsent(field(item, 'supplierId'), () => []).add(item);
-          }
-          return ListView(
-            padding: const EdgeInsets.all(22),
+        load: session.api.cart,
+        builder: (cart, reload) => _CartContents(
+          cart: cart,
+          reload: reload,
+          embedded: embedded,
+          onBrowse: onBrowse,
+        ),
+      ),
+    );
+    return embedded ? body : Scaffold(body: SafeArea(child: body));
+  }
+}
+
+class _CartContents extends StatefulWidget {
+  const _CartContents({
+    required this.cart,
+    required this.reload,
+    required this.embedded,
+    required this.onBrowse,
+  });
+  final Data cart;
+  final VoidCallback reload;
+  final bool embedded;
+  final VoidCallback? onBrowse;
+
+  @override
+  State<_CartContents> createState() => _CartContentsState();
+}
+
+class _CartContentsState extends State<_CartContents> {
+  Data? updated;
+  String? pending;
+  String? error;
+
+  Data get cart => updated ?? widget.cart;
+
+  @override
+  void didUpdateWidget(covariant _CartContents oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if ((widget.cart['version'] as int) >= (cart['version'] as int)) {
+      updated = null;
+    }
+  }
+
+  Future<void> change(Data item, {String? quantity}) async {
+    if (pending != null) return;
+    final id = field(item, 'listingId');
+    final api = CustomerScope.of(context).api;
+    final version = cart['version'] as int;
+    setState(() {
+      pending = id;
+      error = null;
+    });
+    try {
+      final result = quantity == null
+          ? await api.removeLine(id, version)
+          : await api.setLine(id, quantity, version);
+      if (mounted) setState(() => updated = result);
+    } on CustomerProblem catch (problem) {
+      if (!mounted) return;
+      setState(() => error = problem.message);
+      if (problem.code == 'CART_VERSION_CONFLICT') widget.reload();
+    } catch (_) {
+      if (mounted) {
+        setState(() => error = 'Couldn’t update your cart. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => pending = null);
+    }
+  }
+
+  Future<void> edit(Data item) async {
+    final quantity = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _QuantitySheet(item),
+    );
+    if (mounted &&
+        quantity != null &&
+        scaled(quantity, 3) != scaled(field(item, 'quantity'), 3)) {
+      await change(item, quantity: quantity);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = CustomerScope.of(context);
+    final items = rows(cart);
+    final groups = <String, List<Data>>{};
+    for (final item in items) {
+      (groups[field(item, 'supplierId')] ??= []).add(item);
+    }
+    final subtotal = items.fold<BigInt>(
+        BigInt.zero, (sum, item) => sum + estimatedLinePaise(item));
+    final canCheckout =
+        pending == null && items.every((item) => item['available'] == true);
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              if (embedded)
+              if (widget.embedded)
+                Text('Your cart',
+                    style: Theme.of(context).textTheme.headlineLarge),
+              if (items.isNotEmpty) ...[
                 Text(
-                  'Your cart',
-                  style: Theme.of(context).textTheme.headlineLarge,
+                    '${items.length} ${items.length == 1 ? 'item' : 'items'} · '
+                    '${groups.length} ${groups.length == 1 ? 'supplier' : 'suppliers'}',
+                    style: const TextStyle(color: muted)),
+                const SizedBox(height: 16),
+                Panel(
+                  color: const Color(0xFFEAF2EE),
+                  padding: 14,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_shipping_outlined, color: green),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                            session.address == null
+                                ? 'Choose a delivery address at checkout'
+                                : 'Deliver to ${field(session.address!, 'label')}',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        )),
+                  ),
                 ),
               if (items.isEmpty)
                 EmptyState(
-                  'Room for your next build',
-                  'Choose materials and a supplier offer to get started.',
+                  'Your cart is empty',
+                  'Browse materials to get started.',
                   icon: Icons.shopping_bag_outlined,
                   action: OutlinedButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: widget.onBrowse ??
+                        () => Navigator.of(context).maybePop(),
                     child: const Text('Browse materials'),
                   ),
                 ),
-              ...groups.values.map(
-                (group) => Padding(
-                  padding: const EdgeInsets.only(top: 18),
+              for (final group in groups.values)
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
                   child: Panel(
+                    padding: 14,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(
-                              Icons.storefront_outlined,
-                              size: 19,
-                              color: green,
-                            ),
-                            const SizedBox(width: 8),
+                            const Icon(Icons.storefront_outlined,
+                                color: green, size: 19),
+                            const SizedBox(width: 9),
                             Expanded(
-                              child: Text(
-                                field(group.first, 'supplierName'),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
+                                child: Text(
+                                    field(group.first, 'supplierName',
+                                        'Supplier'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800))),
                           ],
                         ),
-                        const Divider(height: 30),
-                        ...group.map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: paper,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(
-                                        Icons.inventory_2_outlined,
-                                        color: muted,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            field(item, 'displayName'),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${price(item['unitPrice'])} / ${item['unitCode']}',
-                                            style: const TextStyle(
-                                              color: muted,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          if (item['available'] != true)
-                                            const Text(
-                                              'Currently unavailable',
-                                              style: TextStyle(
-                                                color: Colors.red,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: 'Remove item',
-                                      onPressed: () async {
-                                        try {
-                                          await s.api.removeLine(
-                                            field(item, 'listingId'),
-                                            cart['version'] as int,
-                                          );
-                                          reload();
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            notice(
-                                              context,
-                                              e is CustomerProblem
-                                                  ? e.message
-                                                  : 'Unable to update cart.',
-                                            );
-                                          }
-                                          reload();
-                                        }
-                                      },
-                                      icon: const Icon(Icons.close, size: 18),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '${item['quantity']} ${item['unitCode']}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    TextButton(
-                                      onPressed: () async {
-                                        final value = await ask(
-                                          context,
-                                          'Update quantity',
-                                          'Quantity in ${item['unitCode']}',
-                                          initial: field(item, 'quantity'),
-                                          numeric: true,
-                                        );
-                                        if (value == null) return;
-                                        try {
-                                          if (scaled(value, 3) <= BigInt.zero) {
-                                            throw const FormatException(
-                                              'Quantity must be positive.',
-                                            );
-                                          }
-                                          await s.api.setLine(
-                                            field(item, 'listingId'),
-                                            value,
-                                            cart['version'] as int,
-                                          );
-                                          reload();
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            notice(
-                                              context,
-                                              e is CustomerProblem
-                                                  ? e.message
-                                                  : e is FormatException
-                                                      ? e.message
-                                                      : 'Unable to update quantity.',
-                                            );
-                                          }
-                                          reload();
-                                        }
-                                      },
-                                      child: const Text('Edit quantity'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                        for (final item in group) ...[
+                          const Divider(height: 22, color: line),
+                          _CartItem(
+                            item: item,
+                            enabled: pending == null,
+                            saving: pending == field(item, 'listingId'),
+                            onQuantity: (quantity) =>
+                                change(item, quantity: quantity),
+                            onEdit: () => edit(item),
+                            onRemove: () => change(item),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-              ),
-              if (items.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Panel(
-                    child: Column(children: [
-                  AmountRow(
-                      'Estimated materials',
-                      items.fold<BigInt>(BigInt.zero,
-                          (sum, item) => sum + estimatedLinePaise(item))),
-                  const Text(
-                      'Before delivery, tax adjustments and quantity pricing. Your final checkout quote confirms the total.',
-                      style: TextStyle(fontSize: 11, color: muted))
-                ])),
-                const SizedBox(height: 22),
-                const Panel(
-                  child: Row(
-                    children: [
-                      Icon(Icons.local_shipping_outlined, color: green),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Final stock, tax and delivery charges are checked for your selected site at checkout.',
-                          style: TextStyle(fontSize: 12, color: muted),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ActionButton(
-                  'Review checkout',
-                  items.any((i) => i['available'] != true)
-                      ? null
-                      : () async => push(
-                            context,
-                            CheckoutPage(cartVersion: cart['version'] as int),
-                          ),
-                  icon: Icons.arrow_forward_rounded,
-                ),
-              ],
             ],
-          );
-        },
+          ),
+        ),
+        if (items.isNotEmpty)
+          Material(
+            color: Colors.white,
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AmountRow('Materials subtotal', subtotal, total: true),
+                  const Text('Delivery and taxes are calculated at checkout.',
+                      style: TextStyle(color: muted, fontSize: 11)),
+                  const SizedBox(height: 10),
+                  ActionButton(
+                    'Review checkout',
+                    canCheckout
+                        ? () async {
+                            await Navigator.of(context)
+                                .push(MaterialPageRoute<void>(
+                              builder: (_) => CheckoutPage(
+                                  cartVersion: cart['version'] as int),
+                            ));
+                            if (mounted) widget.reload();
+                          }
+                        : null,
+                    icon: Icons.arrow_forward_rounded,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _CartItem extends StatelessWidget {
+  const _CartItem(
+      {required this.item,
+      required this.enabled,
+      required this.saving,
+      required this.onQuantity,
+      required this.onEdit,
+      required this.onRemove});
+  final Data item;
+  final bool enabled, saving;
+  final ValueChanged<String> onQuantity;
+  final VoidCallback onEdit, onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final quantity = field(item, 'quantity');
+    final unit = field(item, 'unitCode').toLowerCase();
+    final available = item['available'] == true;
+    String? next(int direction) {
+      final minimum = item['minOrderQty'];
+      final step = item['stepQty'];
+      if (minimum == null || step == null) return null;
+      final value = quantityStep(quantity, '$minimum', '$step',
+          item['maxOrderQty']?.toString(), direction);
+      return scaled(value, 3) == scaled(quantity, 3) ? null : value;
+    }
+
+    final less = next(-1), more = next(1);
+    final uri =
+        CustomerScope.of(context).api.imageUri(item['imageUrl']?.toString());
+    const fallback = Icon(Icons.inventory_2_outlined, color: muted);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                  color: paper, borderRadius: BorderRadius.circular(12)),
+              child: uri == null
+                  ? fallback
+                  : Image.network(
+                      uri.toString(),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => fallback,
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(field(item, 'displayName'),
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text('${price(item['unitPrice'])} / $unit',
+                    style: const TextStyle(color: muted, fontSize: 12)),
+                if (!available)
+                  Text('Currently unavailable',
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+              ],
+            )),
+            IconButton(
+              tooltip: 'Remove item',
+              onPressed: enabled ? onRemove : null,
+              icon: const Icon(Icons.delete_outline_rounded, size: 20),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 12,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                  color: paper, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Decrease quantity',
+                    onPressed: enabled && available && less != null
+                        ? () => onQuantity(less)
+                        : null,
+                    icon: const Icon(Icons.remove_rounded, size: 18),
+                  ),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: enabled && available ? onEdit : null,
+                      child: Text('$quantity $unit',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Increase quantity',
+                    onPressed: enabled && available && more != null
+                        ? () => onQuantity(more)
+                        : null,
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                  ),
+                ],
+              ),
+            ),
+            if (saving)
+              const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              Text(money(estimatedLinePaise(item)),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _QuantitySheet extends StatefulWidget {
+  const _QuantitySheet(this.item);
+  final Data item;
+
+  @override
+  State<_QuantitySheet> createState() => _QuantitySheetState();
+}
+
+class _QuantitySheetState extends State<_QuantitySheet> {
+  final form = GlobalKey<FormState>();
+  late final controller =
+      TextEditingController(text: field(widget.item, 'quantity'));
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final minimum = item['minOrderQty']?.toString();
+    final step = item['stepQty']?.toString();
+    final maximum = item['maxOrderQty']?.toString();
+    final unit = field(item, 'unitCode').toLowerCase();
+    void submit() {
+      if (!form.currentState!.validate()) return;
+      Navigator.pop(context, decimal(scaled(controller.text.trim(), 3), 3));
+    }
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+            22, 0, 22, 20 + MediaQuery.viewInsetsOf(context).bottom),
+        child: Form(
+          key: form,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Update quantity',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 6),
+              Text(field(item, 'displayName'),
+                  style: const TextStyle(color: muted)),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                    label: const RequiredLabel('Quantity'),
+                    suffixText: unit,
+                    errorMaxLines: 3),
+                onFieldSubmitted: (_) => submit(),
+                validator: (value) {
+                  try {
+                    final amount = scaled(value?.trim() ?? '', 3);
+                    if (amount <= BigInt.zero) {
+                      return 'Enter a quantity greater than zero.';
+                    }
+                    if (minimum != null && amount < scaled(minimum, 3)) {
+                      return 'Minimum order is $minimum $unit.';
+                    }
+                    if (maximum != null && amount > scaled(maximum, 3)) {
+                      return 'Maximum order is $maximum $unit.';
+                    }
+                    if (minimum != null &&
+                        step != null &&
+                        (amount - scaled(minimum, 3)) % scaled(step, 3) !=
+                            BigInt.zero) {
+                      return 'Start at $minimum and add $step $unit at a time.';
+                    }
+                    return null;
+                  } on FormatException catch (problem) {
+                    return problem.message;
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                  onPressed: submit, child: const Text('Save quantity')),
+            ],
+          ),
+        ),
       ),
     );
-    return embedded ? body : Scaffold(body: SafeArea(child: body));
   }
 }
 
@@ -267,7 +487,7 @@ Future<String?> ask(
         keyboardType: numeric
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
-        decoration: InputDecoration(labelText: hint),
+        decoration: InputDecoration(label: RequiredLabel(hint)),
       ),
       actions: [
         TextButton(
@@ -324,7 +544,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         padding: const EdgeInsets.all(22),
         children: [
           Text(
-            'One step closer\nto your next build.',
+            'Review your order',
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 10),
@@ -332,7 +552,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             'Confirm your delivery site and review your order.',
             style: TextStyle(color: muted),
           ),
-          const Section('01  Delivery address'),
+          const Section('Delivery address'),
           if (addresses.isEmpty)
             const EmptyState(
               'Add your delivery address',
@@ -425,7 +645,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ],
           if (widget.rfqId == null) ...[
-            const Section('02  Promotion'),
+            const Section('Promotion'),
             TextField(
               controller: promo,
               onChanged: (_) => setState(() {
@@ -445,13 +665,32 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ? null
                   : () async {
                       final requestedKey = previewKey;
-                      final result = await s.api.preview(
-                        addressId!,
-                        widget.cartVersion,
-                        requestedKey,
-                        site: siteId,
-                        promotion: promo.text.trim(),
-                      );
+                      final Data result;
+                      try {
+                        result = await s.api.preview(
+                          addressId!,
+                          widget.cartVersion,
+                          requestedKey,
+                          site: siteId,
+                          promotion: promo.text.trim(),
+                        );
+                      } on CustomerProblem catch (problem) {
+                        if (!context.mounted || requestedKey != previewKey) {
+                          return;
+                        }
+                        if (!kReleaseMode &&
+                            s.api.origin.origin ==
+                                'https://buildto-v21-staging.onrender.com' &&
+                            problem.code ==
+                                'COMMISSION_POLICY_NOT_CONFIGURED') {
+                          await Navigator.of(context)
+                              .push(MaterialPageRoute<void>(
+                            builder: (_) => const _DemoOrderPage(),
+                          ));
+                          return;
+                        }
+                        rethrow;
+                      }
                       if (mounted && requestedKey == previewKey) {
                         setState(() {
                           if (quote?['id'] != result['id']) {
@@ -463,7 +702,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     },
             ),
             if (quote != null) ...[
-              const Section('03  Order summary'),
+              const Section('Order summary'),
               Panel(child: totals(quote!)),
               const SizedBox(height: 10),
               Text(
@@ -497,7 +736,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ],
           ] else ...[
-            const Section('02  Accepted supplier quotation'),
+            const Section('Accepted supplier quotation'),
             const Panel(
               child: Text(
                 'The accepted quotation fixes the material and freight amounts. Delivery eligibility is rechecked for this address.',
@@ -535,4 +774,56 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
+}
+
+class _DemoOrderPage extends StatelessWidget {
+  const _DemoOrderPage();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Order preview')),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Panel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const CircleAvatar(
+                        radius: 38,
+                        backgroundColor: Color(0xFFEAF2EE),
+                        child:
+                            Icon(Icons.check_rounded, color: green, size: 40),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('STAGING PREVIEW',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: green, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 8),
+                      Text('Order placed',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'This is a demo confirmation. Your cart is still saved. No real order or payment was created.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: muted),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Back'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }

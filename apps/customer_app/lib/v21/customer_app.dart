@@ -140,7 +140,7 @@ class _CustomerShellState extends State<CustomerShell> {
             child: [
               const CustomerHome(),
               const CustomerHome(categoriesOnly: true),
-              const CartPage(embedded: true),
+              CartPage(embedded: true, onBrowse: () => setState(() => tab = 0)),
               const OrdersPage(),
               const ProfilePage(),
             ][tab],

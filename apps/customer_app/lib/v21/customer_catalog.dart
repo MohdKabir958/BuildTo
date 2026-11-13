@@ -51,75 +51,77 @@ class _CustomerHomeState extends State<CustomerHome> {
         constraints: const BoxConstraints(maxWidth: 1040),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 16, 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 43,
-                    height: 43,
-                    decoration: BoxDecoration(
-                      color: ink,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.apartment_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'splyzo',
-                    style: TextStyle(
-                      fontFamily: 'packages/kraveo_ui/Bricolage',
-                      fontSize: 29,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.3,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Notifications',
-                    onPressed: () => push(context, const NotificationsPage()),
-                    icon: const Icon(Icons.notifications_none_rounded),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => push(context, const AddressesPage()),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 19,
-                        color: accent,
+            if (!widget.categoriesOnly)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 14, 16, 16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 43,
+                      height: 43,
+                      decoration: BoxDecoration(
+                        color: ink,
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      const SizedBox(width: 7),
-                      Expanded(
-                        child: Text(
-                          s.address == null
-                              ? 'Choose your delivery site'
-                              : '${field(s.address!, 'label')} · ${field(s.address!, 'locality')}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                      child: const Icon(
+                        Icons.apartment_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'splyzo',
+                      style: TextStyle(
+                        fontFamily: 'packages/kraveo_ui/Bricolage',
+                        fontSize: 29,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.3,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Notifications',
+                      onPressed: () => push(context, const NotificationsPage()),
+                      icon: const Icon(Icons.notifications_none_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            if (!widget.categoriesOnly)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => push(context, const AddressesPage()),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 19,
+                          color: accent,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            s.address == null
+                                ? 'Choose your delivery site'
+                                : '${field(s.address!, 'label')} · ${field(s.address!, 'locality')}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(Icons.keyboard_arrow_down, size: 18),
-                    ],
+                        const Icon(Icons.keyboard_arrow_down, size: 18),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 8),
               child: TextField(
@@ -264,16 +266,18 @@ class _CustomerHomeState extends State<CustomerHome> {
                           ],
                         ),
                       ],
-                      if (!widget.categoriesOnly &&
-                          search.isEmpty &&
-                          category == null) ...[
-                        const Section('Your material partners'),
-                        const SupplierStrip(),
-                      ],
                       Section(
                         widget.categoriesOnly
-                            ? 'Find your materials'
+                            ? 'All categories'
                             : 'Shop by category',
+                        action: widget.categoriesOnly ? null : 'View all',
+                        onTap: () => push(
+                            context,
+                            Scaffold(
+                              appBar: AppBar(title: const Text('Categories')),
+                              body: const SafeArea(
+                                  child: CustomerHome(categoriesOnly: true)),
+                            )),
                       ),
                       if (categories.isEmpty)
                         const Text(
@@ -283,6 +287,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                       CategoryGrid(
                         categories: categories,
                         selected: category,
+                        horizontal: !widget.categoriesOnly,
                         onChanged: (value) => setState(() => category = value),
                       ),
                       Section(
@@ -297,6 +302,12 @@ class _CustomerHomeState extends State<CustomerHome> {
                         empty:
                             'No materials found. Try another category or search.',
                       ),
+                      if (!widget.categoriesOnly &&
+                          search.isEmpty &&
+                          category == null) ...[
+                        const Section('Your material partners'),
+                        const SupplierStrip(),
+                      ],
                       if (page['nextCursor'] != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
@@ -381,8 +392,10 @@ class CategoryGrid extends StatelessWidget {
     required this.categories,
     required this.selected,
     required this.onChanged,
+    this.horizontal = false,
   });
 
+  final bool horizontal;
   final List<Data> categories;
   final String? selected;
   final ValueChanged<String?> onChanged;
@@ -428,93 +441,107 @@ class CategoryGrid extends StatelessWidget {
     for (final category in categories) {
       (departments[categoryDepartment(category)] ??= []).add(category);
     }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-        final columns = (constraints.maxWidth / (115 * scale)).floor().clamp(
-              2,
-              5,
-            );
-        const gap = 10.0;
-        final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final entry in departments.entries)
-              SizedBox(
-                width: width,
-                child: Builder(
-                  builder: (context) {
-                    final active = entry.value.isEmpty
-                        ? selected == null
-                        : entry.value.any(
-                            (category) => category['id'] == selected,
-                          );
-                    return Semantics(
-                      button: true,
-                      selected: active,
-                      child: Material(
-                        color: active ? const Color(0xFFFFEEE2) : Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: active ? accent : line),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () => select(context, entry.value),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 13,
-                            ),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: 44 + 30 * scale,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      color: active
-                                          ? const Color(0xFFFFDBC4)
-                                          : const Color(0xFFEFF3F0),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(
-                                      entry.value.isEmpty
-                                          ? Icons.grid_view_rounded
-                                          : materialIcon(entry.key),
-                                      size: 19,
-                                      color: ink,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    entry.key,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      height: 1.25,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+    Widget tile(MapEntry<String, List<Data>> entry, double width) {
+      final active = entry.value.isEmpty
+          ? selected == null
+          : entry.value.any((category) => category['id'] == selected);
+      final asset = switch (entry.key.toLowerCase()) {
+        'cement' => 'cement',
+        'steel & rebar' => 'steel',
+        'bricks & blocks' => 'bricks',
+        'ready-mix concrete' => 'concrete',
+        'sand & aggregates' => 'sand',
+        'plumbing' => 'pipes',
+        'paint & finishes' || 'waterproofing' => 'paint',
+        'electrical & wiring' => 'electrical',
+        'tools & hardware' => 'tools',
+        _ => 'all',
+      };
+      return SizedBox(
+        width: width,
+        child: Semantics(
+          button: true,
+          selected: active,
+          child: Material(
+            color: active ? const Color(0xFFFFF3EA) : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: active ? accent : line),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => select(context, entry.value),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 11),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'assets/images/categories/$asset.webp',
+                        width: horizontal ? 76 : 92,
+                        height: horizontal ? 60 : 76,
+                        fit: BoxFit.cover,
+                        excludeFromSemantics: true,
                       ),
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 7),
+                    Text(entry.key,
+                        textAlign: TextAlign.center,
+                        maxLines: horizontal ? 2 : null,
+                        overflow: horizontal ? TextOverflow.ellipsis : null,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800)),
+                  ],
                 ),
               ),
-          ],
-        );
-      },
-    );
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (horizontal) {
+      final scale = MediaQuery.textScalerOf(context).scale(12) / 12;
+      return SizedBox(
+        height: 90 + 34 * scale,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: departments.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 9),
+          itemBuilder: (_, index) =>
+              tile(departments.entries.elementAt(index), 90 + 15 * scale),
+        ),
+      );
+    }
+    return LayoutBuilder(builder: (context, constraints) {
+      const gap = 10.0;
+      final width = (constraints.maxWidth - gap) / 2;
+      final entries = departments.entries.toList();
+      return Column(
+        children: [
+          for (var i = 0; i < entries.length; i += 2)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    tile(entries[i], width),
+                    if (i + 1 < entries.length) ...[
+                      const SizedBox(width: gap),
+                      tile(entries[i + 1], width),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+    });
   }
 }
 
