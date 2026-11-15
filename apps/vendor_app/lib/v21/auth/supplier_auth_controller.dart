@@ -185,22 +185,26 @@ class SupplierAuthController extends ChangeNotifier {
 
   /// Revalidates /me and supplier-specific /access, including after resume.
   /// Previously approved permissions are not used while refresh is pending.
-  Future<void> refresh() async {
+  Future<void> refresh){bool silent = false}) async {
     if (_disposed || _locallyBlocked || _fingerprint == null) return;
     final fingerprint = _fingerprint;
     final generation = ++_generation;
     final previouslySelected = _selectedId;
+    final preserveAuthorized = silent && _stage == SupplierAccessStage.authorized && _activeSupplier != null;
+    if (!preserveAuthorized) {
     _activeSupplier = null;
     _account = null;
     _stage = SupplierAccessStage.checking;
     _notice = null;
     _publish();
+    }
     try {
       final result = await _api.get('/api/v2/me');
       final account = SupplierV21Identity.fromJson(result.requireObject());
       if (!_current(generation, fingerprint)) return;
       _account = account;
       if (account.suppliers.isEmpty) {
+        _activeSupplier = null;
         _selectedId = null;
         _stage = SupplierAccessStage.noSupplier;
         _publish();
@@ -214,22 +218,25 @@ class SupplierAuthController extends ChangeNotifier {
           account.suppliers.length == 1 ? account.suppliers.first : null;
       final target = desired ?? single;
       if (target == null) {
-        _selectedId = null;
+      _activeSupplier = null;
+       _selectedId = null;
         _stage = SupplierAccessStage.chooseSupplier;
         _publish();
         return;
       }
       await _verifySupplier(target, generation, fingerprint);
     } on SupplierV21Exception catch (error) {
+      if (preserveAuthorized && error.problem != SupplierV21Problem.authentication && error.problem != SupplierV21Problem.forbidden && error.problem != SupplierV21Problem.notFound && error.problem != SupplierV21Problem.configuration) return;
       if (_current(generation, fingerprint)) _fail(error);
     } on FormatException {
       if (_current(generation, fingerprint)) {
+        _activeSupplier = null;
         _stage = SupplierAccessStage.accessDenied;
         _notice = 'The backend returned an invalid supplier access record.';
         _publish();
       }
     } catch (_) {
-      if (_current(generation, fingerprint)) {
+      if (_current(generation, fingerprint) && !preserveAuthorized) {
         _stage = SupplierAccessStage.unavailable;
         _notice = 'Could not verify your supplier account. Please retry.';
         _publish();

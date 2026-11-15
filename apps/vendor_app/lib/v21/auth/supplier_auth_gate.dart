@@ -107,7 +107,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
           controller.stage != SupplierAccessStage.starting &&
           controller.stage != SupplierAccessStage.misconfigured) {
         // Re-evaluate membership and suspension whenever the user returns.
-        unawaited(controller.refresh());
+        unawaited(controller.refresh(silent: true));
       }
     }
   }
