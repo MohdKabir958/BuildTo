@@ -288,12 +288,12 @@ focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(999), bord
                           ],
                         ),
                       ],
-                      Section(
+                      _SplyzoSectionHeader(
                         widget.categoriesOnly
                             ? 'All categories'
                             : 'Shop by category',
-                        action: widget.categoriesOnly ? null : 'View all',
-                        onTap: () => push(
+                        actionLabel: 'See All →',
+                        onAction: widget.categoriesOnly ? null : () => push(
                             context,
                             Scaffold(
                               appBar: AppBar(title: const Text('Categories')),
@@ -312,12 +312,12 @@ focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(999), bord
                         horizontal: !widget.categoriesOnly,
                         onChanged: (value) => setState(() => category = value),
                       ),
-                      Section(
+                      _SplyzoSectionHeader(
                         search.isNotEmpty
                             ? 'Results for “$search”'
                             : 'Explore materials',
-                        action: category != null ? 'Clear filter' : null,
-                        onTap: () => setState(() => category = null),
+                        actionLabel: category != null ? 'Clear filter' : 'See All →',
+                        onAction: category != null ? () => setState(() => category = null) : null,
                       ),
                       ProductGrid(
                         products: rows(page),
@@ -699,7 +699,7 @@ class ProductCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 const SizedBox(height: 10),
-                if (product['fromPrice'] != null)
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [Expanded(child: product['fromPrice'] != null ?
                   Text.rich(
                     TextSpan(
                       text: price(product['fromPrice']),
@@ -720,11 +720,11 @@ class ProductCard extends StatelessWidget {
                       ],
                     ),
                   )
-                else
+                :
                   const Text(
                     'Price unavailable',
                     style: TextStyle(color: muted, fontSize: 11),
-                  ),
+                  ),), const SizedBox(width: 6), InkWell(onTap: () => push(context, ProductPage(product)), borderRadius: BorderRadius.circular(999), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(999)), child: const Text('Add +', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)))),]),
                 const SizedBox(height: 8),
                 const Row(
                   children: [
