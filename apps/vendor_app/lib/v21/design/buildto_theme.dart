@@ -11,10 +11,7 @@ abstract final class BuildToPalette {
   static const orange = Color(0xFFF15A24);
   static const canvas = Color(0xFFF5F8FC);
   static const white = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF0C2240);
-  static const muted = Color(0xFF4C5E78);
-  static const outline = Color(0xFFDCE5F0);
-  static const success = Color(0xFF087945);
+  static const ink = Color(0xFF0F172A); static const muted = Color(0xFF64748B); static const outline = Color(0xFFE2E8F0); static const success = Color(0xFF16A34A);
   static const successTint = Color(0xFFE7F7EE);
   static const warning = Color(0xFF9A5800);
   static const warningTint = Color(0xFFFFF3D9);
@@ -30,7 +27,7 @@ abstract final class BuildToSpace {
   static const lg = 20.0;
   static const xl = 24.0;
   static const xxl = 32.0;
-  static const cardRadius = 18.0;
+  static const cardRadius = 16.0;
   static const fieldRadius = 14.0;
   static const maxContentWidth = 720.0;
   static const minTapTarget = 48.0;
@@ -50,7 +47,7 @@ abstract final class BuildToTheme {
       error: BuildToPalette.danger,
     );
     final base = ThemeData(
-        useMaterial3: true, colorScheme: scheme, fontFamily: 'Roboto');
+        useMaterial3: true, colorScheme: scheme, fontFamily: 'packages/kraveo_ui/Jakarta');
     return base.copyWith(
       scaffoldBackgroundColor: BuildToPalette.canvas,
       visualDensity: VisualDensity.standard,
@@ -63,39 +60,39 @@ abstract final class BuildToTheme {
       textTheme: base.textTheme
           .copyWith(
             headlineMedium: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: 'packages/kraveo_ui/Jakarta',
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.7,
                 color: BuildToPalette.navyDeep),
             headlineSmall: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: 'packages/kraveo_ui/Jakarta',
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.4,
                 color: BuildToPalette.navyDeep),
             titleLarge: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: 'packages/kraveo_ui/Jakarta',
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: BuildToPalette.navyDeep),
             titleMedium: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: 'packages/kraveo_ui/Jakarta',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: BuildToPalette.navyDeep),
             bodyMedium: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: 'packages/kraveo_ui/Jakarta',
                 fontSize: 14,
                 height: 1.4,
                 color: BuildToPalette.ink),
             bodySmall: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: 'packages/kraveo_ui/Jakarta',
                 fontSize: 12,
                 height: 1.4,
                 color: BuildToPalette.muted),
           )
-          .apply(fontFamily: 'Roboto'),
+          .apply(fontFamily: 'packages/kraveo_ui/Jakarta'),
       cardTheme: CardThemeData(
         color: BuildToPalette.white,
         elevation: 0,
@@ -114,7 +111,7 @@ abstract final class BuildToTheme {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
           textStyle: const TextStyle(
-              fontFamily: 'Roboto', fontSize: 14, fontWeight: FontWeight.w700),
+              fontFamily: 'packages/kraveo_ui/Jakarta', fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -126,12 +123,12 @@ abstract final class BuildToTheme {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(BuildToSpace.fieldRadius)),
           textStyle: const TextStyle(
-              fontFamily: 'Roboto', fontSize: 14, fontWeight: FontWeight.w700),
+              fontFamily: 'packages/kraveo_ui/Jakarta', fontSize: 14, fontWeight: FontWeight.w700),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: BuildToPalette.white,
+        fillColor: BuildToPalette.canvas,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         enabledBorder: OutlineInputBorder(
@@ -147,7 +144,7 @@ abstract final class BuildToTheme {
         backgroundColor: BuildToPalette.white,
         indicatorColor: BuildToPalette.sky,
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
-              fontFamily: 'Roboto',
+              fontFamily: 'packages/kraveo_ui/Jakarta',
               color: states.contains(WidgetState.selected)
                   ? BuildToPalette.navy
                   : BuildToPalette.muted,
@@ -165,6 +162,7 @@ abstract final class BuildToTheme {
       ),
       dividerTheme:
           const DividerThemeData(color: BuildToPalette.outline, space: 1),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: BuildToPalette.orange, foregroundColor: BuildToPalette.white, minimumSize: const Size(0, BuildToSpace.minTapTarget), shape: const StadiumBorder(), textStyle: const TextStyle(fontFamily: 'packages/kraveo_ui/Jakarta', fontSize: 14, fontWeight: FontWeight.w700))),
     );
   }
 }

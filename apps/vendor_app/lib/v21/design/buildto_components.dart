@@ -112,9 +112,9 @@ class BuildToStatusChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
-              color: background, borderRadius: BorderRadius.circular(50)),
+              color: foreground.withValues(alpha: .12), borderRadius: BorderRadius.circular(50)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, color: foreground, size: 15),
+            Container(width: 6, height: 6, decoration: BoxDecoration(color: foreground, shape: BoxShape.circle)),
             const SizedBox(width: 5),
             Flexible(
                 child: Text(label,
@@ -237,4 +237,17 @@ class _BuildToSkeletonState extends State<BuildToSkeleton> {
           ),
         )),
       );
+}
+class BuildToSectionHeader extends StatelessWidget {
+  const BuildToSectionHeader({super.key, required this.title, this.actionLabel, this.onAction});
+  final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  @override
+  Widget build(BuildContext context) => Row(children: [
+    Container(width: 4, height: 18, decoration: BoxDecoration(color: const Color(0xFFF15A24), borderRadius: BorderRadius.circular(2))),
+    const SizedBox(width: 10),
+    Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+    if (actionLabel != null && onAction != null) TextButton(onPressed: onAction, child: Text(actionLabel!, style: const TextStyle(color: Color(0xFFF15A24), fontWeight: FontWeight.w700))),
+  ]);
 }

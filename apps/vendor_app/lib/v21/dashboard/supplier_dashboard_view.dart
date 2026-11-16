@@ -130,7 +130,7 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
         key: const Key('supplier-dashboard-error'),
         padding: const EdgeInsets.fromLTRB(20, 30, 20, 36),
         children: [
-          const BuildToSectionHeading(
+          const BuildToSectionHeader(
             title: 'Supplier overview',
             subtitle:
                 'Protected business figures require current verification.',
@@ -205,7 +205,7 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
             onRefresh: () => unawaited(refresh()),
           ),
           const SizedBox(height: 24),
-          const BuildToSectionHeading(
+          const BuildToSectionHeader(
             title: 'Business at a glance',
             subtitle: 'Your current orders, catalog and stock.',
           ),
@@ -227,14 +227,14 @@ class _SupplierDashboardViewState extends State<SupplierDashboardView> {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 26),
-          const BuildToSectionHeading(
+          const BuildToSectionHeader(
             title: 'Quick access',
             subtitle: 'Open your construction-material workspaces.',
           ),
           const SizedBox(height: 12),
           _QuickActions(onNavigate: widget.onNavigate),
           const SizedBox(height: 26),
-          const BuildToSectionHeading(
+          const BuildToSectionHeader(
             title: 'Recent supplier orders',
             subtitle: 'Five most recently returned orders.',
           ),
@@ -302,14 +302,14 @@ class _DashboardHero extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
-              BuildToPalette.navyDeep,
-              BuildToPalette.navy,
-              Color(0xFF07528B),
+              Color(0xFF061B3B),
+              Color(0xFF0B2D67),
+              Color(0xFF13428A),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Row(children: [

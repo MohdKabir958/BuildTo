@@ -25,6 +25,21 @@ IconData materialIcon(String name) {
                       ? Icons.format_paint_outlined
                       : Icons.category_outlined;
 }
+class _SplyzoSectionHeader extends StatelessWidget {
+  const _SplyzoSectionHeader(this.title, {this.actionLabel = 'See All →', this.onAction});
+final String title;
+final String actionLabel;
+final VoidCallback? onAction;
+@override
+Widget build(BuildContext context) {
+return Row(children: [
+Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(999))),
+const SizedBox(width: 8),
+Expanded(child: Text(title, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w800))),
+if (onAction != null) TextButton(onPressed: onAction, style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF7A00), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap), child: Text(actionLabel, style: const TextStyle(color: Color(0xFFFF7A00), fontSize: 13, fontWeight: FontWeight.w700))),
+]);
+}
+}
 
 class CustomerHome extends StatefulWidget {
   const CustomerHome({super.key, this.categoriesOnly = false});
@@ -129,6 +144,13 @@ class _CustomerHomeState extends State<CustomerHome> {
                 textInputAction: TextInputAction.search,
                 onSubmitted: (v) => setState(() => search = v.trim()),
                 decoration: InputDecoration(
+filled: true,
+fillColor: Colors.white,
+contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+border: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: const BorderSide(color: Color(0xFFFF7A00), width: 1.5)),
+                  
                   hintText: 'Search materials',
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: IconButton(
@@ -163,9 +185,9 @@ class _CustomerHomeState extends State<CustomerHome> {
                           search.isEmpty &&
                           category == null) ...[
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(25),
+                          borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            color: ink,
+                            decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF061B3B), Color(0xFF0B2D67), Color(0xFF13428A)])),
                             child: Stack(
                               children: [
                                 Positioned(
@@ -201,7 +223,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                                       const Text(
                                         'BUILT FOR YOUR NEXT BIG THING',
                                         style: TextStyle(
-                                          color: Color(0xFFFFBB91),
+                                          color: Color(0xFFFFB020),
                                           fontSize: 9,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 1.2,
@@ -209,7 +231,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                                       ),
                                       const SizedBox(height: 13),
                                       const Text(
-                                        'Good materials.\nGreat beginnings.',
+                                        'Get Building Materials from Verified Suppliers Near You',
                                         style: TextStyle(
                                           fontFamily:
                                               'packages/kraveo_ui/Bricolage',
@@ -266,12 +288,12 @@ class _CustomerHomeState extends State<CustomerHome> {
                           ],
                         ),
                       ],
-                      Section(
+                      _SplyzoSectionHeader(
                         widget.categoriesOnly
                             ? 'All categories'
                             : 'Shop by category',
-                        action: widget.categoriesOnly ? null : 'View all',
-                        onTap: () => push(
+                        actionLabel: 'See All →',
+                        onAction: widget.categoriesOnly ? null : () => push(
                             context,
                             Scaffold(
                               appBar: AppBar(title: const Text('Categories')),
@@ -290,12 +312,12 @@ class _CustomerHomeState extends State<CustomerHome> {
                         horizontal: !widget.categoriesOnly,
                         onChanged: (value) => setState(() => category = value),
                       ),
-                      Section(
+                      _SplyzoSectionHeader(
                         search.isNotEmpty
                             ? 'Results for “$search”'
                             : 'Explore materials',
-                        action: category != null ? 'Clear filter' : null,
-                        onTap: () => setState(() => category = null),
+                        actionLabel: category != null ? 'Clear filter' : 'See All →',
+                        onAction: category != null ? () => setState(() => category = null) : null,
                       ),
                       ProductGrid(
                         products: rows(page),
@@ -305,7 +327,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                       if (!widget.categoriesOnly &&
                           search.isEmpty &&
                           category == null) ...[
-                        const Section('Your material partners'),
+                        const _SplyzoSectionHeader('Your material partners'),
                         const SupplierStrip(),
                       ],
                       if (page['nextCursor'] != null)
@@ -639,8 +661,8 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) => Material(
         color: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: line),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -677,7 +699,7 @@ class ProductCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 const SizedBox(height: 10),
-                if (product['fromPrice'] != null)
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [Expanded(child: product['fromPrice'] != null ?
                   Text.rich(
                     TextSpan(
                       text: price(product['fromPrice']),
@@ -698,11 +720,11 @@ class ProductCard extends StatelessWidget {
                       ],
                     ),
                   )
-                else
+                :
                   const Text(
                     'Price unavailable',
                     style: TextStyle(color: muted, fontSize: 11),
-                  ),
+                  ),), const SizedBox(width: 6), InkWell(onTap: () => push(context, ProductPage(product)), borderRadius: BorderRadius.circular(999), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFFFF7A00), borderRadius: BorderRadius.circular(999)), child: const Text('Add +', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)))),]),
                 const SizedBox(height: 8),
                 const Row(
                   children: [
@@ -1094,7 +1116,7 @@ class _SupplierStripState extends State<SupplierStrip> {
                     color: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
-                      side: const BorderSide(color: line),
+                      side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
                     ),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),

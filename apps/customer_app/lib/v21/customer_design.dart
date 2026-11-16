@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'customer_api.dart';
 import 'customer_session.dart';
 
-const ink = Color(0xFF152A3A),
-    accent = Color(0xFFF17436),
-    paper = Color(0xFFF7F7F2),
-    muted = Color(0xFF64747C),
-    line = Color(0xFFE4E9E5),
-    green = Color(0xFF23745D);
+const ink = Color(0xFF0F172A);
+const navy = Color(0xFF0B2D67);
+const accent = Color(0xFFF15A24);
+const paper = Color(0xFFF5F8FC);
+const muted = Color(0xFF64748B);
+const line = Color(0xFFE2E8F0);
+const green = Color(0xFF16A34A);
 ThemeData customerTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: ink,
@@ -52,10 +53,10 @@ ThemeData customerTheme() {
       foregroundColor: ink,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
-    ),
+    ), cardTheme: CardThemeData(color: Colors.white, elevation: 0, surfaceTintColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: line))),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: const Color(0xFFF4F7FB),
       contentPadding: const EdgeInsets.all(17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -68,10 +69,7 @@ ThemeData customerTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: ink,
-        foregroundColor: Colors.white,
-        minimumSize: const Size(48, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+       backgroundColor: accent, foregroundColor: Colors.white, minimumSize: const Size(48, 48), shape: const StadiumBorder(),
         textStyle: const TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 14,
