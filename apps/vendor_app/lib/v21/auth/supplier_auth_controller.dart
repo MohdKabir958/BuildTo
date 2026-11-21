@@ -183,6 +183,27 @@ class SupplierAuthController extends ChangeNotifier {
       RegExp(r'^user_[A-Za-z0-9]{6,150}$').hasMatch(identity.userId ?? '') &&
       RegExp(r'^sess_[A-Za-z0-9]{6,150}$').hasMatch(identity.sessionId ?? '');
 
+  /// Clerk signup may finish before its signed webhook creates the matching
+  /// local profile. Retry only that explicit synchronization condition; never
+  /// pretend a failed authorization grants supplier access.
+  Future<SupplierV21Response> _loadAccountAfterClerkSync(
+      int generation, String? fingerprint) async {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await _api.get('/api/v2/me');
+      } on SupplierV21Exception catch (error) {
+        if (error.code != 'PROFILE_NOT_PROVISIONED' ||
+            attempt == 2 ||
+            !_current(generation, fingerprint)) {
+          rethrow;
+        }
+        await Future<void>.delayed(
+            Duration(milliseconds: 400 * (attempt + 1)));
+      }
+    }
+    throw StateError('Unreachable profile synchronization state');
+  }
+
   /// Recheck supplier permissions without tearing down a form when the
   /// Android lifecycle briefly resumes (notifications, file picker, etc).
   /// On a changed Clerk identity or a rejected membership, fail closed.
@@ -203,7 +224,7 @@ class SupplierAuthController extends ChangeNotifier {
       _publish();
     }
     try {
-      final result = await _api.get('/api/v2/me');
+      final result = await _loadAccountAfterClerkSync(generation, fingerprint);
       final account = SupplierV21Identity.fromJson(result.requireObject());
       if (!_current(generation, fingerprint)) return;
       _account = account;
@@ -346,6 +367,13 @@ class SupplierAuthController extends ChangeNotifier {
       SupplierV21Problem.configuration => SupplierAccessStage.misconfigured,
       _ => SupplierAccessStage.unavailable,
     };
+    if (error.code == 'PROFILE_NOT_PROVISIONED') {
+      _stage = SupplierAccessStage.unavailable;
+      _notice = 'Your email account is ready, but Splyzo is still '
+          'synchronizing your profile. Please retry in a moment.';
+      _publish();
+      return;
+    }
     _notice = switch (_stage) {
       SupplierAccessStage.sessionExpired =>
         'Your session expired. Sign in again.',
