@@ -266,95 +266,17 @@ class SupplierRegistrationDraft {
         : null;
   }
 
-  /// Accept a familiar Indian mobile number but send canonical E.164.
+  /// Accept a 10-digit Indian mobile number and send canonical E.164.
   static String normalizePhone(String? value) {
     final phone = (value ?? '').replaceAll(RegExp(r'[\s()\-]'), '');
-    if (RegExp(r'^[6-9]\d{9}
-
-  static String? validatePinCode(String? value) =>
-      RegExp(r'^[1-9]\d{5}$').hasMatch((value ?? '').trim())
-          ? null
-          : 'Enter a valid six-digit Indian PIN code.';
-
-  static String? validateGstin(String? value, SupplierGstRegistration status) {
-    final gstin = (value ?? '').trim().toUpperCase();
-    if (!status.needsGstin) {
-      return gstin.isNotEmpty
-          ? 'GSTIN is not allowed for unregistered or exempt businesses.'
-          : null;
-    }
-    return RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$')
-            .hasMatch(gstin)
-        ? null
-        : 'Enter a valid 15-character GSTIN.';
-  }
-
-  Map<String, Object?> toJson() => {
-        'slug': slug.trim().toLowerCase(),
-        'legalName': legalName.trim(),
-        'displayName': displayName.trim(),
-        'contactEmail': contactEmail.trim().toLowerCase(),
-        if (contactPhone?.trim().isNotEmpty ?? false)
-          'contactPhone': contactPhone!.trim(),
-        'gstRegistration': gstRegistration.apiValue,
-        if (gstin?.trim().isNotEmpty ?? false)
-          'gstin': gstin!.trim().toUpperCase(),
-        'billingAddress': <String, String>{
-          'line1': line1.trim(),
-          if (line2?.trim().isNotEmpty ?? false) 'line2': line2!.trim(),
-          'city': city.trim(),
-          'state': state.trim(),
-          'pinCode': pinCode.trim(),
-        },
-      };
-}
-).hasMatch(phone)) return '+91$phone';
+    if (RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) return '+91$phone';
     return phone;
   }
 
   static String? validatePhone(String? value) {
     final phone = normalizePhone(value);
     if (phone.isEmpty) return 'Mobile number is required.';
-    return RegExp(r'^\+[1-9]\d{7,14}
-
-  static String? validatePinCode(String? value) =>
-      RegExp(r'^[1-9]\d{5}$').hasMatch((value ?? '').trim())
-          ? null
-          : 'Enter a valid six-digit Indian PIN code.';
-
-  static String? validateGstin(String? value, SupplierGstRegistration status) {
-    final gstin = (value ?? '').trim().toUpperCase();
-    if (!status.needsGstin) {
-      return gstin.isNotEmpty
-          ? 'GSTIN is not allowed for unregistered or exempt businesses.'
-          : null;
-    }
-    return RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$')
-            .hasMatch(gstin)
-        ? null
-        : 'Enter a valid 15-character GSTIN.';
-  }
-
-  Map<String, Object?> toJson() => {
-        'slug': slug.trim().toLowerCase(),
-        'legalName': legalName.trim(),
-        'displayName': displayName.trim(),
-        'contactEmail': contactEmail.trim().toLowerCase(),
-        if (contactPhone?.trim().isNotEmpty ?? false)
-          'contactPhone': contactPhone!.trim(),
-        'gstRegistration': gstRegistration.apiValue,
-        if (gstin?.trim().isNotEmpty ?? false)
-          'gstin': gstin!.trim().toUpperCase(),
-        'billingAddress': <String, String>{
-          'line1': line1.trim(),
-          if (line2?.trim().isNotEmpty ?? false) 'line2': line2!.trim(),
-          'city': city.trim(),
-          'state': state.trim(),
-          'pinCode': pinCode.trim(),
-        },
-      };
-}
-).hasMatch(phone)
+    return RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(phone)
         ? null
         : 'Enter a valid mobile number, e.g. 9876543210.';
   }
