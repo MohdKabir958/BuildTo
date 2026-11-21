@@ -436,6 +436,22 @@ class _ReviewDetail extends StatelessWidget {
       SupplierApplicationStatus.underReview,
       SupplierApplicationStatus.rejected,
     ].contains(application.approval);
+    // If all required documents are already attached, don't ask people to
+    // upload GST or business evidence a second time after submission.
+    final requiredDocuments = [
+      SupplierEvidenceType.businessRegistration,
+      if (application.gstRegistration.needsGstin)
+        SupplierEvidenceType.gstCertificate,
+    ];
+    final documentsReceived = requiredDocuments.every((type) =>
+        detail.documents.any((document) =>
+            document.type == type &&
+            [
+              SupplierEvidenceStatus.uploaded,
+              SupplierEvidenceStatus.pending,
+              SupplierEvidenceStatus.reviewed,
+              SupplierEvidenceStatus.verified,
+            ].contains(document.status)));
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       BuildToCard(
           child:
@@ -495,13 +511,18 @@ class _ReviewDetail extends StatelessWidget {
             child: Text('Upload a PDF, JPEG or PNG document up to 10 MB. '
                 'Your documents stay private and are checked by an independent reviewer.')),
       ])),
-      if (canLink) ...[
+      if (canLink && !documentsReceived) ...[
         const SizedBox(height: 14),
         OutlinedButton.icon(
             onPressed: onLinkEvidence,
             icon: const Icon(Icons.attach_file_rounded),
-            label: const Text('Upload verification document')),
-      ],
+            label: const Text('Add missing document')),
+      ] else if (documentsReceived)
+        const Padding(
+          padding: EdgeInsets.only(top: 14),
+          child: Text('Documents received. No further upload is needed '
+              'unless our review team requests a change.'),
+        ),
     ]);
   }
 }
