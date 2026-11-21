@@ -36,7 +36,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
   List<SupplierApplicationSummary> applications = const [];
   SupplierApplicationDetail? details;
   bool loading = true, showWizard = false, linking = false;
-  String? selectedId, error;
+  String? selectedId, error, documentWarning;
   int generation = 0;
 
   bool get sessionOk =>
@@ -187,6 +187,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       if (!mounted || !sessionOk || session != widget.controller.sessionKey) {
         return;
       }
+      setState(() => documentWarning = null);
       await load(openId: current.summary.id);
     } catch (failure) {
       if (!mounted || !sessionOk || session != widget.controller.sessionKey) {
@@ -250,6 +251,17 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                           const SizedBox(height: 18),
                           _NavyBanner(email: widget.controller.signedInEmail),
                           const SizedBox(height: 22),
+                          if (documentWarning != null) ...[
+                            BuildToCard(
+                              child: Row(children: [
+                                const Icon(Icons.info_outline,
+                                    color: BuildToPalette.orange),
+                                const SizedBox(width: 10),
+                                Expanded(child: Text(documentWarning!)),
+                              ]),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
                           if (error != null) ...[
                             BuildToCard(
                                 child: Row(children: [
@@ -265,6 +277,19 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                               email: widget.controller.signedInEmail,
                               cancel: _confirmDiscardDraft,
                               submit: widget.api.submit,
+                              uploadEvidence: widget.api.uploadEvidence,
+                              attachEvidence: (supplierId, mediaId, type) async {
+                                await widget.api.attachExistingEvidence(
+                                  supplierId: supplierId,
+                                  mediaId: mediaId,
+                                  type: type,
+                                );
+                              },
+                              attachmentWarning: (warning) {
+                                if (mounted) {
+                                  setState(() => documentWarning = warning);
+                                }
+                              },
                               completed: (submitted) {
                                 if (!mounted) return;
                                 setState(() => selectedId = submitted.id);
