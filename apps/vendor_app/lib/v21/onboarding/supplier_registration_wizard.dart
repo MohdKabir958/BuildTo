@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import 'supplier_application_models.dart';
+import 'supplier_evidence_link_sheet.dart';
 
 /// Four-step supplier application with the same navy, amber and card language
 /// as the approved Splyzo customer design reference.
@@ -12,12 +13,22 @@ class SupplierRegistrationWizard extends StatefulWidget {
     required this.submit,
     required this.cancel,
     required this.completed,
+    this.uploadEvidence,
+    this.attachEvidence,
+    this.attachmentWarning,
   });
   final String? email;
   final Future<SupplierApplicationSummary> Function(SupplierRegistrationDraft)
       submit;
   final ValueChanged<SupplierApplicationSummary> completed;
   final VoidCallback cancel;
+  final EvidenceUpload? uploadEvidence;
+  final Future<void> Function(
+    String supplierId,
+    String mediaId,
+    SupplierEvidenceType type,
+  )? attachEvidence;
+  final ValueChanged<String>? attachmentWarning;
 
   @override
   State<SupplierRegistrationWizard> createState() =>
@@ -40,6 +51,27 @@ class _SupplierRegistrationWizardState
   int step = 0;
   bool busy = false;
   String? error;
+  final Map<SupplierEvidenceType, String> documentMediaIds = {};
+
+  Future<void> _chooseDocument(SupplierEvidenceType type) async {
+    final uploader = widget.uploadEvidence;
+    if (busy || uploader == null) return;
+    final result = await showModalBottomSheet<PrivateEvidenceSelection>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => PrivateEvidenceLinkSheet(
+        upload: uploader,
+        fixedType: type,
+      ),
+    );
+    if (mounted && result != null && result.type == type) {
+      setState(() {
+        documentMediaIds[type] = result.mediaId;
+        error = null;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -141,8 +173,25 @@ class _SupplierRegistrationWizardState
     });
     try {
       final result = await widget.submit(_draft());
-      if (!mounted) {
-        return;
+      // First create exactly one application, then attach the private
+      // documents already uploaded inside this form. Never retry creation
+      // if an attachment fails after the application was accepted.
+      var failedAttachments = 0;
+      final attach = widget.attachEvidence;
+      if (attach != null) {
+        for (final item in documentMediaIds.entries) {
+          try {
+            await attach(result.id, item.value, item.key);
+          } catch (_) {
+            failedAttachments++;
+          }
+        }
+      }
+      if (!mounted) return;
+      if (failedAttachments > 0) {
+        widget.attachmentWarning?.call(
+            'Your application was submitted, but some documents could '
+            'not be attached. Open the document checklist and try again.');
       }
       widget.completed(result);
     } catch (e) {
@@ -314,6 +363,49 @@ class _SupplierRegistrationWizardState
                       _ReviewValue('GSTIN', gstin.text.toUpperCase()),
                     _ReviewValue('Billing city & PIN',
                         '${city.text}, ${state.text} ${pinCode.text}'),
+                    if (widget.uploadEvidence != null &&
+                        widget.attachEvidence != null) ...[
+                      const SizedBox(height: 12),
+                      Text('Documents for approval',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 6),
+                      const Text(
+                          'You can add your documents now instead of doing '
+                          'another upload after submitting. Documents stay private.'),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: busy
+                            ? null
+                            : () => _chooseDocument(
+                                SupplierEvidenceType.businessRegistration),
+                        icon: Icon(
+                            documentMediaIds.containsKey(
+                                    SupplierEvidenceType.businessRegistration)
+                                ? Icons.check_circle_outline
+                                : Icons.attach_file_outlined),
+                        label: Text(documentMediaIds.containsKey(
+                                SupplierEvidenceType.businessRegistration)
+                            ? 'Business document added'
+                            : 'Add business registration document'),
+                      ),
+                      if (gst.needsGstin) ...[
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => _chooseDocument(
+                                  SupplierEvidenceType.gstCertificate),
+                          icon: Icon(documentMediaIds.containsKey(
+                                  SupplierEvidenceType.gstCertificate)
+                              ? Icons.check_circle_outline
+                              : Icons.attach_file_outlined),
+                          label: Text(documentMediaIds.containsKey(
+                                  SupplierEvidenceType.gstCertificate)
+                              ? 'GST certificate added'
+                              : 'Add GST certificate'),
+                        ),
+                      ],
+                    ],
                     const SizedBox(height: 12),
                     const BuildToStatePanel(
                       title: 'Independent verification required',
