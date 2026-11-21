@@ -50,8 +50,9 @@ export async function submitSupplierApplication(db:PrismaClient,actor:string,inp
  const displayName=text(d.displayName,'display name',3,200);
  const email=text(d.contactEmail,'email',6,320).toLowerCase();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))no('INVALID_EMAIL','Contact email must be verified.');
- const phone=d.contactPhone==null?null:text(d.contactPhone,'phone',8,20);
- if(phone&&!/^\+[1-9]\d{7,14}$/.test(phone))no('INVALID_PHONE','Use E.164 contact phone.');
+ if(d.contactPhone==null||d.contactPhone==='')no('PHONE_REQUIRED','A mobile number is required.');
+ const phone=text(d.contactPhone,'phone',8,20);
+ if(!/^\+[1-9]\d{7,14}$/.test(phone))no('INVALID_PHONE','Use E.164 contact phone.');
  if(typeof d.gstRegistration!=='string'||!GST.includes(d.gstRegistration as typeof GST[number]))
   no('INVALID_GST_REGISTRATION','Select a supported GST registration.');
  const gstRegistration=d.gstRegistration as typeof GST[number];
