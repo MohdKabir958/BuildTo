@@ -36,7 +36,7 @@ class _SupplierRegistrationWizardState
   final city = TextEditingController();
   final state = TextEditingController();
   final pinCode = TextEditingController();
-  SupplierGstRegistration gst = SupplierGstRegistration.regular;
+  SupplierGstRegistration gst = SupplierGstRegistration.unregistered;
   int step = 0;
   bool busy = false;
   String? error;
@@ -69,7 +69,7 @@ class _SupplierRegistrationWizardState
       legalName: legalName.text,
       displayName: displayName.text,
       contactEmail: widget.email ?? '',
-      contactPhone: phone.text,
+      contactPhone: SupplierRegistrationDraft.normalizePhone(phone.text),
       gstRegistration: gst,
       gstin: gstin.text,
       line1: line1.text,
@@ -187,7 +187,7 @@ class _SupplierRegistrationWizardState
           Text(
               const [
                 'Your business',
-                'GST & contact',
+                'Phone & GST',
                 'Billing address',
                 'Review & submit'
               ][0 + step],
@@ -215,41 +215,63 @@ class _SupplierRegistrationWizardState
                                 v, 'Display name')),
                   ],
                   if (step == 1) ...[
-                    const Text('Your verified Clerk email',
+                    const Text('Your verified email',
                         style: TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     Text(widget.email ?? 'A verified email is required',
                         style: Theme.of(context).textTheme.bodyMedium),
                     const SizedBox(height: 16),
+                    _Field(
+                        label: 'Mobile number *',
+                        controller: phone,
+                        keyboard: TextInputType.phone,
+                        helper: 'Enter your 10-digit mobile number. '
+                            'We will add +91 automatically.',
+                        maxLength: 16,
+                        validator: SupplierRegistrationDraft.validatePhone),
+                    const Text('Is your business registered for GST?',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<SupplierGstRegistration>(
                       initialValue: gst,
-                      decoration:
-                          const InputDecoration(labelText: 'GST registration'),
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'GST status',
+                        helperText: 'Choose No if you do not have a GST number.',
+                      ),
                       items: SupplierGstRegistration.values
                           .map((value) => DropdownMenuItem(
-                              value: value, child: Text(value.apiValue)))
+                              value: value, child: Text(switch (value) {
+                                SupplierGstRegistration.unregistered =>
+                                  'No, not registered for GST',
+                                SupplierGstRegistration.regular =>
+                                  'Yes, registered for GST',
+                                SupplierGstRegistration.composition =>
+                                  'Yes, composition scheme',
+                                SupplierGstRegistration.exempt =>
+                                  'GST-exempt business',
+                              })))
                           .toList(),
                       onChanged: busy
                           ? null
                           : (value) {
                               if (value != null) {
-                                setState(() => gst = value);
+                                setState(() {
+                                  gst = value;
+                                  if (!value.needsGstin) gstin.clear();
+                                });
                               }
                             },
                     ),
                     const SizedBox(height: 12),
                     if (gst.needsGstin)
                       _Field(
-                          label: '15-character GSTIN',
+                          label: 'GSTIN (15 characters) *',
                           controller: gstin,
+                          helper: 'Only needed for a GST-registered business.',
                           validator: (v) =>
                               SupplierRegistrationDraft.validateGstin(v, gst)),
-                    _Field(
-                        label: 'Phone (optional)',
-                        controller: phone,
-                        keyboard: TextInputType.phone,
-                        helper: 'E.164 format, e.g. +919876543210',
-                        validator: SupplierRegistrationDraft.validatePhone),
+                    const SizedBox(height: 4),
                   ],
                   if (step == 2) ...[
                     _Field(
@@ -284,7 +306,9 @@ class _SupplierRegistrationWizardState
                   if (step == 3) ...[
                     _ReviewValue('Registered name', legalName.text),
                     _ReviewValue('Display name', displayName.text),
-                    _ReviewValue('Clerk email', widget.email ?? 'Unavailable'),
+                    _ReviewValue('Verified email', widget.email ?? 'Unavailable'),
+                    _ReviewValue('Mobile number',
+                        SupplierRegistrationDraft.normalizePhone(phone.text)),
                     _ReviewValue('GST registration', gst.apiValue),
                     if (gst.needsGstin)
                       _ReviewValue('GSTIN', gstin.text.toUpperCase()),
@@ -295,8 +319,9 @@ class _SupplierRegistrationWizardState
                       title: 'Independent verification required',
                       icon: Icons.fact_check_outlined,
                       message:
-                          'Submission creates a PENDING supplier application, not an approved business. '
-                          'Splyzo operations will independently verify your documents.',
+                          'Submit once. Our team will review your business. '
+                          'A business registration document, and only for GST-registered '
+                          'suppliers a GST certificate, are needed for approval.',
                     ),
                   ],
                 ],
@@ -340,12 +365,14 @@ class _Field extends StatelessWidget {
       required this.controller,
       this.validator,
       this.keyboard,
-      this.helper});
+      this.helper,
+      this.maxLength = 250});
   final String label;
   final TextEditingController controller;
   final String? helper;
   final TextInputType? keyboard;
   final String? Function(String?)? validator;
+  final int maxLength;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -355,7 +382,7 @@ class _Field extends StatelessWidget {
             controller: controller,
             validator: validator,
             keyboardType: keyboard,
-            maxLength: 250,
+            maxLength: maxLength,
             decoration: InputDecoration(labelText: label, helperText: helper)),
       );
 }
