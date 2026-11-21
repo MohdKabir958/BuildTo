@@ -183,24 +183,32 @@ class SupplierAuthController extends ChangeNotifier {
       RegExp(r'^user_[A-Za-z0-9]{6,150}$').hasMatch(identity.userId ?? '') &&
       RegExp(r'^sess_[A-Za-z0-9]{6,150}$').hasMatch(identity.sessionId ?? '');
 
-  /// Revalidates /me and supplier-specific /access, including after resume.
-  /// Previously approved permissions are not used while refresh is pending.
-  Future<void> refresh() async {
+  /// Recheck supplier permissions without tearing down a form when the
+  /// Android lifecycle briefly resumes (notifications, file picker, etc).
+  /// On a changed Clerk identity or a rejected membership, fail closed.
+  Future<void> refresh({bool silent = false}) async {
     if (_disposed || _locallyBlocked || _fingerprint == null) return;
     final fingerprint = _fingerprint;
     final generation = ++_generation;
     final previouslySelected = _selectedId;
-    _activeSupplier = null;
-    _account = null;
-    _stage = SupplierAccessStage.checking;
-    _notice = null;
-    _publish();
+    final keepApplicantForm =
+        silent && _stage == SupplierAccessStage.noSupplier && _account != null;
+    final keepApprovedScreen =
+        silent && _stage == SupplierAccessStage.authorized && _activeSupplier != null;
+    if (!keepApplicantForm && !keepApprovedScreen) {
+      _activeSupplier = null;
+      _account = null;
+      _stage = SupplierAccessStage.checking;
+      _notice = null;
+      _publish();
+    }
     try {
       final result = await _api.get('/api/v2/me');
       final account = SupplierV21Identity.fromJson(result.requireObject());
       if (!_current(generation, fingerprint)) return;
       _account = account;
       if (account.suppliers.isEmpty) {
+        _activeSupplier = null;
         _selectedId = null;
         _stage = SupplierAccessStage.noSupplier;
         _publish();
@@ -214,6 +222,7 @@ class SupplierAuthController extends ChangeNotifier {
           account.suppliers.length == 1 ? account.suppliers.first : null;
       final target = desired ?? single;
       if (target == null) {
+        _activeSupplier = null;
         _selectedId = null;
         _stage = SupplierAccessStage.chooseSupplier;
         _publish();
@@ -221,7 +230,16 @@ class SupplierAuthController extends ChangeNotifier {
       }
       await _verifySupplier(target, generation, fingerprint);
     } on SupplierV21Exception catch (error) {
-      if (_current(generation, fingerprint)) _fail(error);
+      if (!_current(generation, fingerprint)) return;
+      // Editing an unsubmitted draft is safe even during a temporary outage:
+      // this state never grants any protected supplier access.
+      if (keepApplicantForm && error.problem == SupplierV21Problem.network) {
+        _notice = 'Connection interrupted. Your form is still here. '
+            'You can retry when online.';
+        _publish();
+        return;
+      }
+      _fail(error);
     } on FormatException {
       if (_current(generation, fingerprint)) {
         _stage = SupplierAccessStage.accessDenied;
@@ -334,7 +352,8 @@ class SupplierAuthController extends ChangeNotifier {
       SupplierAccessStage.accessDenied =>
         'This account does not currently have access to that supplier.',
       SupplierAccessStage.misconfigured => 'Splyzo staging is not configured.',
-      _ => 'Secure account verification is unavailable. Please retry.',
+      _ => 'Your email sign-in may be complete, but Splyzo could not '
+          'check supplier access. Check your connection and retry.',
     };
     _publish();
   }

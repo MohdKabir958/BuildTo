@@ -107,7 +107,7 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
           controller.stage != SupplierAccessStage.starting &&
           controller.stage != SupplierAccessStage.misconfigured) {
         // Re-evaluate membership and suspension whenever the user returns.
-        unawaited(controller.refresh());
+        unawaited(controller.refresh(silent: true));
       }
     }
   }
@@ -249,9 +249,10 @@ class _SupplierAccessView extends StatelessWidget {
           Icons.storefront_outlined,
         ),
       SupplierAccessStage.noSupplier => (
-          'Your account is in review',
-          'Your registration is awaiting admin approval. Once accepted by Splyzo administration, your supplier workspace will activate immediately.',
-          Icons.domain_verification_outlined,
+          'Your email is verified',
+          'Your account is ready. Register your business next. '
+              'Nothing goes to admin until you submit your application.',
+          Icons.verified_user_outlined,
         ),
       SupplierAccessStage.accessDenied => (
           'Supplier access unavailable',
@@ -265,9 +266,10 @@ class _SupplierAccessView extends StatelessWidget {
           Icons.lock_clock_outlined,
         ),
       SupplierAccessStage.unavailable => (
-          'Cannot verify your access',
-          'The connection or identity provider is unavailable. '
-              'We will not use cached roles while offline.',
+          'Cannot connect to Splyzo right now',
+          'Email verification and supplier approval are different. '
+              'We could not reach Splyzo to check your supplier status; '
+              'this does not mean you need another email verification.',
           Icons.wifi_off_outlined,
         ),
       SupplierAccessStage.misconfigured => (
@@ -315,12 +317,12 @@ class _SupplierAccessView extends StatelessWidget {
           ],
         SupplierAccessStage.noSupplier => [
             _AccessAction(
-              'Open supplier applications',
+              'Register or check my business',
               Icons.add_business_rounded,
               openApplications,
             ),
             _AccessAction(
-              'Recheck admin approval',
+              'Refresh supplier status',
               Icons.refresh_rounded,
               controller.refresh,
             ),
@@ -336,7 +338,7 @@ class _SupplierAccessView extends StatelessWidget {
         SupplierAccessStage.misconfigured =>
           [
             _AccessAction(
-              'Retry secure verification',
+              'Retry connection to Splyzo',
               Icons.refresh_rounded,
               controller.refresh,
             ),
