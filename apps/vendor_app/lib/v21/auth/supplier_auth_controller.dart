@@ -254,7 +254,10 @@ class SupplierAuthController extends ChangeNotifier {
       if (!_current(generation, fingerprint)) return;
       // Editing an unsubmitted draft is safe even during a temporary outage:
       // this state never grants any protected supplier access.
-      if (keepApplicantForm && error.problem == SupplierV21Problem.network) {
+      if (keepApplicantForm &&
+          (error.problem == SupplierV21Problem.network ||
+              error.problem == SupplierV21Problem.server ||
+              error.problem == SupplierV21Problem.rateLimited)) {
         _notice = 'Connection interrupted. Your form is still here. '
             'You can retry when online.';
         _publish();
