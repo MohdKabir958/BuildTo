@@ -30,7 +30,7 @@ const auth=(api,method,path,token,body)=>{
 const apply=(applicant)=>({
  slug:'supplier-'+randomUUID().slice(0,8),
  legalName:'Example Materials Pvt Ltd',displayName:'Example Materials',
- contactEmail:applicant.email,gstRegistration:'UNREGISTERED',
+ contactEmail:applicant.email,contactPhone:'+919876543210',gstRegistration:'UNREGISTERED',
  billingAddress:{line1:'Main Building Road 42',city:'Hyderabad',state:'Telangana',pinCode:'500001'}
 });
 async function evidence(owner){
