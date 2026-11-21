@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/supplier_v21_api.dart';
 import '../auth/supplier_auth_controller.dart';
@@ -73,6 +74,8 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
   }
 
   Future<void> load({String? openId}) async {
+    // An accidental refresh must not dispose a form the supplier is editing.
+    if (showWizard && openId == null) return;
     final version = ++generation;
     final session = widget.controller.sessionKey;
     setState(() {
@@ -131,6 +134,30 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
     }
   }
 
+  Future<void> _confirmDiscardDraft() async {
+    if (!showWizard) {
+      widget.onClose();
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave registration?'),
+        content: const Text('Your details stay filled if you switch apps or '
+            'open notifications. Leaving registration will discard the form.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep editing')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Discard form')),
+        ],
+      ),
+    );
+    if (mounted && discard == true) setState(() => showWizard = false);
+  }
+
   Future<void> linkMedia(SupplierApplicationDetail current) async {
     if (linking || !sessionOk) return;
     final session = widget.controller.sessionKey;
@@ -187,17 +214,22 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
     final pending = applications.any((a) =>
         a.approval == SupplierApplicationStatus.pending ||
         a.approval == SupplierApplicationStatus.underReview);
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) unawaited(_confirmDiscardDraft());
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Supplier registration'),
         leading: IconButton(
             tooltip: 'Back',
-            onPressed: widget.onClose,
+            onPressed: _confirmDiscardDraft,
             icon: const Icon(Icons.arrow_back_rounded)),
         actions: [
           IconButton(
               tooltip: 'Refresh applications',
-              onPressed: loading ? null : () => load(),
+              onPressed: loading || showWizard ? null : () => load(),
               icon: const Icon(Icons.refresh_rounded))
         ],
       ),
@@ -231,7 +263,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                           if (showWizard)
                             SupplierRegistrationWizard(
                               email: widget.controller.signedInEmail,
-                              cancel: () => setState(() => showWizard = false),
+                              cancel: _confirmDiscardDraft,
                               submit: widget.api.submit,
                               completed: (submitted) {
                                 if (!mounted) return;
@@ -263,10 +295,10 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                             const SizedBox(height: 12),
                             if (applications.isEmpty)
                               const BuildToStatePanel(
-                                  title: 'No application yet',
+                                  title: 'No application submitted yet',
                                   message:
-                                      'Start with your verified business and GST information. '
-                                      'Only Splyzo operations can approve a supplier.',
+                                      'Complete the business registration form below. '
+                                      'Admin review begins only after you submit.',
                                   icon: Icons.storefront_outlined),
                             for (final app in applications) ...[
                               BuildToCard(
@@ -303,7 +335,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                           ],
                         ],
                       )))),
-    );
+    ));
   }
 }
 
