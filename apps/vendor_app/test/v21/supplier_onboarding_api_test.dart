@@ -80,6 +80,9 @@ void main() {
     expect(
         SupplierRegistrationDraft.validateSlug('Builder Materials'), isNotNull);
     expect(SupplierRegistrationDraft.validatePhone('+919876543210'), isNull);
+    expect(SupplierRegistrationDraft.validatePhone('9876543210'), isNull);
+    expect(SupplierRegistrationDraft.validatePhone(''), isNotNull);
+    expect(SupplierRegistrationDraft.normalizePhone('9876543210'), '+919876543210');
     expect(SupplierRegistrationDraft.validatePhone('9876543210'), isNotNull);
     expect(SupplierRegistrationDraft.validatePinCode('500001'), isNull);
     expect(SupplierRegistrationDraft.validatePinCode('050001'), isNotNull);
@@ -108,6 +111,7 @@ void main() {
       postCount++;
       final data = jsonDecode(request.body) as Map<String, dynamic>;
       expect(data['contactEmail'], 'applicant@example.com');
+      expect(data['contactPhone'], '+919876543210');
       expect(data['gstRegistration'], 'UNREGISTERED');
       expect(data['gstin'], isNull);
       expect(data['billingAddress']['pinCode'], '500001');
@@ -119,6 +123,7 @@ void main() {
         legalName: 'Builder Materials Pvt Ltd',
         displayName: 'Builder Materials',
         contactEmail: 'APPLICANT@EXAMPLE.COM',
+        contactPhone: '9876543210',
         gstRegistration: SupplierGstRegistration.unregistered,
         line1: 'Industrial Estate Road',
         city: 'Hyderabad',
@@ -197,6 +202,7 @@ void main() {
             legalName: 'Builder Materials Pvt Ltd',
             displayName: 'Builder Materials',
             contactEmail: 'applicant@example.com',
+            contactPhone: '+919876543210',
             gstRegistration: SupplierGstRegistration.unregistered,
             line1: 'Industrial Estate Road',
             city: 'Hyderabad',

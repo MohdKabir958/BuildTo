@@ -5,6 +5,7 @@ on:
       - buildto/supplier-apk-test-20261106
       - fix/v21-backend-audit-all-phases
       - main
+      - fix/supplier-onboarding-resume-ux-20261121
       - branding/splyzo-rebrand-20261111
     paths:
       - '.github/workflows/buildto-supplier-test-apk.yml'
@@ -47,6 +48,12 @@ jobs:
           # back to the feature branch instead of being silently modified only in CI.
           for file in \
             lib/v21/auth/supplier_auth_gate.dart \
+            lib/v21/auth/supplier_auth_controller.dart \
+            lib/v21/onboarding/supplier_onboarding_flow.dart \
+            lib/v21/onboarding/supplier_registration_wizard.dart \
+            lib/v21/onboarding/supplier_application_models.dart \
+            test/v21/supplier_onboarding_widget_test.dart \
+            test/v21/supplier_onboarding_api_test.dart \
             lib/v21/delivery/supplier_delivery_view.dart \
             lib/v21/inventory/supplier_inventory_view.dart \
             lib/v21/shipments/supplier_shipments_repository.dart \

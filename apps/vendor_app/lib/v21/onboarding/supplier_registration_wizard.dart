@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import 'supplier_application_models.dart';
+import 'supplier_evidence_link_sheet.dart';
 
 /// Four-step supplier application with the same navy, amber and card language
 /// as the approved Splyzo customer design reference.
@@ -12,12 +13,22 @@ class SupplierRegistrationWizard extends StatefulWidget {
     required this.submit,
     required this.cancel,
     required this.completed,
+    this.uploadEvidence,
+    this.attachEvidence,
+    this.attachmentWarning,
   });
   final String? email;
   final Future<SupplierApplicationSummary> Function(SupplierRegistrationDraft)
       submit;
   final ValueChanged<SupplierApplicationSummary> completed;
   final VoidCallback cancel;
+  final EvidenceUpload? uploadEvidence;
+  final Future<void> Function(
+    String supplierId,
+    String mediaId,
+    SupplierEvidenceType type,
+  )? attachEvidence;
+  final ValueChanged<String>? attachmentWarning;
 
   @override
   State<SupplierRegistrationWizard> createState() =>
@@ -36,10 +47,31 @@ class _SupplierRegistrationWizardState
   final city = TextEditingController();
   final state = TextEditingController();
   final pinCode = TextEditingController();
-  SupplierGstRegistration gst = SupplierGstRegistration.regular;
+  SupplierGstRegistration gst = SupplierGstRegistration.unregistered;
   int step = 0;
   bool busy = false;
   String? error;
+  final Map<SupplierEvidenceType, String> documentMediaIds = {};
+
+  Future<void> _chooseDocument(SupplierEvidenceType type) async {
+    final uploader = widget.uploadEvidence;
+    if (busy || uploader == null) return;
+    final result = await showModalBottomSheet<PrivateEvidenceSelection>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => PrivateEvidenceLinkSheet(
+        upload: uploader,
+        fixedType: type,
+      ),
+    );
+    if (mounted && result != null && result.type == type) {
+      setState(() {
+        documentMediaIds[type] = result.mediaId;
+        error = null;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -69,7 +101,7 @@ class _SupplierRegistrationWizardState
       legalName: legalName.text,
       displayName: displayName.text,
       contactEmail: widget.email ?? '',
-      contactPhone: phone.text,
+      contactPhone: SupplierRegistrationDraft.normalizePhone(phone.text),
       gstRegistration: gst,
       gstin: gstin.text,
       line1: line1.text,
@@ -141,8 +173,25 @@ class _SupplierRegistrationWizardState
     });
     try {
       final result = await widget.submit(_draft());
-      if (!mounted) {
-        return;
+      // First create exactly one application, then attach the private
+      // documents already uploaded inside this form. Never retry creation
+      // if an attachment fails after the application was accepted.
+      var failedAttachments = 0;
+      final attach = widget.attachEvidence;
+      if (attach != null) {
+        for (final item in documentMediaIds.entries) {
+          try {
+            await attach(result.id, item.value, item.key);
+          } catch (_) {
+            failedAttachments++;
+          }
+        }
+      }
+      if (!mounted) return;
+      if (failedAttachments > 0) {
+        widget.attachmentWarning?.call(
+            'Your application was submitted, but some documents could '
+            'not be attached. Open the document checklist and try again.');
       }
       widget.completed(result);
     } catch (e) {
@@ -187,7 +236,7 @@ class _SupplierRegistrationWizardState
           Text(
               const [
                 'Your business',
-                'GST & contact',
+                'Phone & GST',
                 'Billing address',
                 'Review & submit'
               ][0 + step],
@@ -215,41 +264,63 @@ class _SupplierRegistrationWizardState
                                 v, 'Display name')),
                   ],
                   if (step == 1) ...[
-                    const Text('Your verified Clerk email',
+                    const Text('Your verified email',
                         style: TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     Text(widget.email ?? 'A verified email is required',
                         style: Theme.of(context).textTheme.bodyMedium),
                     const SizedBox(height: 16),
+                    _Field(
+                        label: 'Mobile number *',
+                        controller: phone,
+                        keyboard: TextInputType.phone,
+                        helper: 'Enter your 10-digit mobile number. '
+                            'We will add +91 automatically.',
+                        maxLength: 16,
+                        validator: SupplierRegistrationDraft.validatePhone),
+                    const Text('Is your business registered for GST?',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<SupplierGstRegistration>(
                       initialValue: gst,
-                      decoration:
-                          const InputDecoration(labelText: 'GST registration'),
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'GST status',
+                        helperText: 'Choose No if you do not have a GST number.',
+                      ),
                       items: SupplierGstRegistration.values
                           .map((value) => DropdownMenuItem(
-                              value: value, child: Text(value.apiValue)))
+                              value: value, child: Text(switch (value) {
+                                SupplierGstRegistration.unregistered =>
+                                  'No, not registered for GST',
+                                SupplierGstRegistration.regular =>
+                                  'Yes, registered for GST',
+                                SupplierGstRegistration.composition =>
+                                  'Yes, composition scheme',
+                                SupplierGstRegistration.exempt =>
+                                  'GST-exempt business',
+                              })))
                           .toList(),
                       onChanged: busy
                           ? null
                           : (value) {
                               if (value != null) {
-                                setState(() => gst = value);
+                                setState(() {
+                                  gst = value;
+                                  if (!value.needsGstin) gstin.clear();
+                                });
                               }
                             },
                     ),
                     const SizedBox(height: 12),
                     if (gst.needsGstin)
                       _Field(
-                          label: '15-character GSTIN',
+                          label: 'GSTIN (15 characters) *',
                           controller: gstin,
+                          helper: 'Only needed for a GST-registered business.',
                           validator: (v) =>
                               SupplierRegistrationDraft.validateGstin(v, gst)),
-                    _Field(
-                        label: 'Phone (optional)',
-                        controller: phone,
-                        keyboard: TextInputType.phone,
-                        helper: 'E.164 format, e.g. +919876543210',
-                        validator: SupplierRegistrationDraft.validatePhone),
+                    const SizedBox(height: 4),
                   ],
                   if (step == 2) ...[
                     _Field(
@@ -284,19 +355,65 @@ class _SupplierRegistrationWizardState
                   if (step == 3) ...[
                     _ReviewValue('Registered name', legalName.text),
                     _ReviewValue('Display name', displayName.text),
-                    _ReviewValue('Clerk email', widget.email ?? 'Unavailable'),
+                    _ReviewValue('Verified email', widget.email ?? 'Unavailable'),
+                    _ReviewValue('Mobile number',
+                        SupplierRegistrationDraft.normalizePhone(phone.text)),
                     _ReviewValue('GST registration', gst.apiValue),
                     if (gst.needsGstin)
                       _ReviewValue('GSTIN', gstin.text.toUpperCase()),
                     _ReviewValue('Billing city & PIN',
                         '${city.text}, ${state.text} ${pinCode.text}'),
+                    if (widget.uploadEvidence != null &&
+                        widget.attachEvidence != null) ...[
+                      const SizedBox(height: 12),
+                      Text('Documents for approval',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 6),
+                      const Text(
+                          'You can add your documents now instead of doing '
+                          'another upload after submitting. Documents stay private.'),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: busy
+                            ? null
+                            : () => _chooseDocument(
+                                SupplierEvidenceType.businessRegistration),
+                        icon: Icon(
+                            documentMediaIds.containsKey(
+                                    SupplierEvidenceType.businessRegistration)
+                                ? Icons.check_circle_outline
+                                : Icons.attach_file_outlined),
+                        label: Text(documentMediaIds.containsKey(
+                                SupplierEvidenceType.businessRegistration)
+                            ? 'Business document added'
+                            : 'Add business registration document'),
+                      ),
+                      if (gst.needsGstin) ...[
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => _chooseDocument(
+                                  SupplierEvidenceType.gstCertificate),
+                          icon: Icon(documentMediaIds.containsKey(
+                                  SupplierEvidenceType.gstCertificate)
+                              ? Icons.check_circle_outline
+                              : Icons.attach_file_outlined),
+                          label: Text(documentMediaIds.containsKey(
+                                  SupplierEvidenceType.gstCertificate)
+                              ? 'GST certificate added'
+                              : 'Add GST certificate'),
+                        ),
+                      ],
+                    ],
                     const SizedBox(height: 12),
                     const BuildToStatePanel(
                       title: 'Independent verification required',
                       icon: Icons.fact_check_outlined,
                       message:
-                          'Submission creates a PENDING supplier application, not an approved business. '
-                          'Splyzo operations will independently verify your documents.',
+                          'Submit once. Our team will review your business. '
+                          'A business registration document, and only for GST-registered '
+                          'suppliers a GST certificate, are needed for approval.',
                     ),
                   ],
                 ],
@@ -340,12 +457,14 @@ class _Field extends StatelessWidget {
       required this.controller,
       this.validator,
       this.keyboard,
-      this.helper});
+      this.helper,
+      this.maxLength = 250});
   final String label;
   final TextEditingController controller;
   final String? helper;
   final TextInputType? keyboard;
   final String? Function(String?)? validator;
+  final int maxLength;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -355,7 +474,7 @@ class _Field extends StatelessWidget {
             controller: controller,
             validator: validator,
             keyboardType: keyboard,
-            maxLength: 250,
+            maxLength: maxLength,
             decoration: InputDecoration(labelText: label, helperText: helper)),
       );
 }

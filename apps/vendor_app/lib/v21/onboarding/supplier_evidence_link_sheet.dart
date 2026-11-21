@@ -14,9 +14,11 @@ typedef EvidenceUpload = Future<String> Function(
 
 class PrivateEvidenceLinkSheet extends StatefulWidget {
   const PrivateEvidenceLinkSheet(
-      {super.key, required this.upload, this.pickFile});
+      {super.key, required this.upload, this.pickFile, this.fixedType});
   final EvidenceUpload upload;
   final Future<XFile?> Function()? pickFile;
+  /// When used during registration, the document type is already known.
+  final SupplierEvidenceType? fixedType;
   @override
   State<PrivateEvidenceLinkSheet> createState() =>
       _PrivateEvidenceLinkSheetState();
@@ -27,6 +29,12 @@ class _PrivateEvidenceLinkSheetState extends State<PrivateEvidenceLinkSheet> {
   XFile? file;
   bool busy = false;
   String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    type = widget.fixedType ?? SupplierEvidenceType.businessRegistration;
+  }
 
   Future<void> choose() async {
     try {
@@ -123,7 +131,13 @@ class _PrivateEvidenceLinkSheetState extends State<PrivateEvidenceLinkSheet> {
                     title: 'Upload verification document',
                     subtitle: 'Private PDF, JPEG or PNG • Up to 10 MB'),
                 const SizedBox(height: 20),
-                DropdownButtonFormField<SupplierEvidenceType>(
+                if (widget.fixedType != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(type.title,
+                        style: Theme.of(context).textTheme.titleMedium),
+                  )
+                else DropdownButtonFormField<SupplierEvidenceType>(
                   initialValue: type,
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Document type'),
