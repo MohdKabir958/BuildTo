@@ -378,11 +378,17 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
     } on SupplierV21Exception catch (e) {
       setState(() {
         busy = false;
-        error = e.code == 'PAYLOAD_TOO_LARGE'
-            ? _photoTooBig
-            : e.code == 'UNSUPPORTED_IMAGE'
-                ? _photoTypeHint
-                : 'The photo could not be saved. Try another photo.';
+        error = e.problem == SupplierV21Problem.authentication
+            ? 'Your session needs verification. Check your account and try again.'
+            : e.problem == SupplierV21Problem.forbidden
+                ? 'You do not currently have permission to upload product photos.'
+                : e.code == 'PAYLOAD_TOO_LARGE'
+                    ? _photoTooBig
+                    : e.code == 'UNSUPPORTED_IMAGE'
+                        ? _photoTypeHint
+                        : e.problem == SupplierV21Problem.network
+                            ? 'Could not reach the server to upload your photo. Check your connection.'
+                            : 'The photo could not be saved. Try another photo.';
       });
       return;
     } catch (_) {
