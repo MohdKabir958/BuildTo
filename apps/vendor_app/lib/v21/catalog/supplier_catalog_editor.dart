@@ -708,7 +708,6 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     busy ? null : (value) => setState(() => inclusive = value),
               ),
               ExpansionTile(
-                tilePadding: EdgeInsets.zero,
                 key: const Key('catalog-advanced-options'),
                 tilePadding: EdgeInsets.zero,
                 title: const Text('Advanced order settings'),
