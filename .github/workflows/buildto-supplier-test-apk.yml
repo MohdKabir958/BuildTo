@@ -6,6 +6,7 @@ on:
       - fix/v21-backend-audit-all-phases
       - main
       - fix/supplier-onboarding-resume-ux-20261121
+      - fix/supplier-catalog-form-auth-ux-20261123
       - branding/splyzo-rebrand-20261111
     paths:
       - '.github/workflows/buildto-supplier-test-apk.yml'
@@ -49,6 +50,10 @@ jobs:
           for file in \
             lib/v21/auth/supplier_auth_gate.dart \
             lib/v21/auth/supplier_auth_controller.dart \
+            lib/v21/catalog/supplier_catalog_editor.dart \
+            lib/v21/catalog/supplier_catalog_view.dart \
+            test/v21/supplier_catalog_widget_test.dart \
+            test/v21/supplier_auth_controller_test.dart \
             lib/v21/onboarding/supplier_onboarding_flow.dart \
             lib/v21/onboarding/supplier_registration_wizard.dart \
             lib/v21/onboarding/supplier_application_models.dart \
