@@ -54,6 +54,7 @@ jobs:
             lib/v21/catalog/supplier_catalog_view.dart \
             test/v21/supplier_catalog_widget_test.dart \
             test/v21/supplier_auth_controller_test.dart \
+            lib/v21/onboarding/supplier_evidence_link_sheet.dart \
             lib/v21/onboarding/supplier_onboarding_flow.dart \
             lib/v21/onboarding/supplier_registration_wizard.dart \
             lib/v21/onboarding/supplier_application_models.dart \
