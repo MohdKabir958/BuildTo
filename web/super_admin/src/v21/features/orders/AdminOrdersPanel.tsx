@@ -62,9 +62,9 @@ export function AdminOrdersPanel(){
   return ()=>c.abort();
  },[api,detailId]);
  return <div className="space-y-5">
-  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
    <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><ClipboardList size={23} className="text-[#174C86]"/><div>
-    <h2 className="text-lg font-extrabold">Platform orders</h2><p className="text-sm text-slate-500">Read-only, cross-supplier oversight. Customer contacts, shipping addresses and provider secrets stay hidden.</p>
+    <h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Platform orders</h2><p className="text-sm text-slate-500">Read-only, cross-supplier oversight. Customer contacts, shipping addresses and provider secrets stay hidden.</p>
    </div></div><button type="button" onClick={()=>void load(true)} disabled={loading} className="rounded-lg border px-4 py-2 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
    <div className="mt-5 grid gap-3 sm:grid-cols-3">
     <label className="text-sm font-bold">Order status<select value={status} onChange={e=>setStatus(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm">{STATES.map(x=><option key={x} value={x}>{x.replace(/_/g,' ')}</option>)}</select></label>
@@ -86,8 +86,8 @@ export function AdminOrdersPanel(){
      {cursor&&<button type="button" disabled={loading} onClick={()=>void load(false,cursor)} className="mt-3 rounded-lg border px-4 py-2 text-sm font-bold disabled:opacity-50">Load older orders</button>}
     </div>}
   </section>
-  {detailId&&<section aria-label="Order detail" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-   <div className="flex justify-between gap-3"><h3 className="text-lg font-extrabold">Order details</h3><button type="button" className="text-sm font-semibold text-[#174C86]" onClick={()=>{setDetailId('');setDetail(null);}}>Close</button></div>
+  {detailId&&<section aria-label="Order detail" className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+   <div className="flex justify-between gap-3"><h3 className="text-xl font-extrabold tracking-tight text-[#173251]">Order details</h3><button type="button" className="text-sm font-semibold text-[#174C86]" onClick={()=>{setDetailId('');setDetail(null);}}>Close</button></div>
    {detailLoading?<p role="status" className="mt-4">Loading order record…</p>:detail&&<>
     <div className="mt-4 flex flex-wrap gap-4 text-sm"><p><b>{detail.publicNumber}</b> · {detail.status}</p><p>Quoted total: <b>{rupees(detail.totalPaise)}</b></p></div>
     <p className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><ShieldCheck size={16}/>Totals are order commitments, not bank deposits. No order modification or impersonation is available.</p>
