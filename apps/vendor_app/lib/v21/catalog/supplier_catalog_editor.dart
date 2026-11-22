@@ -8,6 +8,7 @@ import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import 'supplier_catalog_models.dart';
 import 'supplier_catalog_repository.dart';
+import 'catalog_search_sheet.dart';
 
 const fallbackSellingUnits = [
   CatalogUnit('BAG', 'Bag'),
@@ -154,6 +155,88 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
   List<CatalogUnit> get sellingUnits => widget.masters.units.isEmpty
       ? fallbackSellingUnits
       : widget.masters.units;
+
+  Future<void> _chooseCategory() async {
+    if (busy) return;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => CatalogSearchSheet(
+        title: 'Select product category',
+        selected: categoryId,
+        options: [
+          for (final category in widget.masters.categories)
+            CatalogSearchOption(category.id, category.name),
+        ],
+      ),
+    );
+    if (!mounted || chosen == null) return;
+    setState(() {
+      categoryId = chosen;
+      error = null;
+    });
+  }
+
+  Future<void> _chooseUnit() async {
+    if (busy) return;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => CatalogSearchSheet(
+        title: 'How do you sell this product?',
+        selected: unit,
+        options: [
+          for (final sellingUnit in sellingUnits)
+            CatalogSearchOption(sellingUnit.code, sellingUnit.name),
+        ],
+      ),
+    );
+    if (!mounted || chosen == null) return;
+    setState(() {
+      unit = chosen;
+      error = null;
+    });
+  }
+
+  Widget _selection({
+    required String label,
+    required String placeholder,
+    required String? value,
+    required VoidCallback onTap,
+  }) => Padding(
+        padding: const EdgeInsets.only(bottom: 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 7),
+            OutlinedButton(
+              onPressed: busy ? null : onTap,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(54),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+              child: Row(children: [
+                Expanded(
+                  child: Text(value ?? placeholder,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: value == null
+                      ? Theme.of(context).hintColor
+                      : Theme.of(context).colorScheme.onSurface)),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.keyboard_arrow_down_rounded),
+              ]),
+            ),
+          ],
+        ),
+      );
 
   static const _photoTooBig = 'Choose a photo of 8 MB or smaller.';
   static const _photoTypeHint =
@@ -358,7 +441,45 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     : 'Update this product',
                 subtitle: 'Customers can see it as soon as you save.',
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
+              Text('PRODUCT PHOTO',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              if (photoBytes != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.memory(
+                    photoBytes!,
+                    height: 144,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else if (widget.original?.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    SupplierV21Config.origin
+                        .resolve(widget.original!.imageUrl!)
+                        .toString(),
+                    height: 144,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const SizedBox(height: 48, child: Center(child: Icon(Icons.image_outlined))),
+                  ),
+                ),
+              OutlinedButton.icon(
+                onPressed: busy ? null : () => unawaited(pickPhoto()),
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: Text(photoBytes == null && widget.original?.imageUrl == null
+                    ? 'Add product photo (optional)'
+                    : 'Change product photo'),
+              ),
+              const SizedBox(height: 4),
+              Text('JPEG, PNG, WebP and other supported images, up to 8 MB.',
+                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 20),
               if (widget.original == null) ...[
                 _field(
                   'What do you have in the warehouse?',
@@ -371,64 +492,37 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     return null;
                   },
                 ),
-                if (widget.masters.categories.isNotEmpty) ...[
-                  Text('Category',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final category in widget.masters.categories)
-                        ChoiceChip(
-                          label: Text(category.name),
-                          selected: categoryId == category.id,
-                          onSelected: busy
-                              ? null
-                              : (_) => setState(() {
-                                    categoryId = category.id;
-                                    error = null;
-                                  }),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                Text('How do you sell it?',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
+                _selection(
+                  label: 'Category *',
+                  placeholder: 'Select category',
+                  value: widget.masters.categories
+                      .where((category) => category.id == categoryId)
+                      .map((category) => category.name)
+                      .firstOrNull,
+                  onTap: () => unawaited(_chooseCategory()),
+                ),
                 FormField<String>(
                   key: const Key('catalog-unit'),
-                  validator: (_) => unit == null
-                      ? 'Choose bag, kg, piece, or another unit.'
-                      : null,
+                  validator: (_) =>
+                      unit == null ? 'Choose how you sell this material.' : null,
                   builder: (state) => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final sellingUnit in sellingUnits)
-                            ChoiceChip(
-                              label: Text(sellingUnit.name),
-                              selected: unit == sellingUnit.code,
-                              onSelected: busy
-                                  ? null
-                                  : (_) => setState(() {
-                                        unit = sellingUnit.code;
-                                        error = null;
-                                      }),
-                            ),
-                        ],
+                      _selection(
+                        label: 'How do you sell it? *',
+                        placeholder: 'Select unit (bag, kg, tonne, piece...)',
+                        value: sellingUnits
+                            .where((item) => item.code == unit)
+                            .map((item) => item.name)
+                            .firstOrNull,
+                        onTap: () {
+                          state.didChange(unit);
+                          unawaited(_chooseUnit().then((_) => state.didChange(unit)));
+                        },
                       ),
                       if (state.hasError)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(state.errorText!,
-                              style: const TextStyle(
-                                  color: BuildToPalette.danger)),
-                        ),
+                        Text(state.errorText!,
+                            style: const TextStyle(color: BuildToPalette.danger)),
                     ],
                   ),
                 ),
@@ -441,50 +535,6 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
-              const SizedBox(height: 8),
-              if (photoBytes != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(
-                    photoBytes!,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(
-                      height: 180,
-                      child: Center(child: Text('Photo selected')),
-                    ),
-                  ),
-                )
-              else if (widget.original?.imageUrl != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    SupplierV21Config.origin
-                        .resolve(widget.original!.imageUrl!)
-                        .toString(),
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: busy ? null : () => unawaited(pickPhoto()),
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(
-                      photoBytes == null && widget.original?.imageUrl == null
-                          ? 'Add a photo'
-                          : 'Change photo'),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'JPEG, PNG, WebP, GIF, BMP, HEIC, or AVIF, up to 8 MB. The product can still be saved without a photo.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
               const SizedBox(height: 12),
               _field(
                 'Your price (₹)',
