@@ -251,6 +251,56 @@ void main() {
     clerk.state.dispose();
   });
 
+  test(
+      'temporary backend outage on resume keeps draft route but blocks actions',
+      () async {
+    final clerk = FakeClerk();
+    var offline = false;
+    var revoked = false;
+    final controller = makeController(
+      clerk,
+      MockClient((request) async {
+        if (offline) {
+          return http.Response('{"error":{"code":"SERVICE_UNAVAILABLE"}}', 503);
+        }
+        if (revoked) {
+          return http.Response('{"error":{"code":"MEMBERSHIP_REVOKED"}}', 403);
+        }
+        if (request.url.path == '/api/v2/me') {
+          return me([member(idA, 'OWNER')]);
+        }
+        if (request.url.path == '/api/v2/suppliers/$idA/access') {
+          return access(idA, 'OWNER');
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+    await controller.start();
+    clerk.login('user_SupplierOne', 'sess_SupplierOne');
+    await until(controller, SupplierAccessStage.authorized);
+    final activeSession = controller.sessionKey;
+    offline = true;
+    await controller.refresh(silent: true);
+    expect(controller.stage, SupplierAccessStage.authorized);
+    expect(controller.activeSupplier?.supplierId, idA);
+    expect(controller.sessionKey, activeSession);
+    expect(controller.accessRecheckBlocked, isTrue);
+    expect(controller.accessRecheckPending, isFalse);
+    expect(controller.notice, contains('product form is safe'));
+    offline = false;
+    await controller.refresh(silent: true);
+    expect(controller.stage, SupplierAccessStage.authorized);
+    expect(controller.accessRecheckBlocked, isFalse);
+    expect(controller.activeSupplier?.supplierId, idA);
+    revoked = true;
+    await controller.refresh(silent: true);
+    expect(controller.stage, SupplierAccessStage.accessDenied);
+    expect(controller.activeSupplier, isNull);
+    expect(controller.accessRecheckBlocked, isFalse);
+    controller.dispose();
+    clerk.state.dispose();
+  });
+
   test('no approved supplier membership is never authorized', () async {
     final clerk = FakeClerk();
     final controller = makeController(clerk, MockClient((_) async => me([])));

@@ -123,6 +123,98 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   @override
   Widget build(BuildContext context) => MaterialApp(
         navigatorKey: _navigatorKey,
+        // The barrier is above Navigator routes (including the product sheet).
+        // A transient /me or /access outage must never destroy an unfinished
+        // draft; nevertheless cached supplier roles cannot be used offline.
+        builder: _controller == null
+            ? null
+            : (context, child) => AnimatedBuilder(
+                  animation: _controller!,
+                  builder: (context, _) {
+                    final controller = _controller!;
+                    if (!controller.accessRecheckBlocked) {
+                      return child ?? const SizedBox.shrink();
+                    }
+                    return Stack(
+                      children: [
+                        child ?? const SizedBox.shrink(),
+                        const ModalBarrier(
+                          dismissible: false,
+                          color: Color(0x990C2342),
+                        ),
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 410),
+                            child: Material(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              clipBehavior: Clip.antiAlias,
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Icon(Icons.shield_outlined,
+                                        size: 38, color: Color(0xFF12396A)),
+                                    const SizedBox(height: 14),
+                                    Text(
+                                      controller.accessRecheckPending
+                                          ? 'Checking your supplier access'
+                                          : 'Connection interrupted',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w800),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      controller.notice ??
+                                          'We are securely checking your '
+                                              'current supplier permissions. '
+                                              'Your product form will remain '
+                                              'exactly as you left it.',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 18),
+                                    FilledButton.icon(
+                                      onPressed: controller.accessRecheckPending
+                                          ? null
+                                          : () => unawaited(
+                                              controller.refresh(silent: true)),
+                                      icon: controller.accessRecheckPending
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2),
+                                            )
+                                          : const Icon(Icons.refresh_rounded),
+                                      label: Text(
+                                          controller.accessRecheckPending
+                                              ? 'Verifying…'
+                                              : 'Retry connection'),
+                                    ),
+                                    TextButton(
+                                      onPressed: controller.accessRecheckPending
+                                          ? null
+                                          : () =>
+                                              unawaited(controller.signOut()),
+                                      child: const Text('Sign out'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
         title: 'Splyzo Supplier',
         debugShowCheckedModeBanner: false,
         theme: BuildToTheme.light(),
@@ -214,7 +306,7 @@ class _SupplierAccessView extends StatelessWidget {
         displayName: controller.account?.displayName,
         onSwitchSupplier: controller.showSupplierChooser,
         onSignOut: controller.signOut,
-        onRefresh: controller.refresh,
+        onRefresh: () => controller.refresh(silent: true),
         onOpenApplications: openApplications,
         canSwitchSupplier: (controller.account?.suppliers.length ?? 0) > 1,
       );

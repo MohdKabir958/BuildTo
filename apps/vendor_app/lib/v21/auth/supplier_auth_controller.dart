@@ -53,12 +53,19 @@ class SupplierAuthController extends ChangeNotifier {
   bool _disposed = false;
   bool _locallyBlocked = false;
   bool _busy = false;
+  bool _accessRecheckBlocked = false;
+  bool _accessRecheckPending = false;
 
   SupplierAccessStage get stage => _stage;
   SupplierV21Identity? get account => _account;
   SupplierV21Membership? get activeSupplier => _activeSupplier;
   String? get notice => _notice;
   bool get busy => _busy;
+
+  /// The previous supplier route remains mounted, but cannot receive any
+  /// interaction until the backend confirms that membership still exists.
+  bool get accessRecheckBlocked => _accessRecheckBlocked;
+  bool get accessRecheckPending => _accessRecheckPending;
   String? get signedInEmail => _clerk.identity.value.email;
 
   /// Invalidates open onboarding screens across session and account changes.
@@ -109,6 +116,8 @@ class SupplierAuthController extends ChangeNotifier {
 
   void _clear(SupplierAccessStage stage) {
     _generation++;
+    _accessRecheckBlocked = false;
+    _accessRecheckPending = false;
     _account = null;
     _activeSupplier = null;
     _selectedId = null;
@@ -197,8 +206,7 @@ class SupplierAuthController extends ChangeNotifier {
             !_current(generation, fingerprint)) {
           rethrow;
         }
-        await Future<void>.delayed(
-            Duration(milliseconds: 400 * (attempt + 1)));
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
       }
     }
     throw StateError('Unreachable profile synchronization state');
@@ -214,9 +222,21 @@ class SupplierAuthController extends ChangeNotifier {
     final previouslySelected = _selectedId;
     final keepApplicantForm =
         silent && _stage == SupplierAccessStage.noSupplier && _account != null;
-    final keepApprovedScreen =
-        silent && _stage == SupplierAccessStage.authorized && _activeSupplier != null;
+    final keepApprovedScreen = silent &&
+        _stage == SupplierAccessStage.authorized &&
+        _activeSupplier != null;
+    if (keepApprovedScreen) {
+      // A network failure is NOT proof that supplier permissions were revoked.
+      // Keep the current edit route/controllers mounted but make all operations
+      // inaccessible until the same account is reverified.
+      _accessRecheckBlocked = true;
+      _accessRecheckPending = true;
+      _notice = null;
+      _publish();
+    }
     if (!keepApplicantForm && !keepApprovedScreen) {
+      _accessRecheckBlocked = false;
+      _accessRecheckPending = false;
       _activeSupplier = null;
       _account = null;
       _stage = SupplierAccessStage.checking;
@@ -254,6 +274,15 @@ class SupplierAuthController extends ChangeNotifier {
       if (!_current(generation, fingerprint)) return;
       // Editing an unsubmitted draft is safe even during a temporary outage:
       // this state never grants any protected supplier access.
+      if (keepApprovedScreen &&
+          (error.problem == SupplierV21Problem.network ||
+              error.problem == SupplierV21Problem.server ||
+              error.problem == SupplierV21Problem.rateLimited)) {
+        _notice = 'We cannot confirm your supplier access right now. '
+            'Your unfinished product form is safe. Reconnect to continue.';
+        _publish();
+        return;
+      }
       if (keepApplicantForm &&
           (error.problem == SupplierV21Problem.network ||
               error.problem == SupplierV21Problem.server ||
@@ -266,14 +295,21 @@ class SupplierAuthController extends ChangeNotifier {
       _fail(error);
     } on FormatException {
       if (_current(generation, fingerprint)) {
+        _accessRecheckBlocked = false;
         _stage = SupplierAccessStage.accessDenied;
         _notice = 'The backend returned an invalid supplier access record.';
         _publish();
       }
     } catch (_) {
       if (_current(generation, fingerprint)) {
+        _accessRecheckBlocked = false;
         _stage = SupplierAccessStage.unavailable;
         _notice = 'Could not verify your supplier account. Please retry.';
+        _publish();
+      }
+    } finally {
+      if (_current(generation, fingerprint)) {
+        _accessRecheckPending = false;
         _publish();
       }
     }
@@ -341,6 +377,8 @@ class SupplierAuthController extends ChangeNotifier {
     }
     _selectedId = verified.supplierId;
     _activeSupplier = verified;
+    _accessRecheckBlocked = false;
+    _accessRecheckPending = false;
     _stage = SupplierAccessStage.authorized;
     _notice = null;
     _publish();
@@ -362,6 +400,8 @@ class SupplierAuthController extends ChangeNotifier {
 
   void _fail(SupplierV21Exception error) {
     _activeSupplier = null;
+    _accessRecheckBlocked = false;
+    _accessRecheckPending = false;
     _stage = switch (error.problem) {
       SupplierV21Problem.authentication => SupplierAccessStage.sessionExpired,
       SupplierV21Problem.forbidden ||

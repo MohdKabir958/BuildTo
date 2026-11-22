@@ -17,6 +17,7 @@ class PrivateEvidenceLinkSheet extends StatefulWidget {
       {super.key, required this.upload, this.pickFile, this.fixedType});
   final EvidenceUpload upload;
   final Future<XFile?> Function()? pickFile;
+
   /// When used during registration, the document type is already known.
   final SupplierEvidenceType? fixedType;
   @override
@@ -137,20 +138,23 @@ class _PrivateEvidenceLinkSheetState extends State<PrivateEvidenceLinkSheet> {
                     child: Text(type.title,
                         style: Theme.of(context).textTheme.titleMedium),
                   )
-                else DropdownButtonFormField<SupplierEvidenceType>(
-                  initialValue: type,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Document type'),
-                  items: SupplierEvidenceType.values
-                      .map((value) => DropdownMenuItem(
-                          value: value, child: Text(value.title, maxLines: 2)))
-                      .toList(),
-                  onChanged: busy
-                      ? null
-                      : (value) {
-                          if (value != null) setState(() => type = value);
-                        },
-                ),
+                else
+                  DropdownButtonFormField<SupplierEvidenceType>(
+                    initialValue: type,
+                    isExpanded: true,
+                    decoration:
+                        const InputDecoration(labelText: 'Document type'),
+                    items: SupplierEvidenceType.values
+                        .map((value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.title, maxLines: 2)))
+                        .toList(),
+                    onChanged: busy
+                        ? null
+                        : (value) {
+                            if (value != null) setState(() => type = value);
+                          },
+                  ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                     onPressed: busy ? null : choose,

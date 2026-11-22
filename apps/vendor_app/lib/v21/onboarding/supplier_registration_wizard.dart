@@ -189,9 +189,9 @@ class _SupplierRegistrationWizardState
       }
       if (!mounted) return;
       if (failedAttachments > 0) {
-        widget.attachmentWarning?.call(
-            'Your application was submitted, but some documents could '
-            'not be attached. Open the document checklist and try again.');
+        widget.attachmentWarning
+            ?.call('Your application was submitted, but some documents could '
+                'not be attached. Open the document checklist and try again.');
       }
       widget.completed(result);
     } catch (e) {
@@ -286,11 +286,13 @@ class _SupplierRegistrationWizardState
                       isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'GST status',
-                        helperText: 'Choose No if you do not have a GST number.',
+                        helperText:
+                            'Choose No if you do not have a GST number.',
                       ),
                       items: SupplierGstRegistration.values
                           .map((value) => DropdownMenuItem(
-                              value: value, child: Text(switch (value) {
+                              value: value,
+                              child: Text(switch (value) {
                                 SupplierGstRegistration.unregistered =>
                                   'No, not registered for GST',
                                 SupplierGstRegistration.regular =>
@@ -355,7 +357,8 @@ class _SupplierRegistrationWizardState
                   if (step == 3) ...[
                     _ReviewValue('Registered name', legalName.text),
                     _ReviewValue('Display name', displayName.text),
-                    _ReviewValue('Verified email', widget.email ?? 'Unavailable'),
+                    _ReviewValue(
+                        'Verified email', widget.email ?? 'Unavailable'),
                     _ReviewValue('Mobile number',
                         SupplierRegistrationDraft.normalizePhone(phone.text)),
                     _ReviewValue('GST registration', gst.apiValue),
@@ -378,11 +381,10 @@ class _SupplierRegistrationWizardState
                             ? null
                             : () => _chooseDocument(
                                 SupplierEvidenceType.businessRegistration),
-                        icon: Icon(
-                            documentMediaIds.containsKey(
-                                    SupplierEvidenceType.businessRegistration)
-                                ? Icons.check_circle_outline
-                                : Icons.attach_file_outlined),
+                        icon: Icon(documentMediaIds.containsKey(
+                                SupplierEvidenceType.businessRegistration)
+                            ? Icons.check_circle_outline
+                            : Icons.attach_file_outlined),
                         label: Text(documentMediaIds.containsKey(
                                 SupplierEvidenceType.businessRegistration)
                             ? 'Business document added'

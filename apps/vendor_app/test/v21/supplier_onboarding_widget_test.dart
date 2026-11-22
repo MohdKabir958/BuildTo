@@ -142,7 +142,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Your account is in review'), findsNothing);
     expect(
-        tester.widget<TextFormField>(field('Registered legal name')).controller!.text,
+        tester
+            .widget<TextFormField>(field('Registered legal name'))
+            .controller!
+            .text,
         'Materials Hub Pvt Ltd');
     // An accidental back press asks before discarding the entered details.
     await tester.tap(find.byTooltip('Back'));
@@ -150,7 +153,11 @@ void main() {
     expect(find.text('Leave registration?'), findsOneWidget);
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();
-    expect(tester.widget<TextFormField>(field('Supplier display name')).controller!.text,
+    expect(
+        tester
+            .widget<TextFormField>(field('Supplier display name'))
+            .controller!
+            .text,
         'Materials Hub');
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();

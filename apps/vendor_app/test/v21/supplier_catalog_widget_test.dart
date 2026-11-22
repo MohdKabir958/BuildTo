@@ -6,6 +6,8 @@ import 'package:http/testing.dart';
 import 'package:vendor_app/v21/api/supplier_v21_api.dart';
 import 'package:vendor_app/v21/api/supplier_v21_models.dart';
 import 'package:vendor_app/v21/catalog/supplier_catalog_repository.dart';
+import 'package:vendor_app/v21/catalog/supplier_catalog_editor.dart';
+import 'package:vendor_app/v21/catalog/supplier_catalog_models.dart';
 import 'package:vendor_app/v21/design/buildto_theme.dart';
 import 'package:vendor_app/v21/screens/supplier_shell.dart';
 
@@ -112,6 +114,97 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('create form uses searchable category and selling-unit selectors',
+      (tester) async {
+    final server = CatalogServer();
+    const steel = '123e4567-e89b-12d3-a456-426614174035';
+    const masters = CatalogMasters(
+      [
+        CatalogCategory(
+            '123e4567-e89b-12d3-a456-426614174030', 'Cement & Concrete'),
+        CatalogCategory(steel, 'TMT Steel & Rebars'),
+        CatalogCategory(
+            '123e4567-e89b-12d3-a456-426614174036', 'Paints & Finishes'),
+      ],
+      [
+        CatalogUnit('BAG', 'Bag'),
+        CatalogUnit('KG', 'Kilogram'),
+        CatalogUnit('PIECE', 'Piece'),
+      ],
+    );
+    await tester.pumpWidget(MaterialApp(
+      theme: BuildToTheme.light(),
+      home: Scaffold(
+        body: SupplierListingEditor(
+          supplierId: supplier,
+          repository: server.repo,
+          masters: masters,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Product category'), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('catalog-field-Product name')), 'Test cement bag');
+    await tester.tap(find.byTooltip('Close product form'));
+    await tester.pumpAndSettle();
+    expect(find.text('Leave product form?'), findsOneWidget);
+    await tester.tap(find.text('Continue editing'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextFormField>(
+              find.byKey(const Key('catalog-field-Product name')))
+          .controller!
+          .text,
+      'Test cement bag',
+    );
+    expect(find.text('TMT Steel & Rebars'), findsNothing);
+    expect(find.text('How do customers buy this?'), findsOneWidget);
+    // This section is below the primary fields in the lazy list.
+    final categoryButton = find.descendant(
+      of: find.byKey(const Key('catalog-category-selector')),
+      matching: find.byType(OutlinedButton),
+    );
+    await tester.ensureVisible(categoryButton);
+    await tester.tap(categoryButton);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('catalog-option-search')), 'steel');
+    await tester.pumpAndSettle();
+    expect(find.text('Cement & Concrete'), findsNothing);
+    await tester.tap(find.byKey(const Key('catalog-option-$steel')));
+    await tester.pumpAndSettle();
+    expect(find.text('TMT Steel & Rebars'), findsOneWidget);
+    final unitButton = find.descendant(
+      of: find.byKey(const Key('catalog-unit-selector')),
+      matching: find.byType(OutlinedButton),
+    );
+    await tester.ensureVisible(unitButton);
+    await tester.tap(unitButton);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('catalog-option-search')), 'kilogram');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('catalog-option-KG')));
+    await tester.pumpAndSettle();
+    expect(find.text('Kilogram'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Advanced order settings'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Advanced order settings'), findsOneWidget);
+    await tester
+        .ensureVisible(find.byKey(const Key('catalog-advanced-options')));
+    await tester.tap(find.byKey(const Key('catalog-advanced-options')));
+    await tester.pumpAndSettle();
+    expect(find.text('Minimum order quantity'), findsOneWidget);
+    expect(find.text('Order quantity increments'), findsOneWidget);
+    expect(find.text('Maximum order quantity (optional)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('professional owner catalog shows real rows and create control',
       (tester) async {
