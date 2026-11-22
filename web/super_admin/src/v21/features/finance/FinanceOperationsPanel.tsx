@@ -124,9 +124,9 @@ export function FinanceOperationsPanel(){
  }
  const eligible=finance?.orders.filter(x=>x.fundingType==='RAZORPAY_CAPTURE_VERIFIED'&&!x.disputed&&!x.allocatedToActiveSettlement)??[];
  return <div className="space-y-5">
-  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-   <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><Landmark size={23} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Finance review desk</h2><p className="mt-1 text-sm text-slate-500">Audit-backed maker/checker settlement evidence, supplier-held COD and balanced journals.</p></div></div>
-    <button type="button" disabled={loading} onClick={()=>void load()} className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
+  <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+   <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><Landmark size={23} className="text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Finance review desk</h2><p className="mt-1 text-sm text-slate-500">Audit-backed maker/checker settlement evidence, supplier-held COD and balanced journals.</p></div></div>
+    <button type="button" disabled={loading} onClick={()=>void load()} className="v21-outline-button disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
    <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Captured gateway payments are NOT verified bank deposits. Approved settlement is NOT a bank payout. COD is held by the supplier until independently confirmed. This screen never sends funds.</p>
    <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Finance review">
     {(['settlements','cod','journals'] as const).map(t=><button type="button" role="tab" key={t} aria-selected={tab===t} onClick={()=>{setTab(t);setError('');setAction(null);}} className={'rounded-lg px-4 py-2 text-sm font-bold '+(tab===t?'bg-[#174C86] text-white':'border')}>{t==='cod'?'COD receipts':t==='journals'?'Ledger journals':'Settlements'}</button>)}
