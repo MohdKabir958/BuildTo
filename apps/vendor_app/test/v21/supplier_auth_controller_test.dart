@@ -231,7 +231,7 @@ void main() {
       MockClient((request) async {
         if (request.url.path == '/api/v2/me') {
           calls++;
-          return calls == 1 ? me([]) : delayed.future;
+          return calls == 1 ? me([]) : await delayed.future;
         }
         return http.Response('{}', 404);
       }),
