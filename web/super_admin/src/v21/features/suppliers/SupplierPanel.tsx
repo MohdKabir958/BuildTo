@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import type {FormEvent} from 'react';
-import {Building2,ClipboardCheck,RefreshCw,ShieldAlert} from 'lucide-react';
+import {AlertCircle,ArrowRight,Building2,CheckCircle2,ClipboardCheck,FileCheck2,FileWarning,RefreshCw,Search,ShieldAlert,ShieldCheck,XCircle} from 'lucide-react';
 import {useV21Api} from '../../lib/ApiProvider';
 import {V21ApiError} from '../../lib/apiClient';
 
@@ -22,10 +22,48 @@ type Page={items:Supplier[];nextCursor:string|null};
 type Review={type:'supplier'|'document';decision:string;documentId?:string;reason:string};
 
 const STATUSES:readonly Approval[]=['PENDING','UNDER_REVIEW','APPROVED','REJECTED','SUSPENDED'];
-const message=(error:unknown)=>error instanceof V21ApiError
- ?error.status===403?'You do not have supplier review permission.':error.status===409?'Supplier evidence or approval state has changed. Refresh and check the required verification.':
-  error.status===404?'The supplier record could not be found.':error.message
- :'The request failed. Check your network and retry.';
+export const supplierReviewMessage=(error:unknown):string=>{
+ if(!(error instanceof V21ApiError)) return 'The request failed. Check your connection and retry.';
+ switch(error.code){
+  case 'VERIFIED_DOCUMENTS_REQUIRED':
+   return 'Approval blocked: independently verified business registration evidence is required, plus a verified GST certificate for a GST-registered business. Open the Evidence checklist below and review each uploaded document first.';
+  case 'INDEPENDENT_SUPPLIER_REVIEW_REQUIRED':
+   return 'You cannot approve a business that you belong to. Another authorized administrator must review this application.';
+  case 'INCOMPLETE_APPLICATION':
+   return 'Approval blocked: the supplier must provide a verified contact email and billing address.';
+  case 'OWNER_REQUIRED':
+   return 'Approval blocked: this business needs an active owner record before it can be approved.';
+  case 'ILLEGAL_TRANSITION':
+   return 'This review action is no longer allowed. Refresh the supplier record to see its current status.';
+  case 'DOCUMENT_LOCKED':
+   return 'This application cannot accept document changes in its current state.';
+ }
+ if(error.status===403)return 'Your administrator role cannot perform this action.';
+ if(error.status===404)return 'This supplier or document is no longer available. Refresh the page.';
+ if(error.status===409)return error.message || 'This supplier changed. Refresh and try again.';
+ return error.message;
+};
+const message=supplierReviewMessage;
+const statusLabel=(value:string)=>value.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+const statusColor=(value:string)=>value==='APPROVED'||value==='VERIFIED'
+ ?'border-emerald-200 bg-emerald-50 text-emerald-800'
+ :value==='PENDING'||value==='UNDER_REVIEW'||value==='UPLOADED'
+ ?'border-amber-200 bg-amber-50 text-amber-800'
+ :value==='REJECTED'||value==='SUSPENDED'
+ ?'border-rose-200 bg-rose-50 text-rose-800'
+ :'border-slate-200 bg-slate-100 text-slate-700';
+const requiredEvidence=(detail:Detail):{type:string;label:string;verified:boolean;uploaded:boolean}[]=>{
+ const requirements=[
+  {type:'BUSINESS_REGISTRATION',label:'Business registration certificate'},
+  ...(['REGULAR','COMPOSITION'].includes(detail.gstRegistration)
+   ?[{type:'GST_CERTIFICATE',label:'GST registration certificate'}]:[]),
+ ];
+ return requirements.map(entry=>{
+  const matches=detail.documents.filter(d=>d.documentType===entry.type);
+  return {...entry,uploaded:matches.length>0,verified:matches.some(d=>
+   d.status==='VERIFIED'&&d.digestAvailable&&(!d.expiresAt||new Date(d.expiresAt)>new Date()))};
+ });
+};
 const allowed=(value:Approval):readonly string[]=>({
  DRAFT:[],PENDING:['UNDER_REVIEW','APPROVED','REJECTED'],
  UNDER_REVIEW:['APPROVED','REJECTED'],REJECTED:['UNDER_REVIEW'],
@@ -36,6 +74,7 @@ const date=(value:string|null)=>value?new Date(value).toLocaleString():'—';
 export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
  const api=useV21Api();
  const [status,setStatus]=useState<Approval|'ALL'>('PENDING');
+ const [search,setSearch]=useState('');
  const [items,setItems]=useState<Supplier[]>([]);
  const [cursor,setCursor]=useState<string|null>(null);
  const [selectedId,setSelectedId]=useState('');
@@ -47,6 +86,10 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
  const [error,setError]=useState('');
  const [info,setInfo]=useState('');
  const [downloading,setDownloading]=useState<string|null>(null);
+ const [lastRequestId,setLastRequestId]=useState('');
+ const evidence=detail?requiredEvidence(detail):[];
+ const approvalReady=evidence.every(e=>e.verified)&&Boolean(detail?.contactEmail)&&Boolean(detail?.billingAddress)&&Boolean(detail?.owners.length);
+ const filteredItems=items.filter(s=>[s.displayName,s.legalName,s.slug].join(' ').toLowerCase().includes(search.trim().toLowerCase()));
  const download=async(doc:Doc)=>{
   if(!doc.downloadPath||downloading)return;
   setDownloading(doc.id);setError('');
@@ -101,7 +144,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
  const self=detail?.owners.some(owner=>owner.userId===currentAdminId) ?? false;
  async function submitReview(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!detail||!review||busy||review.reason.trim().length<8)return;
-  setBusy(true);setError('');setInfo('');
+  setBusy(true);setError('');setInfo('');setLastRequestId('');
   try{
    const base='/api/v2/admin/suppliers/'+encodeURIComponent(detail.id);
    const path=review.type==='document'
@@ -110,38 +153,56 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
    setReview(null);
    setInfo('Review saved with an audit reason. No payment or supplier data was changed.');
    await Promise.all([load(true),loadDetail(detail.id)]);
-  }catch(e){setError(message(e));}
+  }catch(e){setError(message(e));if(e instanceof V21ApiError)setLastRequestId(e.requestId);}
   finally{setBusy(false);}
  }
  return <div className="space-y-6">
-  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-   <div className="flex flex-wrap items-center justify-between gap-3">
-    <div className="flex items-center gap-3"><Building2 className="text-[#174C86]" size={24}/><div>
-     <h2 className="text-lg font-extrabold">Supplier verification</h2>
-     <p className="text-sm text-slate-500">Independent review is required. Approval uses human-verified business records and, where applicable, GST evidence.</p>
-    </div></div>
-    <button type="button" onClick={()=>void load(true)} disabled={loading} className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button>
+  <section className="v21-surface overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+   <div className="flex flex-wrap items-start justify-between gap-4 bg-gradient-to-br from-[#f6f9ff] via-white to-white px-6 py-7 sm:px-8">
+    <div className="flex items-start gap-4">
+     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e7effe] text-[#123a75]"><Building2 size={23}/></div>
+     <div>
+      <div className="mb-1 flex items-center gap-2"><span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#5275aa]">Marketplace / Compliance</span></div>
+      <h2 className="text-2xl font-extrabold tracking-tight text-[#142e53]">Supplier verification</h2>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Review business credentials and document evidence before enabling marketplace access. Every decision is independently audited.</p>
+     </div>
+    </div>
+    <button type="button" onClick={()=>void load(true)} disabled={loading} className="v21-outline-button"><RefreshCw size={16} className={loading?'animate-spin':''}/> Refresh queue</button>
    </div>
-   <div className="mt-5 flex flex-wrap items-center gap-3">
-    <label htmlFor="supplier-state" className="text-sm font-semibold">Approval status</label>
-    <select id="supplier-state" value={status} onChange={e=>setStatus(e.target.value as Approval|'ALL')} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
-     <option value="ALL">All suppliers</option>
-     {STATUSES.map(s=><option value={s} key={s}>{s.replace(/_/g,' ')}</option>)}
-    </select>
+   <div className="grid gap-3 border-y border-slate-100 bg-white px-6 py-4 sm:grid-cols-3 sm:px-8">
+    <div className="rounded-xl bg-[#f5f8fc] p-4"><p className="text-xs font-semibold text-slate-500">Applications loaded</p><p className="mt-1 text-2xl font-extrabold text-[#173860]">{items.length}</p></div>
+    <div className="rounded-xl bg-amber-50 p-4"><p className="text-xs font-semibold text-amber-800">Awaiting review in this page</p><p className="mt-1 text-2xl font-extrabold text-amber-900">{items.filter(s=>s.approval==='PENDING'||s.approval==='UNDER_REVIEW').length}</p></div>
+    <div className="rounded-xl bg-emerald-50 p-4"><p className="text-xs font-semibold text-emerald-800">Approved in this page</p><p className="mt-1 text-2xl font-extrabold text-emerald-900">{items.filter(s=>s.approval==='APPROVED').length}</p></div>
    </div>
-   {error&&<p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
-   {info&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{info}</p>}
+   <div className="px-6 pb-6 pt-5 sm:px-8">
+   <div className="flex flex-wrap items-end gap-3">
+    <div className="min-w-[200px] flex-1">
+     <label htmlFor="supplier-search" className="mb-2 block text-xs font-semibold text-slate-600">Search applications</label>
+     <div className="relative"><Search aria-hidden="true" size={17} className="pointer-events-none absolute left-3.5 top-3.5 text-slate-400"/><input id="supplier-search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Business name or supplier ID" className="v21-input pl-10"/></div>
+    </div>
+    <div className="min-w-[185px]">
+     <label htmlFor="supplier-state" className="mb-2 block text-xs font-semibold text-slate-600">Approval status</label>
+     <select id="supplier-state" value={status} onChange={e=>setStatus(e.target.value as Approval|'ALL')} className="v21-input">
+      <option value="ALL">All suppliers</option>
+      {STATUSES.map(v=><option value={v} key={v}>{statusLabel(v)}</option>)}
+     </select>
+    </div>
+   </div>
+   {error&&<div role="alert" className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"><AlertCircle className="mt-0.5 shrink-0" size={19}/><div><strong className="block">Action could not be completed</strong><p className="mt-1 leading-6">{error}</p>{lastRequestId&&<p className="mt-2 text-xs text-rose-700">Support reference: {lastRequestId}</p>}</div></div>}
+   {info&&<div role="status" className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 size={18}/>{info}</div>}
    {loading&&items.length===0?<p role="status" className="mt-6 text-sm text-slate-500">Loading supplier applications…</p>:
-    <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[540px] text-left text-sm">
-     <thead><tr className="border-b text-xs uppercase text-slate-500"><th scope="col" className="pb-3">Supplier</th><th scope="col">GST</th><th scope="col">State</th><th scope="col" className="text-right">Review</th></tr></thead>
-     <tbody>{items.map(s=><tr key={s.id} className="border-b border-slate-100">
-      <td className="py-4"><span className="font-bold">{s.displayName}</span><span className="block text-xs text-slate-500">{s.legalName}</span></td>
-      <td className="py-4">{s.gstRegistration}</td><td className="py-4">{s.approval.replace(/_/g,' ')}</td>
-      <td className="py-4 text-right"><button type="button" className="rounded-lg border border-slate-300 px-3 py-2 font-semibold hover:bg-slate-50" onClick={()=>{setSelectedId(s.id);setReview(null);}}>View details</button></td>
+    <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200"><table className="w-full min-w-[560px] text-left text-sm">
+     <thead><tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500"><th scope="col" className="px-5 py-4">Supplier</th><th scope="col" className="px-4 py-4">GST</th><th scope="col" className="px-4 py-4">Status</th><th scope="col" className="px-5 py-4 text-right">Action</th></tr></thead>
+     <tbody>{filteredItems.map(s=><tr key={s.id} className={`border-b border-slate-100 transition hover:bg-[#f5f8fd] ${selectedId===s.id?'bg-[#eff5ff]':''}`}>
+      <td className="px-5 py-4"><div className="font-bold text-[#173251]">{s.displayName}</div><div className="mt-1 text-xs text-slate-500">{s.legalName}</div><div className="mt-1 font-mono text-[10px] text-slate-400">{s.slug}</div></td>
+      <td className="px-4 py-4"><span className="text-xs font-semibold text-slate-700">{statusLabel(s.gstRegistration)}</span></td>
+      <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusColor(s.approval)}`}>{statusLabel(s.approval)}</span></td>
+      <td className="px-5 py-4 text-right"><button type="button" className="v21-outline-button ml-auto" onClick={()=>{setSelectedId(s.id);setReview(null);}}>View details <ArrowRight size={16}/></button></td>
      </tr>)}</tbody>
-    </table>{items.length===0&&!loading&&<p className="py-8 text-sm text-slate-500">No suppliers match this approval status.</p>}
+    </table>{filteredItems.length===0&&!loading&&<p className="px-5 py-8 text-sm text-slate-500">{search?'No suppliers match this search.':'No suppliers match this approval status.'}</p>}
     {cursor&&<button type="button" disabled={loading} onClick={()=>void load(false,cursor)} className="mt-4 rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">Load more</button>}
     </div>}
+   </div>
   </section>
 
   {selectedId&&<section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" aria-label="Selected supplier details">
