@@ -86,8 +86,8 @@ export function SupportAdminPanel(){
    {message:responseText.trim(),internal}),internal?'Private internal note saved.':'Customer-visible response saved.');
  }
  return <div className="space-y-5">
-  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-   <div className="flex flex-wrap justify-between gap-3"><div className="flex items-center gap-3"><Headphones size={23} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Customer care and trust</h2>
+  <div className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+   <div className="flex flex-wrap justify-between gap-3"><div className="flex items-center gap-3"><Headphones size={23} className="text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Customer care and trust</h2>
     <p className="text-sm text-slate-500">Support cases, return decisions and independent supplier review moderation.</p></div></div><button disabled={loading} type="button" onClick={()=>void load()} className="rounded-lg border px-4 py-2 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className="mr-1 inline"/>Refresh</button></div>
    <div role="tablist" aria-label="Support queues" className="mt-5 flex flex-wrap gap-2">
     {(['cases','returns','reviews'] as const).map(t=><button type="button" role="tab" key={t} aria-selected={tab===t} onClick={()=>{setTab(t);setPending(null);setError('');}} className={'rounded-lg px-4 py-2 text-sm font-bold '+(tab===t?'bg-[#174C86] text-white':'border')}>{t==='cases'?'Support cases':t==='returns'?'Return claims':'Supplier reviews'} ({t==='cases'?cases.length:t==='returns'?returns.length:reviews.length})</button>)}
@@ -111,7 +111,7 @@ export function SupportAdminPanel(){
    </>}
    <p className="mt-4 text-xs text-slate-500">These existing queues show up to 100 entries each. Queue totals displayed here are visible-item counts, not platform-wide totals.</p>
   </div>
-  {detailId&&tab==='cases'&&<section aria-label="Support conversation" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  {detailId&&tab==='cases'&&<section aria-label="Support conversation" className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
    <div className="flex justify-between gap-2"><h3 className="font-extrabold">{detail?.publicNumber||'Loading conversation…'}</h3><button type="button" className="text-sm font-bold text-[#174C86]" onClick={()=>{setDetailId('');setDetail(null);}}>Close</button></div>
    {detail&&<>
     <h4 className="mt-3 text-sm font-bold">{detail.subject} · {detail.status}</h4>
