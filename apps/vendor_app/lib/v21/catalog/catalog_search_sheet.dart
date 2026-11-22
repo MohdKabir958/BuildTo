@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// Reusable searchable picker for backend-provided catalog masters.
@@ -54,8 +55,7 @@ class _CatalogSearchSheetState extends State<CatalogSearchSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(widget.title,
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 14),
               TextField(
                 key: const Key('catalog-option-search'),
@@ -73,9 +73,12 @@ class _CatalogSearchSheetState extends State<CatalogSearchSheet> {
               Expanded(
                 child: visible.isEmpty
                     ? Center(
-                        child: Text(widget.options.isEmpty
-                            ? 'No options are available. Refresh the catalog.'
-                            : 'No matches. Try another name.'))
+                        child: Text(
+                          widget.options.isEmpty
+                              ? 'No options are available. Refresh the catalog.'
+                              : 'No matches. Try another name.',
+                        ),
+                      )
                     : ListView.builder(
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
@@ -84,9 +87,11 @@ class _CatalogSearchSheetState extends State<CatalogSearchSheet> {
                           final option = visible[index];
                           return ListTile(
                             key: Key('catalog-option-${option.value}'),
-                            title: Text(option.label,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis),
+                            title: Text(
+                              option.label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             trailing: widget.selected == option.value
                                 ? const Icon(Icons.check_circle_rounded)
                                 : null,
