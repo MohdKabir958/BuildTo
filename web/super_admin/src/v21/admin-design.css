@@ -1,0 +1,95 @@
+/* Splyzo V2.1 admin workspace — scoped away from legacy admin. */
+.splyzo-admin {
+  --sp-navy: #102b4d;
+  --sp-ink: #142a46;
+  --sp-accent: #f26b3c;
+  --sp-border: #dce5f1;
+  --sp-muted: #63758b;
+  font-family: "Plus Jakarta Sans Variable","Plus Jakarta Sans",system-ui,sans-serif;
+  background: radial-gradient(circle at 70% -8%, #eaf1fc 0, transparent 35%), #f4f7fb;
+  color: var(--sp-ink);
+}
+.splyzo-admin .splyzo-sidebar {
+  background: linear-gradient(175deg,#0e315a 0%,#0d294b 48%,#091e37 100%);
+  box-shadow: 5px 0 36px rgba(13,37,66,.055);
+}
+.splyzo-admin .splyzo-nav-item {position:relative;min-height:46px;letter-spacing:-.01em;}
+.splyzo-admin .splyzo-nav-item[aria-current="page"]::before {
+  content:"";position:absolute;left:-12px;top:11px;bottom:11px;width:3px;
+  background:var(--sp-accent);border-radius:0 6px 6px 0;
+}
+.splyzo-admin .splyzo-topbar {box-shadow:0 1px 0 rgba(18,50,83,.025);}
+.splyzo-admin .splyzo-admin-main > * {animation:splyzo-appear .18s ease-out both;}
+@keyframes splyzo-appear {from{opacity:.65;transform:translateY(3px)}to{opacity:1;transform:none}}
+.splyzo-admin main section.rounded-2xl,
+.splyzo-admin main div.rounded-2xl.border.border-slate-200.bg-white {
+  border:1px solid var(--sp-border);
+  border-radius:21px;
+  box-shadow:0 3px 7px rgba(16,43,77,.018),0 14px 34px rgba(16,43,77,.035);
+}
+.splyzo-admin main h2,.splyzo-admin main h3 {letter-spacing:-.035em;}
+.splyzo-admin main h2 {font-weight:800;}
+.splyzo-admin main table {width:100%;border-collapse:separate;border-spacing:0;}
+.splyzo-admin main thead th {
+  background:#edf2f9;color:#526783;text-transform:uppercase;
+  font-size:11px;letter-spacing:.075em;font-weight:800;
+  padding:13px 15px;border-bottom:1px solid #dce6f2;
+}
+.splyzo-admin main thead th:first-child {border-top-left-radius:10px;}
+.splyzo-admin main thead th:last-child {border-top-right-radius:10px;}
+.splyzo-admin main tbody td {padding:15px;color:var(--sp-ink);border-bottom:1px solid #e9eef5;}
+.splyzo-admin main tbody tr:hover {background:#f6f9fe;}
+.splyzo-admin main :is(input:not([type="checkbox"]),select,textarea) {
+  border-color:#cfdae9; background-color:white; color:var(--sp-ink);
+  border-radius:12px;outline-offset:2px;min-height:42px;
+}
+.splyzo-admin main :is(input:not([type="checkbox"]),select,textarea):focus-visible {
+  outline:2px solid #37679e;outline-offset:1px;border-color:#37679e;
+}
+.splyzo-admin main :is(button,[role="button"]){
+  border-radius:11px;transition:background-color .15s,border-color .15s,box-shadow .15s,transform .15s;
+}
+.splyzo-admin main button:not(:disabled):active {transform:translateY(1px);}
+.splyzo-admin main button:disabled {opacity:.55;cursor:not-allowed;}
+.splyzo-admin main [role="tablist"] {padding:5px;border:1px solid #e1e9f3;border-radius:14px;background:#f0f4fa;max-width:max-content;}
+.splyzo-admin main [role="tablist"] [aria-selected="true"] {box-shadow:0 2px 5px rgba(13,40,78,.15);}
+.splyzo-admin main [role="alert"] {
+  border:1px solid #f1b5b5;border-left:4px solid #ca4141;
+  background:#fff4f3;color:#8c2929;border-radius:13px;padding:14px 16px;
+  font-weight:600;line-height:1.55;
+}
+.splyzo-admin main [role="status"] {line-height:1.55;}
+.splyzo-admin .splyzo-surface {
+  border:1px solid var(--sp-border);background:white;border-radius:22px;
+  box-shadow:0 14px 35px rgba(16,43,77,.045);
+}
+.splyzo-admin .splyzo-primary {
+  background:#123963;color:white;font-weight:750;border:1px solid #123963;
+  padding:11px 16px;min-height:43px;
+}
+.splyzo-admin .splyzo-primary:not(:disabled):hover {background:#1d507e;box-shadow:0 6px 16px rgba(18,57,99,.17);}
+.splyzo-admin .splyzo-secondary {
+  border:1px solid #d2deeb;background:white;color:#254b74;font-weight:750;
+  padding:10px 14px;min-height:42px;
+}
+.splyzo-admin .splyzo-secondary:not(:disabled):hover {background:#edf4fc;border-color:#aac1dc;}
+.splyzo-admin .splyzo-eyebrow {color:#687e97;font-size:11px;letter-spacing:.14em;font-weight:800;text-transform:uppercase;}
+.splyzo-admin .splyzo-status {display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid transparent;white-space:nowrap;}
+.splyzo-admin .splyzo-status[data-state="PENDING"],
+.splyzo-admin .splyzo-status[data-state="UNDER_REVIEW"] {background:#fff7e8;color:#99611b;border-color:#f4dfad;}
+.splyzo-admin .splyzo-status[data-state="APPROVED"],
+.splyzo-admin .splyzo-status[data-state="VERIFIED"] {background:#eaf8f0;color:#20744c;border-color:#c4e9d4;}
+.splyzo-admin .splyzo-status[data-state="REJECTED"],
+.splyzo-admin .splyzo-status[data-state="SUSPENDED"] {background:#fff0ef;color:#a93d35;border-color:#f4cdc8;}
+.splyzo-admin .splyzo-status[data-state="UPLOADED"],
+.splyzo-admin .splyzo-status[data-state="DRAFT"] {background:#edf3fb;color:#41648c;border-color:#dbe6f4;}
+.splyzo-admin .splyzo-status[data-state="MISSING"] {background:#fff0ec;color:#a74430;border-color:#f5d6ca;}
+.splyzo-admin .splyzo-select, .splyzo-admin .splyzo-input {border:1px solid #d3deed;border-radius:12px;min-height:44px;padding:9px 12px;background:white;}
+.splyzo-admin .splyzo-note {border-radius:15px;border:1px solid #dbe5f2;background:#f5f8fd;padding:16px;}
+.splyzo-admin .splyzo-note[data-tone="warning"] {background:#fff9ed;border-color:#f0dcae;}
+.splyzo-admin .splyzo-note[data-tone="danger"] {background:#fff3f2;border-color:#f1c5be;}
+@media (max-width: 700px) {
+  .splyzo-admin .splyzo-admin-main {padding-top:19px;}
+  .splyzo-admin main tbody td {padding:12px;}
+}
+@media (prefers-reduced-motion: reduce){.splyzo-admin .splyzo-admin-main > *{animation:none}}
