@@ -9,6 +9,7 @@ import '../design/buildto_theme.dart';
 import 'supplier_catalog_models.dart';
 import 'supplier_catalog_repository.dart';
 import 'catalog_search_sheet.dart';
+import 'supplier_photo_picker_activity.dart';
 
 const fallbackSellingUnits = [
   CatalogUnit('BAG', 'Bag'),
@@ -290,28 +291,37 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
   }
 
   Future<void> pickPhoto() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1600,
-      maxHeight: 1600,
-      imageQuality: 80,
-    );
-    if (image == null || !mounted) return;
-    final bytes = await image.readAsBytes();
-    if (!mounted) return;
-    if (bytes.length > 8 * 1024 * 1024) {
-      setState(() => error = _photoTooBig);
-      return;
+    SupplierPhotoPickerActivity.begin();
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
+      );
+      if (image == null || !mounted) return;
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+      if (bytes.length > 8 * 1024 * 1024) {
+        setState(() => error = _photoTooBig);
+        return;
+      }
+      if (_photoType(bytes) == null) {
+        setState(() => error = _photoTypeHint);
+        return;
+      }
+      setState(() {
+        photoBytes = bytes;
+        uploadedImageUrl = null;
+        error = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => error = 'Unable to open this photo. Try again.');
+      }
+    } finally {
+      SupplierPhotoPickerActivity.end();
     }
-    if (_photoType(bytes) == null) {
-      setState(() => error = _photoTypeHint);
-      return;
-    }
-    setState(() {
-      photoBytes = bytes;
-      uploadedImageUrl = null;
-      error = null;
-    });
   }
 
   CatalogListingInput _input() => CatalogListingInput(
@@ -542,7 +552,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                 validator: _price,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              Text('GST', style: Theme.of(context).textTheme.titleMedium),
+              Text('GST rate *', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -584,10 +594,10 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                 subtitle: const Text(
                     'Pack size and order limits. Leave these as 1 for most products.'),
                 children: [
-                  _field('Pack size', pack, validator: _quantity),
-                  _field('Smallest order', minimum, validator: _quantity),
-                  _field('Order step', step, validator: _quantity),
-                  _field('Largest order', maximum,
+                  _field('Units per pack', pack, validator: _quantity),
+                  _field('Minimum order quantity', minimum, validator: _quantity),
+                  _field('Order quantity increment', step, validator: _quantity),
+                  _field('Maximum order quantity', maximum,
                       optional: true,
                       validator: (value) => (value ?? '').trim().isEmpty
                           ? null
