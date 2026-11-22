@@ -5,6 +5,7 @@ import '../api/supplier_v21_api.dart';
 import '../design/buildto_components.dart';
 import '../design/buildto_theme.dart';
 import '../screens/supplier_shell.dart';
+import '../catalog/supplier_photo_picker_activity.dart';
 import 'supplier_auth_controller.dart';
 import 'supplier_clerk_port.dart';
 import 'supplier_release_policy.dart';
@@ -101,6 +102,10 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Returning from Android's image picker is not an account switch.
+      // Rebuilding the navigator here would discard an unsaved listing.
+      // Native Clerk identity changes and explicit access checks still apply.
+      if (SupplierPhotoPickerActivity.isActive) return;
       final controller = _controller;
       if (controller != null &&
           controller.stage != SupplierAccessStage.signedOut &&
