@@ -107,12 +107,18 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: .94,
-        child: SupplierListingEditor(
-            repository: widget.repository,
-            supplierId: widget.supplierId,
-            masters: masters!),
+      builder: (sheetContext) => Padding(
+        // Reduce the actual sheet height when the keyboard is open, instead
+        // of allowing the last fields/buttons to disappear under the IME.
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom),
+        child: FractionallySizedBox(
+          heightFactor: .94,
+          child: SupplierListingEditor(
+              repository: widget.repository,
+              supplierId: widget.supplierId,
+              masters: masters!),
+        ),
       ),
     );
     if (mounted && result != null) {
