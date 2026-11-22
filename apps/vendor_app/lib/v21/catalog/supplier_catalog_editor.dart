@@ -187,16 +187,15 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
     required List<_CatalogChoice> items,
     required String? current,
   }) async {
-    final searchController = TextEditingController();
-    try {
-      return await showModalBottomSheet<String>(
+    var searchTerm = '';
+    return showModalBottomSheet<String>(
         context: context,
         useSafeArea: true,
         isScrollControlled: true,
         showDragHandle: true,
         builder: (sheetContext) => StatefulBuilder(
           builder: (context, rebuild) {
-            final term = searchController.text.trim().toLowerCase();
+            final term = searchTerm.trim().toLowerCase();
             final shown = items
                 .where((item) => item.label.toLowerCase().contains(term))
                 .toList();
@@ -204,7 +203,11 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
               padding: EdgeInsets.only(
                   bottom: MediaQuery.viewInsetsOf(context).bottom),
               child: SizedBox(
-                height: min(MediaQuery.sizeOf(context).height * 0.68, 530),
+                height: min(
+                  530,
+                  max(240, MediaQuery.sizeOf(context).height -
+                      MediaQuery.viewInsetsOf(context).bottom - 80),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -221,9 +224,8 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                           const SizedBox(height: 14),
                           TextField(
                             key: const Key('catalog-option-search'),
-                            controller: searchController,
                             autofocus: true,
-                            onChanged: (_) => rebuild(() {}),
+                            onChanged: (text) => rebuild(() => searchTerm = text),
                             decoration: InputDecoration(
                               prefixIcon: const Icon(Icons.search_rounded),
                               hintText: 'Search options',
@@ -268,9 +270,6 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
           },
         ),
       );
-    } finally {
-      searchController.dispose();
-    }
   }
 
   Widget _selectionField({
@@ -462,7 +461,7 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
   Future<void> save() async {
     if (busy || uncertain) return;
     if (form.currentState?.validate() != true) {
-      setState(() => error = 'Check the price, GST, and order quantities.');
+      setState(() => error = 'Complete the highlighted fields before saving.');
       return;
     }
     if (widget.original == null && productName.text.trim().isEmpty) {
