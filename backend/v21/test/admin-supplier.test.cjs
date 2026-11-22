@@ -7,6 +7,7 @@ const {PrismaClient}=require('../../generated/buildto-v21');
 const {createV21App}=require('../dist/app.js');
 const {InMemoryTestLimiter}=require('../dist/rateLimit.js');
 const {ApiError}=require('../dist/errors.js');
+const {isStagingSupplierTestBypass}=require('../dist/admin-supplier-service.js');
 
 const db=new PrismaClient();
 test.after(async()=>db.$disconnect());
@@ -37,6 +38,18 @@ async function evidence(owner){
  return db.mediaAsset.create({data:{objectKey:'private/suppliers/'+randomUUID(),ownerUserId:owner.id,
   mimeType:'application/pdf',sizeBytes:BigInt(1024),sha256:'a'.repeat(64)}});
 }
+test('A05: unverified approval bypass is explicitly scoped, expiring, and impossible in production',()=>{
+ const now=Date.parse('2026-11-23T10:00:00.000Z');
+ const enabled={enabled:true,scope:'SUPPLIER_APPROVAL_WITHOUT_DOCUMENTS_UAT',expiresAt:'2026-11-28T00:00:00.000Z'};
+ assert.equal(isStagingSupplierTestBypass(enabled,'staging',now),true);
+ assert.equal(isStagingSupplierTestBypass(enabled,'local',now),false);
+ assert.equal(isStagingSupplierTestBypass(enabled,'production',now),false);
+ assert.equal(isStagingSupplierTestBypass({...enabled,enabled:false},'staging',now),false);
+ assert.equal(isStagingSupplierTestBypass({...enabled,scope:'SUPPLIER_APPROVAL_ALWAYS'},'staging',now),false);
+ assert.equal(isStagingSupplierTestBypass({...enabled,expiresAt:'2026-11-21T00:00:00.000Z'},'staging',now),false);
+ assert.equal(isStagingSupplierTestBypass({...enabled,expiresAt:'2027-01-01T00:00:00.000Z'},'staging',now),false);
+});
+
 test('A05: signed-in applicant cannot use supplier endpoints before independent approval; reviewed evidence unlocks owner',async()=>{
  const applicant=await user('applicant'),operator=await user('operator');
  await db.adminMembership.create({data:{userId:operator.id,role:'OPERATIONS',active:true}});
