@@ -12,6 +12,8 @@ on:
       - 'apps/vendor_app/**'
       - 'packages/**'
       - 'branding/**'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
