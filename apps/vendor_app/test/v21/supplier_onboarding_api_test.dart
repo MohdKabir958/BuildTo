@@ -83,7 +83,7 @@ void main() {
     expect(SupplierRegistrationDraft.validatePhone('9876543210'), isNull);
     expect(SupplierRegistrationDraft.validatePhone(''), isNotNull);
     expect(SupplierRegistrationDraft.normalizePhone('9876543210'), '+919876543210');
-    expect(SupplierRegistrationDraft.validatePhone('9876543210'), isNotNull);
+    expect(SupplierRegistrationDraft.validatePhone('12345'), isNotNull);
     expect(SupplierRegistrationDraft.validatePinCode('500001'), isNull);
     expect(SupplierRegistrationDraft.validatePinCode('050001'), isNotNull);
     expect(
