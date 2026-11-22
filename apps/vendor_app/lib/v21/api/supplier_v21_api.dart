@@ -142,9 +142,16 @@ class SupplierV21Api {
         final code =
             err is Map && err['code'] is String ? err['code'] as String : null;
         throw SupplierV21Exception(
-          payload.statusCode == 413 || payload.statusCode == 415
-              ? SupplierV21Problem.validation
-              : SupplierV21Problem.server,
+          switch (payload.statusCode) {
+            400 || 413 || 415 || 422 => SupplierV21Problem.validation,
+            401 => SupplierV21Problem.authentication,
+            403 => SupplierV21Problem.forbidden,
+            404 => SupplierV21Problem.notFound,
+            409 => SupplierV21Problem.conflict,
+            429 => SupplierV21Problem.rateLimited,
+            >= 500 => SupplierV21Problem.server,
+            _ => SupplierV21Problem.invalidResponse,
+          },
           code: code,
           statusCode: payload.statusCode,
         );
