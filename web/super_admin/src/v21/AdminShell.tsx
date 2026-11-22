@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {LogoMark} from '../components/ui/Logo';
 import {
   ArrowRight, Building2, CircleHelp, Command, ExternalLink, LockKeyhole,
-  LogOut, Menu, RefreshCw, ShieldCheck, X,
+  LogOut, Menu, RefreshCw, ShieldCheck, Search, X,
 } from 'lucide-react';
 import type {Section,SectionId} from './navigation';
 import {FEATURE_ORDER,SECTIONS} from './navigation';
@@ -19,6 +19,7 @@ import {SupportAdminPanel} from './features/support/SupportAdminPanel';
 import {FinanceWorkspace} from './features/finance/FinanceWorkspace';
 import {AuditPanel} from './features/audit/AuditPanel';
 import type {VerifiedAdminSession} from './auth/adminSession';
+import './admin-design.css';
 
 type Connection={state:'unconfigured'|'checking'|'connected'|'failed';release?:PublicRelease};
 type Props={apiBaseUrl?:string;administrator?:VerifiedAdminSession;onSignOut?:()=>void};
@@ -28,6 +29,8 @@ const byId=(id:SectionId):Section=>SECTIONS.find(s=>s.id===id)!;
 export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
   const [active,setActive]=useState<SectionId>('overview');
   const [mobileOpen,setMobileOpen]=useState(false);
+  const [quickOpen,setQuickOpen]=useState(false);
+  const [quickQuery,setQuickQuery]=useState('');
   const origin=apiBaseUrl??import.meta.env.VITE_API_BASE_URL??'';
   const [connection,setConnection]=useState<Connection>({state:origin?'checking':'unconfigured'});
   const [refresh,setRefresh]=useState(0);
@@ -45,6 +48,17 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
   },[origin,refresh]);
 
   useEffect(()=>{
+    const onShortcut=(event:KeyboardEvent)=>{
+      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){
+        event.preventDefault();setQuickOpen(value=>!value);
+      }
+      if(event.key==='Escape')setQuickOpen(false);
+    };
+    document.addEventListener('keydown',onShortcut);
+    return ()=>document.removeEventListener('keydown',onShortcut);
+  },[]);
+
+  useEffect(()=>{
     if(!mobileOpen)return;
     const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')setMobileOpen(false);};
     document.addEventListener('keydown',onKey);
@@ -52,7 +66,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
   },[mobileOpen]);
 
   const navigate=(section:SectionId)=>{
-    setActive(section);setMobileOpen(false);
+    setActive(section);setMobileOpen(false);setQuickOpen(false);setQuickQuery('');
   };
   const statusText={
     unconfigured:'API origin not configured',
@@ -67,7 +81,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
         <LogoMark size={44}/>
         <div>
           <p className="text-xl font-black leading-none tracking-tight text-white">Splyzo</p>
-          <p className="mt-1 text-xs font-semibold tracking-wide text-slate-300">ADMIN CONSOLE</p>
+          <p className="mt-1 text-[10px] font-semibold uppercase tracking-[.2em] text-slate-300">Operations center</p>
         </div>
       </div>
       <nav aria-label="Admin sections" className="flex-1 overflow-y-auto px-3 py-5">
@@ -82,7 +96,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
                   type="button"
                   onClick={()=>navigate(section.id)}
                   aria-current={active===section.id?'page':undefined}
-                  className={`flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors ${active===section.id?'bg-white text-slate-900 shadow-sm':'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+                  className={`splyzo-nav-item flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors ${active===section.id?'bg-white text-slate-900 shadow-sm':'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
                   <Icon size={18} aria-hidden="true"/>
                   <span>{section.label}</span>
                 </button>;
@@ -103,33 +117,56 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
     </>
   );
 
-  return <div className="min-h-screen bg-[#F5F7FB] text-[#172D49]">
+  return <div className="splyzo-admin min-h-screen bg-[#F4F7FB] text-[#172D49]">
     <div className="flex min-h-screen">
-      <aside aria-label="Desktop navigation" className="sticky top-0 hidden h-screen w-[258px] shrink-0 flex-col bg-[#102B4D] lg:flex">{sidebar}</aside>
+      <aside aria-label="Desktop navigation" className="splyzo-sidebar sticky top-0 hidden h-screen w-[272px] shrink-0 flex-col bg-[#102B4D] lg:flex">{sidebar}</aside>
       {mobileOpen&&<div className="fixed inset-0 z-40 lg:hidden">
         <div className="absolute inset-0 bg-[#10213D]/70" aria-hidden="true" onClick={()=>setMobileOpen(false)}/>
-        <div role="dialog" aria-modal="true" aria-label="Mobile navigation" className="absolute inset-y-0 left-0 flex w-[min(85vw,300px)] flex-col bg-[#102B4D] shadow-2xl">
+        <div role="dialog" aria-modal="true" aria-label="Mobile navigation" className="splyzo-sidebar absolute inset-y-0 left-0 flex w-[min(85vw,300px)] flex-col bg-[#102B4D] shadow-2xl">
           <button type="button" className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/10" aria-label="Close navigation" onClick={()=>setMobileOpen(false)}><X size={19}/></button>
           {sidebar}
         </div>
       </div>}
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex min-h-[80px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-8">
+        {quickOpen&&<div className="fixed inset-0 z-50 flex justify-center bg-[#081d37]/60 px-4 pt-[12vh]" role="presentation" onMouseDown={e=>{if(e.currentTarget===e.target)setQuickOpen(false);}}>
+          <div role="dialog" aria-modal="true" aria-label="Quick workspace navigation" className="h-fit w-full max-w-xl overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl">
+            <label className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+              <Search size={20} className="text-slate-500"/>
+              <span className="sr-only">Find a module</span>
+              <input autoFocus placeholder="Search workspace modules…" value={quickQuery} onChange={e=>setQuickQuery(e.target.value)} className="w-full border-0 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"/>
+              <button type="button" aria-label="Close quick navigation" onClick={()=>setQuickOpen(false)} className="rounded-lg border px-2 py-1 text-xs font-bold">Esc</button>
+            </label>
+            <div className="max-h-[60vh] overflow-y-auto p-2">
+              {visibleSections.filter(s=>(s.label+' '+s.caption).toLowerCase().includes(quickQuery.toLowerCase())).map(section=>{
+                const Icon=section.icon;
+                return <button key={section.id} type="button" onClick={()=>navigate(section.id)} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-[#F1F5FC]">
+                  <Icon size={18} className="text-[#174C86]"/><span>{section.label}<span className="mt-0.5 block text-xs font-normal text-slate-500">{section.caption}</span></span><ArrowRight size={16} className="ml-auto text-slate-400"/>
+                </button>;
+              })}
+              {!visibleSections.some(s=>(s.label+' '+s.caption).toLowerCase().includes(quickQuery.toLowerCase()))&&<p className="px-5 py-8 text-center text-sm text-slate-500">No matching module.</p>}
+            </div>
+          </div>
+        </div>}
+        <header className="splyzo-topbar sticky top-0 z-20 flex min-h-[88px] items-center justify-between gap-4 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-8">
           <div className="flex items-center gap-4">
             <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 lg:hidden" aria-label="Open navigation" onClick={()=>setMobileOpen(true)}><Menu size={21}/></button>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Splyzo / Administration</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Workspace <span aria-hidden="true" className="mx-2 text-slate-300">/</span> {current.group}</p>
               <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{current.label}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button type="button" onClick={()=>setQuickOpen(true)} aria-label="Find a workspace module"
+             className="splyzo-quick-trigger hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-white sm:flex">
+             <Search size={17}/><span className="hidden xl:inline">Quick jump</span><kbd className="hidden rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold lg:inline">Ctrl K</kbd>
+            </button>
             {administrator&&<span className="hidden rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 sm:inline-flex">{administrator.role}</span>}
             <span className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800" title="Production is disabled"><span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true"/>Staging</span>
             {administrator&&onSignOut&&<button type="button" onClick={onSignOut} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"><LogOut size={15}/>Sign out</button>}
           </div>
         </header>
-        <main id="main-content" className="mx-auto max-w-[1250px] px-4 py-8 sm:px-8 sm:py-10">
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+        <main id="main-content" className="splyzo-admin-main mx-auto max-w-[1450px] px-4 py-7 sm:px-8 sm:py-9">
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-[#e5ebf3] pb-5">
             <p className="text-sm text-slate-500">{current.caption}</p>
             <div className="flex items-center gap-2">
               <span role="status" className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${connection.state==='connected'?'border-emerald-200 bg-emerald-50 text-emerald-800':connection.state==='failed'?'border-rose-200 bg-rose-50 text-rose-700':'border-slate-200 bg-white text-slate-600'}`}>{statusText}</span>
@@ -137,7 +174,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             </div>
           </div>
           {active==='overview'
-            ? administrator ? <DashboardPanel/> : <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
+            ? administrator ? <DashboardPanel onNavigate={navigate}/> : <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
             : active==='suppliers'&&administrator&&['OWNER','OPERATIONS'].includes(administrator.role)
             ? <SupplierPanel currentAdminId={administrator.id}/>
             : active==='catalog'&&administrator&&['OWNER','CATALOG'].includes(administrator.role)
@@ -156,7 +193,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
         </main>
-        <footer className="mx-auto flex max-w-[1250px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
+        <footer className="mx-auto flex max-w-[1450px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
           <span>Splyzo V2.1 · Administrator workspace</span>
           <span>{administrator?'Clerk identity verified; server permissions remain authoritative.':'Public preview only. No administrator data is loaded.'}</span>
         </footer>
