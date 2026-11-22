@@ -174,7 +174,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             </div>
           </div>
           {active==='overview'
-            ? administrator ? <DashboardPanel/> : <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
+            ? administrator ? <DashboardPanel onNavigate={navigate}/> : <Overview onNavigate={navigate} connection={connection} administrator={administrator} />
             : active==='suppliers'&&administrator&&['OWNER','OPERATIONS'].includes(administrator.role)
             ? <SupplierPanel currentAdminId={administrator.id}/>
             : active==='catalog'&&administrator&&['OWNER','CATALOG'].includes(administrator.role)
