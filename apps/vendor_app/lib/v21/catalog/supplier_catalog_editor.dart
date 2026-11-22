@@ -561,8 +561,38 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
     }
   }
 
+  Future<void> _confirmDiscard() async {
+    if (!mounted || busy) return;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave product form?'),
+        content: const Text(
+          'You have not saved this product. Continue editing to keep '
+          'the details already entered.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Continue editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Discard changes'),
+          ),
+        ],
+      ),
+    );
+    if (mounted && discard == true) Navigator.pop(context);
+  }
+
   @override
-  Widget build(BuildContext context) => SafeArea(
+  Widget build(BuildContext context) => PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) unawaited(_confirmDiscard());
+        },
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Form(
@@ -572,11 +602,23 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.only(bottom: 36),
                 children: [
-                  BuildToSectionHeading(
-                    title: widget.original == null
-                        ? 'Add a product'
-                        : 'Update this product',
-                    subtitle: 'Customers can see it as soon as you save.',
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: BuildToSectionHeading(
+                          title: widget.original == null
+                              ? 'Add a product'
+                              : 'Update this product',
+                          subtitle: 'Customers can see it as soon as you save.',
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close product form',
+                        onPressed: busy ? null : () => unawaited(_confirmDiscard()),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   if (photoBytes != null)
@@ -790,5 +832,6 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
                 ]),
           ),
         ),
-      );
+      ),
+    );
 }
