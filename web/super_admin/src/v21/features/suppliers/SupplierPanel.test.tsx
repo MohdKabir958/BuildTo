@@ -2,7 +2,8 @@
 import React from 'react';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
-import {SupplierPanel} from './SupplierPanel';
+import {SupplierPanel,supplierReviewMessage} from './SupplierPanel';
+import {V21ApiError} from '../../lib/apiClient';
 import {V21ApiProvider} from '../../lib/ApiProvider';
 import type {V21ApiClient} from '../../lib/apiClient';
 
@@ -26,6 +27,26 @@ function setup(myId=reviewer){
  return api;
 }
 describe('A06 supplier approval UI',()=>{
+ it('explains the exact 409 business-document blocker rather than a generic conflict',()=>{
+  const error=new V21ApiError(409,'VERIFIED_DOCUMENTS_REQUIRED',
+   'Current independently verified business and applicable GST evidence required.','request-approval');
+  const text=supplierReviewMessage(error);
+  expect(text).toContain('Approval blocked');
+  expect(text).toContain('GST certificate');
+  expect(text).toContain('Evidence checklist');
+ });
+ it('shows missing document requirements and disables approval before verification',async()=>{
+  setup();
+  await screen.findByText('Example Cement');
+  fireEvent.click(screen.getByRole('button',{name:'View details'}));
+  await screen.findByText('Evidence checklist');
+  expect(screen.getByText('Approval requirements not yet complete')).toBeTruthy();
+  expect(screen.getByText('Uploaded — awaiting verification')).toBeTruthy();
+  const approve=screen.getByRole('button',{name:'Approved'});
+  expect(approve.hasAttribute('disabled')).toBe(true);
+  expect(screen.getByText(/Approve is disabled until all required evidence/)).toBeTruthy();
+ });
+
  it('shows real queue, private evidence review instructions and audit reason before actions',async()=>{
   const api=setup();
   await screen.findByText('Example Cement');
