@@ -1,7 +1,7 @@
 name: Splyzo Customer Staging Android APK
 on:
   push:
-    branches: [main]
+    branches: [main, fix/supplier-product-form-resume-ux]
     paths:
       - '.github/workflows/splyzo-customer-staging-apk.yml'
       - 'apps/customer_app/**'
