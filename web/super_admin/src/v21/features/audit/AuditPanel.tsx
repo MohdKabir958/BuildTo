@@ -50,10 +50,10 @@ export function AuditPanel(){
     event.preventDefault();
     setApplied({entityType:entityType.trim(),action:action.trim()});
   }
-  return <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  return <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2"><FileClock aria-hidden="true" className="text-[#174C86]"/>
-        <div><h2 className="text-lg font-extrabold">Audit trail</h2>
+        <div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Audit trail</h2>
           <p className="mt-1 text-sm text-slate-500">Owner / auditor only. Read-only; private before/after snapshots and IP hashes are never sent to the browser.</p>
         </div>
       </div>
