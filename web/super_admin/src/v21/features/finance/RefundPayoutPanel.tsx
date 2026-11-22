@@ -28,7 +28,7 @@ const money=(paise:string)=>{
  const n=BigInt(paise);
  return '₹'+(n/100n).toLocaleString('en-IN')+'.'+(n%100n).toString().padStart(2,'0');
 };
-const cls='w-full rounded-lg border border-slate-300 bg-white p-2 text-sm';
+const cls='v21-input';
 export function RefundPayoutPanel(){
  const api=useV21Api();
  const [tab,setTab]=useState<'refunds'|'payouts'|'beneficiaries'>('refunds');
@@ -118,8 +118,8 @@ export function RefundPayoutPanel(){
  const valid=Boolean(action)&&(!requiresRef||action!.providerRef.trim().length>=8)&&(!requiresSecond||action!.secondRef.trim().length>=8)&&
   (action?.type!=='payoutIntent'||Boolean(action.selectedBank));
  return <div className="space-y-5">
-  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-   <div className="flex gap-3"><Landmark size={23} className="shrink-0 text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Refund and payout evidence</h2>
+  <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+   <div className="flex gap-3"><Landmark size={23} className="shrink-0 text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Refund and payout evidence</h2>
     <p className="mt-1 text-sm text-slate-500">Manual maker/checker flow. Provider lookup verifies status but does not send money.</p></div></div>
    <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
     <ShieldCheck size={16} className="mr-2 inline"/>Refund SUCCEEDED means provider processed, not customer bank credit.
@@ -129,7 +129,7 @@ export function RefundPayoutPanel(){
    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Finance evidence sections">
     {(['refunds','payouts','beneficiaries'] as const).map(t=><button key={t} type="button" role="tab" aria-selected={tab===t} onClick={()=>{setTab(t);setAction(null);}}
       className={'rounded-lg px-4 py-2 text-sm font-bold '+(tab===t?'bg-[#174C86] text-white':'border')}>{t==='beneficiaries'?'Beneficiaries':t==='payouts'?'Payouts':'Refunds'}</button>)}</div>
-    <button type="button" disabled={loading} onClick={()=>void load()} className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
+    <button type="button" disabled={loading} onClick={()=>void load()} className="v21-outline-button disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
    {error&&<p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
    {loading?<p role="status" className="mt-5">Reading finance evidence…</p>:<>

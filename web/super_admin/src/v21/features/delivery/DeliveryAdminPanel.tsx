@@ -7,7 +7,7 @@ import {V21ApiError} from '../../lib/apiClient';
 type City={id:string;code:string;name:string;stateCode:string;active:boolean};
 type Zone={id:string;cityId:string;name:string;postalCodes:string[];active:boolean;centerLat:string|null;centerLng:string|null;radiusKm:string|null};
 type Promo={id:string;code:string|null;title:string;type:string;startsAt:string;endsAt:string;active:boolean;amountPaise:string|null;percentageBps:number|null};
-const cls='w-full rounded-lg border border-slate-300 bg-white p-2 text-sm';
+const cls='v21-input';
 const msg=(e:unknown)=>e instanceof V21ApiError?
  e.status===403?'Operations permission is required.':e.status===409?'A linked area or business state prevents this change. Resolve dependencies first.':e.message:
  'Could not load delivery configuration.';
@@ -85,8 +85,8 @@ export function DeliveryAdminPanel(){
   const path=c.type==='city'?'/api/v2/admin/delivery/cities/':c.type==='area'?'/api/v2/admin/delivery/areas/':'/api/v2/admin/promotions/';
   void save(()=>api.write('PATCH',path+encodeURIComponent(c.id),{active:!c.active}),c.name+' status updated.');
  }
- return <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-  <div className="flex gap-3"><MapPin size={22} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Delivery areas and promotions</h2><p className="text-sm text-slate-500">Only configured active cities and PIN zones are eligible for supplier delivery. Supplier-specific fees stay with suppliers.</p></div></div>
+ return <div className="space-y-5 v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+  <div className="flex gap-3"><MapPin size={22} className="text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Delivery areas and promotions</h2><p className="text-sm text-slate-500">Only configured active cities and PIN zones are eligible for supplier delivery. Supplier-specific fees stay with suppliers.</p></div></div>
   <div className="flex flex-wrap gap-2" role="tablist" aria-label="Delivery configuration">
    {(['cities','zones','promotions'] as const).map(t=><button type="button" role="tab" aria-selected={tab===t} key={t} onClick={()=>{setTab(t);setName('');setCode('');setError('');}} className={'rounded-lg px-4 py-2 text-sm font-bold '+(tab===t?'bg-[#174C86] text-white':'border')}>{t==='cities'?'Cities':t==='zones'?'PIN zones':'Promotions'}</button>)}
   </div>

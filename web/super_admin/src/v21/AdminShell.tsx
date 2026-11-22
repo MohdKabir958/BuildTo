@@ -63,7 +63,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
 
   const sidebar=(
     <>
-      <div className="flex items-center gap-3 border-b border-white/10 px-6 py-7">
+      <div className="flex items-center gap-3 border-b border-white/10 bg-white/[0.025] px-6 py-7">
         <LogoMark size={44}/>
         <div>
           <p className="text-xl font-black leading-none tracking-tight text-white">Splyzo</p>
@@ -82,7 +82,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
                   type="button"
                   onClick={()=>navigate(section.id)}
                   aria-current={active===section.id?'page':undefined}
-                  className={`flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors ${active===section.id?'bg-white text-slate-900 shadow-sm':'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+                  className={`group flex min-h-[46px] w-full items-center gap-3 rounded-xl px-3.5 text-left text-[13px] font-semibold transition-all ${active===section.id?'bg-white text-[#122f58] shadow-[0_6px_18px_rgba(3,18,41,0.17)]':'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
                   <Icon size={18} aria-hidden="true"/>
                   <span>{section.label}</span>
                 </button>;
@@ -103,9 +103,9 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
     </>
   );
 
-  return <div className="min-h-screen bg-[#F5F7FB] text-[#172D49]">
+  return <div className="v21-admin min-h-screen bg-[#f3f6fb] text-[#172D49]">
     <div className="flex min-h-screen">
-      <aside aria-label="Desktop navigation" className="sticky top-0 hidden h-screen w-[258px] shrink-0 flex-col bg-[#102B4D] lg:flex">{sidebar}</aside>
+      <aside aria-label="Desktop navigation" className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col bg-[#0e2849] shadow-[4px_0_24px_rgba(10,32,63,0.07)] lg:flex">{sidebar}</aside>
       {mobileOpen&&<div className="fixed inset-0 z-40 lg:hidden">
         <div className="absolute inset-0 bg-[#10213D]/70" aria-hidden="true" onClick={()=>setMobileOpen(false)}/>
         <div role="dialog" aria-modal="true" aria-label="Mobile navigation" className="absolute inset-y-0 left-0 flex w-[min(85vw,300px)] flex-col bg-[#102B4D] shadow-2xl">
@@ -114,12 +114,12 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
         </div>
       </div>}
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex min-h-[80px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-20 flex min-h-[84px] items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 shadow-[0_1px_15px_rgba(10,40,76,0.035)] backdrop-blur-xl sm:px-8">
           <div className="flex items-center gap-4">
             <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 lg:hidden" aria-label="Open navigation" onClick={()=>setMobileOpen(true)}><Menu size={21}/></button>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Splyzo / Administration</p>
-              <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{current.label}</h1>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#6181ac]">Splyzo / Administration</p>
+              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.035em] text-[#152f50] sm:text-[27px]">{current.label}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -128,8 +128,8 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             {administrator&&onSignOut&&<button type="button" onClick={onSignOut} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"><LogOut size={15}/>Sign out</button>}
           </div>
         </header>
-        <main id="main-content" className="mx-auto max-w-[1250px] px-4 py-8 sm:px-8 sm:py-10">
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+        <main id="main-content" className="mx-auto max-w-[1480px] px-4 py-7 sm:px-8 sm:py-9">
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-5">
             <p className="text-sm text-slate-500">{current.caption}</p>
             <div className="flex items-center gap-2">
               <span role="status" className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${connection.state==='connected'?'border-emerald-200 bg-emerald-50 text-emerald-800':connection.state==='failed'?'border-rose-200 bg-rose-50 text-rose-700':'border-slate-200 bg-white text-slate-600'}`}>{statusText}</span>
@@ -156,7 +156,7 @@ export function AdminShell({apiBaseUrl,administrator,onSignOut}:Props) {
             ? <TeamPanel currentAdminId={administrator.id}/>
             : <ModulePlaceholder section={current} />}
         </main>
-        <footer className="mx-auto flex max-w-[1250px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
+        <footer className="mx-auto flex max-w-[1480px] flex-wrap justify-between gap-3 px-4 pb-8 text-xs text-slate-500 sm:px-8">
           <span>Splyzo V2.1 · Administrator workspace</span>
           <span>{administrator?'Clerk identity verified; server permissions remain authoritative.':'Public preview only. No administrator data is loaded.'}</span>
         </footer>

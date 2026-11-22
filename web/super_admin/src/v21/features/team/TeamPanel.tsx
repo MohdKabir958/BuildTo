@@ -80,8 +80,8 @@ export function TeamPanel({currentAdminId}:{currentAdminId:string}){
  }
 
  return <div className="space-y-6">
-   <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-     <div className="flex items-center gap-3"><UsersRound size={22} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Administrator team</h2><p className="mt-1 text-sm text-slate-500">Only verified Clerk accounts can be granted access. All changes are audited.</p></div></div>
+   <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+     <div className="flex items-center gap-3"><UsersRound size={22} className="text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Administrator team</h2><p className="mt-1 text-sm text-slate-500">Only verified Clerk accounts can be granted access. All changes are audited.</p></div></div>
      <div className="mt-5 overflow-x-auto">
        <table className="w-full min-w-[620px] text-left text-sm">
          <thead><tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><th scope="col" className="pb-3">Administrator</th><th scope="col" className="pb-3">Role</th><th scope="col" className="pb-3">Status</th><th scope="col" className="pb-3 text-right">Actions</th></tr></thead>
@@ -112,8 +112,8 @@ export function TeamPanel({currentAdminId}:{currentAdminId:string}){
      </form>
    </section>}
 
-   <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-     <div className="flex items-center gap-3"><ShieldCheck size={22} className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Grant administrator access</h2><p className="mt-1 text-sm text-slate-500">The person must have a verified primary email in the current Clerk instance and an active Splyzo user profile.</p></div></div>
+   <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+     <div className="flex items-center gap-3"><ShieldCheck size={22} className="text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Grant administrator access</h2><p className="mt-1 text-sm text-slate-500">The person must have a verified primary email in the current Clerk instance and an active Splyzo user profile.</p></div></div>
      <form onSubmit={e=>{void grant(e);}} className="mt-5 grid gap-4 md:grid-cols-2">
        <label className="text-sm font-semibold">Verified Clerk email<input type="email" required maxLength={320} value={email} onChange={e=>setEmail(e.target.value)} placeholder="operator@example.com" className="mt-2 block w-full rounded-lg border border-slate-300 p-3"/></label>
        <label className="text-sm font-semibold">Admin role<select value={role} onChange={e=>setRole(e.target.value as AdminRole)} className="mt-2 block w-full rounded-lg border border-slate-300 bg-white p-3">{ADMIN_ROLES.map(value=><option key={value} value={value}>{value}</option>)}</select></label>

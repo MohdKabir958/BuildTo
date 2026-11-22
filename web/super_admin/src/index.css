@@ -215,3 +215,41 @@
 
 @layer base { button, [role='button'] { min-height: 44px; } }
 @layer components { .k-icon-btn { min-width: 44px; min-height: 44px; } }
+
+
+/* Splyzo V2.1 admin design system. Isolated so the legacy Grozo screens remain unchanged. */
+.v21-admin {
+  background: #f3f6fb;
+  color: #183452;
+  font-family: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+}
+.v21-admin :where(h1,h2,h3,h4) { letter-spacing: -0.025em; }
+.v21-admin button { transition: background-color .17s ease, box-shadow .17s ease, border-color .17s ease, transform .17s ease; }
+.v21-admin button:focus-visible,
+.v21-admin :where(input,textarea,select,a):focus-visible { outline: 3px solid #8bb8ef; outline-offset: 2px; }
+.v21-admin .v21-surface { box-shadow: 0 9px 34px rgba(23, 57, 100, .055), 0 1px 2px rgba(23, 57, 100, .025); }
+.v21-admin .v21-primary-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem; min-height:44px;
+  border-radius:11px; padding:0.7rem 1.1rem; background:#10396e; border:1px solid #10396e;
+  color:white; font-size:.875rem; font-weight:750; box-shadow:0 4px 12px rgba(16,57,110,.12);
+}
+.v21-admin .v21-primary-button:hover:not(:disabled) {background:#174c88;transform:translateY(-1px);box-shadow:0 7px 15px rgba(16,57,110,.15);}
+.v21-admin .v21-outline-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem; min-height:42px;
+  border:1px solid #d5e0ee; border-radius:11px; padding:.55rem .95rem;
+  color:#20416d; background:#fff; font-size:.8125rem; font-weight:700;
+}
+.v21-admin .v21-outline-button:hover:not(:disabled) {border-color:#9db8dc;background:#f4f8ff;}
+.v21-admin .v21-input {
+  min-height:44px; width:100%; max-width:100%; border:1px solid #d4dfed; border-radius:11px;
+  background:#fff; color:#183452; padding:.65rem .85rem; font-size:.875rem;
+}
+.v21-admin .v21-input:focus {border-color:#4f87c8; outline:3px solid rgba(79,135,200,.18);outline-offset:0;}
+.v21-admin :where(button,input,select,textarea):disabled {cursor:not-allowed;}
+.v21-admin table {border-collapse:separate;border-spacing:0;}
+.v21-admin table th {background:#f8fafc;color:#5c6e86;font-size:.7rem;text-transform:uppercase;letter-spacing:.065em;}
+.v21-admin table td {border-color:#edf1f6;}
+.v21-admin tbody tr:hover {background:#f5f8fd;}
+.v21-admin :where(section,article,div)[role=alert] {overflow-wrap:anywhere;}
+@media (prefers-reduced-motion:reduce) { .v21-admin button {transition:none!important;transform:none!important;} }

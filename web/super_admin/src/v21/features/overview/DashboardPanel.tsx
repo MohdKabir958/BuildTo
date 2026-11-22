@@ -52,11 +52,11 @@ export function DashboardPanel(){
   {loading?<p role="status" className="rounded-lg border bg-white p-6 text-sm">Reading live dashboard data…</p>:data&&<>
    <p className="text-xs text-slate-500" role="status">Snapshot requested: {new Date(data.asOf).toLocaleString()} · Past 7 days begins {new Date(data.windowStart7d).toLocaleString()}</p>
    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    {metrics.map(metric=>{const Icon=metric.icon;return <section key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    {metrics.map(metric=>{const Icon=metric.icon;return <section key={metric.label} className="v21-surface rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
      <Icon size={19} className="text-[#174C86]"/><p className="mt-4 text-xs font-semibold text-slate-500">{metric.label}</p>
      <p className="mt-2 text-3xl font-black tabular-nums">{metric.value.toLocaleString('en-IN')}</p><p className="mt-2 text-xs text-slate-500">{metric.note}</p></section>;})}
    </div>
-   <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+   <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
     <div className="flex items-center gap-2"><Wallet size={20} className="text-[#174C86]"/><h3 className="font-extrabold">Financial operations</h3></div>
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
      <p className="rounded-xl bg-slate-50 p-4 text-sm"><strong>{data.financialActionCounts.pendingRefunds}</strong> refunds requiring finance attention</p>
