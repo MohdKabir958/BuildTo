@@ -22,6 +22,12 @@ const fallbackSellingUnits = [
   CatalogUnit('LITRE', 'Litre'),
 ];
 
+class _CatalogChoice {
+  const _CatalogChoice(this.value, this.label);
+  final String value;
+  final String label;
+}
+
 /// Supplier product form. A verified supplier publishes immediately.
 /// Product and selling unit are chosen only when adding a product.
 class SupplierListingEditor extends StatefulWidget {
@@ -132,22 +138,226 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
     TextInputType? type,
     bool optional = false,
     TextStyle? style,
+    String? hint,
+    String? helper,
   }) =>
       Padding(
-        padding: const EdgeInsets.only(bottom: 13),
-        child: TextFormField(
-          key: ValueKey('catalog-field-$label'),
-          controller: controller,
-          style: style,
-          keyboardType:
-              type ?? const TextInputType.numberWithOptions(decimal: true),
-          autocorrect: false,
-          decoration: InputDecoration(
-            labelText: label,
-            alignLabelWithHint: true,
-            helperText: optional ? 'Optional' : null,
+        padding: const EdgeInsets.only(bottom: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(optional ? '$label (optional)' : label,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: BuildToPalette.navy,
+                    )),
+            if (helper != null) ...[
+              const SizedBox(height: 5),
+              Text(helper,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF526782), height: 1.4)),
+            ],
+            const SizedBox(height: 9),
+            TextFormField(
+              key: ValueKey('catalog-field-$label'),
+              controller: controller,
+              style: style,
+              keyboardType: type ??
+                  const TextInputType.numberWithOptions(decimal: true),
+              textInputAction: TextInputAction.next,
+              scrollPadding: const EdgeInsets.only(bottom: 140),
+              autocorrect: false,
+              decoration: InputDecoration(
+                hintText: hint,
+                errorMaxLines: 3,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              validator: validator,
+            ),
+          ],
+        ),
+      );
+
+  Future<String?> _showSearchPicker({
+    required String title,
+    required List<_CatalogChoice> items,
+    required String? current,
+  }) async {
+    final searchController = TextEditingController();
+    try {
+      return await showModalBottomSheet<String>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, rebuild) {
+            final term = searchController.text.trim().toLowerCase();
+            final shown = items
+                .where((item) => item.label.toLowerCase().contains(term))
+                .toList();
+            return Padding(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(context).bottom),
+              child: SizedBox(
+                height: min(MediaQuery.sizeOf(context).height * 0.68, 530),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 14),
+                          TextField(
+                            key: const Key('catalog-option-search'),
+                            controller: searchController,
+                            autofocus: true,
+                            onChanged: (_) => rebuild(() {}),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              hintText: 'Search options',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: shown.isEmpty
+                          ? const Center(
+                              child: Text('No matching options found.'))
+                          : ListView.separated(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              itemCount: shown.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final option = shown[index];
+                                return ListTile(
+                                  key: Key('catalog-option-${option.value}'),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 22, vertical: 3),
+                                  title: Text(option.label),
+                                  trailing: option.value == current
+                                      ? const Icon(Icons.check_circle_rounded,
+                                          color: BuildToPalette.navy)
+                                      : const Icon(Icons.chevron_right_rounded),
+                                  onTap: () => Navigator.of(sheetContext)
+                                      .pop(option.value),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    } finally {
+      searchController.dispose();
+    }
+  }
+
+  Widget _selectionField({
+    required String label,
+    required String placeholder,
+    required String? current,
+    required List<_CatalogChoice> choices,
+    required String fieldKey,
+    required ValueChanged<String> onChanged,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 18),
+        child: FormField<String>(
+          key: Key(fieldKey),
+          initialValue: current,
+          validator: (value) =>
+              value == null ? 'Choose a $label to continue.' : null,
+          builder: (field) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: BuildToPalette.navy,
+                        fontWeight: FontWeight.w700,
+                      )),
+              const SizedBox(height: 9),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: busy || choices.isEmpty
+                      ? null
+                      : () async {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          final picked = await _showSearchPicker(
+                            title: 'Choose $label',
+                            items: choices,
+                            current: field.value,
+                          );
+                          if (!mounted || picked == null) return;
+                          field.didChange(picked);
+                          setState(() {
+                            onChanged(picked);
+                            error = null;
+                          });
+                        },
+                  style: OutlinedButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 17),
+                    side: BorderSide(
+                        color: field.hasError
+                            ? BuildToPalette.danger
+                            : const Color(0xFFCFD8E5)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          choices
+                              .where((choice) => choice.value == field.value)
+                              .map((choice) => choice.label)
+                              .firstOrNull ??
+                              placeholder,
+                          style: TextStyle(
+                              color: field.value == null
+                                  ? const Color(0xFF64748B)
+                                  : BuildToPalette.navy,
+                              fontWeight: field.value == null
+                                  ? FontWeight.w400
+                                  : FontWeight.w600),
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down_rounded),
+                    ],
+                  ),
+                ),
+              ),
+              if (field.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(field.errorText!,
+                      style: const TextStyle(color: BuildToPalette.danger)),
+                ),
+            ],
           ),
-          validator: validator,
         ),
       );
 
@@ -259,10 +469,12 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
       setState(() => error = 'Enter the product you have in your warehouse.');
       return;
     }
-    if (widget.original == null &&
-        widget.masters.categories.isNotEmpty &&
-        categoryId == null) {
+    if (widget.original == null && categoryId == null) {
       setState(() => error = 'Choose a category, such as cement or steel.');
+      return;
+    }
+    if (unit == null) {
+      setState(() => error = 'Choose how customers buy this product.');
       return;
     }
     CatalogListingInput input;
@@ -347,101 +559,20 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
   @override
   Widget build(BuildContext context) => SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 12, 20, MediaQuery.viewInsetsOf(context).bottom + 18),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Form(
             key: form,
-            child: ListView(shrinkWrap: true, children: [
+            child: ListView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.only(bottom: 36),
+                children: [
               BuildToSectionHeading(
                 title: widget.original == null
                     ? 'Add a product'
                     : 'Update this product',
                 subtitle: 'Customers can see it as soon as you save.',
               ),
-              const SizedBox(height: 18),
-              if (widget.original == null) ...[
-                _field(
-                  'What do you have in the warehouse?',
-                  productName,
-                  type: TextInputType.text,
-                  validator: (value) {
-                    final text = (value ?? '').trim();
-                    if (text.isEmpty) return 'Enter the product name.';
-                    if (text.length > 240) return 'Use a shorter name.';
-                    return null;
-                  },
-                ),
-                if (widget.masters.categories.isNotEmpty) ...[
-                  Text('Category',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final category in widget.masters.categories)
-                        ChoiceChip(
-                          label: Text(category.name),
-                          selected: categoryId == category.id,
-                          onSelected: busy
-                              ? null
-                              : (_) => setState(() {
-                                    categoryId = category.id;
-                                    error = null;
-                                  }),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                Text('How do you sell it?',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                FormField<String>(
-                  key: const Key('catalog-unit'),
-                  validator: (_) => unit == null
-                      ? 'Choose bag, kg, piece, or another unit.'
-                      : null,
-                  builder: (state) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final sellingUnit in sellingUnits)
-                            ChoiceChip(
-                              label: Text(sellingUnit.name),
-                              selected: unit == sellingUnit.code,
-                              onSelected: busy
-                                  ? null
-                                  : (_) => setState(() {
-                                        unit = sellingUnit.code;
-                                        error = null;
-                                      }),
-                            ),
-                        ],
-                      ),
-                      if (state.hasError)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(state.errorText!,
-                              style: const TextStyle(
-                                  color: BuildToPalette.danger)),
-                        ),
-                    ],
-                  ),
-                ),
-              ] else
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Sold as ${widget.original!.unitCode}. '
-                    'To use another unit, add it as a new product.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 14),
               if (photoBytes != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -482,13 +613,62 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
               ),
               const SizedBox(height: 6),
               Text(
-                'JPEG, PNG, WebP, GIF, BMP, HEIC, or AVIF, up to 8 MB. The product can still be saved without a photo.',
+                'Optional · Up to 8 MB. Add a clear photo of the product.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              if (widget.original == null) ...[
+                _field(
+                  'Product name',
+                  productName,
+                  type: TextInputType.text,
+                  hint: 'e.g. UltraTech OPC Cement 50 kg',
+                  helper: 'Enter the name customers should see.',
+                  validator: (value) {
+                    final text = (value ?? '').trim();
+                    if (text.isEmpty) return 'Enter the product name.';
+                    if (text.length > 240) return 'Use a shorter name.';
+                    return null;
+                  },
+                ),
+                _selectionField(
+                  fieldKey: 'catalog-category-selector',
+                  label: 'Product category',
+                  placeholder: 'Select a category',
+                  current: categoryId,
+                  choices: widget.masters.categories
+                      .map((category) =>
+                          _CatalogChoice(category.id, category.name))
+                      .toList(),
+                  onChanged: (value) => categoryId = value,
+                ),
+                _selectionField(
+                  fieldKey: 'catalog-unit-selector',
+                  label: 'How do customers buy this?',
+                  placeholder: 'Select a selling unit (bag, kg, piece...)',
+                  current: unit,
+                  choices: sellingUnits
+                      .map((sellingUnit) => _CatalogChoice(
+                          sellingUnit.code, sellingUnit.name))
+                      .toList(),
+                  onChanged: (value) => unit = value,
+                ),
+              ] else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Sold as ${widget.original!.unitCode}. '
+                    'To use another unit, add it as a new product.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              const SizedBox(height: 8),
               _field(
-                'Your price (₹)',
+                'Selling price (₹)',
                 price,
+                hint: 'e.g. 350',
+                helper: 'Price for one selected selling unit.',
                 validator: _price,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
@@ -530,19 +710,50 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
               ),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: const Text('More options'),
+                key: const Key('catalog-advanced-options'),
+                tilePadding: EdgeInsets.zero,
+                title: const Text('Advanced order settings'),
                 subtitle: const Text(
-                    'Pack size and order limits. Leave these as 1 for most products.'),
+                    'Optional. Default values work for most products.'),
                 children: [
-                  _field('Pack size', pack, validator: _quantity),
-                  _field('Smallest order', minimum, validator: _quantity),
-                  _field('Order step', step, validator: _quantity),
-                  _field('Largest order', maximum,
+                  _field(
+                    'Units per pack',
+                    pack,
+                    hint: '1',
+                    helper: 'Number of selected selling units in one pack. '
+                        'Usually 1 for bags, pieces or rolls.',
+                    validator: _quantity,
+                  ),
+                  _field(
+                    'Minimum order quantity',
+                    minimum,
+                    hint: '1',
+                    helper: 'Smallest quantity a customer may order. '
+                        'Example: 5 bags.',
+                    validator: _quantity,
+                  ),
+                  _field(
+                    'Order quantity increments',
+                    step,
+                    hint: '1',
+                    helper: 'How many units to add each time. '
+                        'Example: 5 means 5, 10, 15...',
+                    validator: _quantity,
+                  ),
+                  _field(
+                    'Maximum order quantity',
+                    maximum,
+                    optional: true,
+                    hint: 'No limit',
+                    helper: 'Leave blank when there is no per-order limit.',
+                    validator: (value) => (value ?? '').trim().isEmpty
+                        ? null
+                        : _quantity(value),
+                  ),
+                  _field('Printed MRP (₹)', mrp,
                       optional: true,
-                      validator: (value) => (value ?? '').trim().isEmpty
-                          ? null
-                          : _quantity(value)),
-                  _field('Printed price / MRP (₹)', mrp, optional: true,
+                      hint: 'e.g. 399',
+                      helper: 'Maximum retail price shown on packaging.',
                       validator: (value) {
                     if ((value ?? '').trim().isEmpty) return null;
                     try {
