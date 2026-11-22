@@ -181,11 +181,10 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                                     ),
                                     const SizedBox(height: 18),
                                     FilledButton.icon(
-                                      onPressed:
-                                          controller.accessRecheckPending
-                                              ? null
-                                              : () => unawaited(controller
-                                                  .refresh(silent: true)),
+                                      onPressed: controller.accessRecheckPending
+                                          ? null
+                                          : () => unawaited(
+                                              controller.refresh(silent: true)),
                                       icon: controller.accessRecheckPending
                                           ? const SizedBox(
                                               width: 18,
@@ -200,11 +199,10 @@ class _BuildToSupplierV21AppState extends State<BuildToSupplierV21App>
                                               : 'Retry connection'),
                                     ),
                                     TextButton(
-                                      onPressed:
-                                          controller.accessRecheckPending
-                                              ? null
-                                              : () => unawaited(
-                                                  controller.signOut()),
+                                      onPressed: controller.accessRecheckPending
+                                          ? null
+                                          : () =>
+                                              unawaited(controller.signOut()),
                                       child: const Text('Sign out'),
                                     ),
                                   ],

@@ -251,7 +251,8 @@ void main() {
     clerk.state.dispose();
   });
 
-  test('temporary backend outage on resume keeps draft route but blocks actions',
+  test(
+      'temporary backend outage on resume keeps draft route but blocks actions',
       () async {
     final clerk = FakeClerk();
     var offline = false;

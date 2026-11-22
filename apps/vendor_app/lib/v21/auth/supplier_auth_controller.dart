@@ -61,6 +61,7 @@ class SupplierAuthController extends ChangeNotifier {
   SupplierV21Membership? get activeSupplier => _activeSupplier;
   String? get notice => _notice;
   bool get busy => _busy;
+
   /// The previous supplier route remains mounted, but cannot receive any
   /// interaction until the backend confirms that membership still exists.
   bool get accessRecheckBlocked => _accessRecheckBlocked;
@@ -205,8 +206,7 @@ class SupplierAuthController extends ChangeNotifier {
             !_current(generation, fingerprint)) {
           rethrow;
         }
-        await Future<void>.delayed(
-            Duration(milliseconds: 400 * (attempt + 1)));
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
       }
     }
     throw StateError('Unreachable profile synchronization state');
@@ -222,8 +222,9 @@ class SupplierAuthController extends ChangeNotifier {
     final previouslySelected = _selectedId;
     final keepApplicantForm =
         silent && _stage == SupplierAccessStage.noSupplier && _account != null;
-    final keepApprovedScreen =
-        silent && _stage == SupplierAccessStage.authorized && _activeSupplier != null;
+    final keepApprovedScreen = silent &&
+        _stage == SupplierAccessStage.authorized &&
+        _activeSupplier != null;
     if (keepApprovedScreen) {
       // A network failure is NOT proof that supplier permissions were revoked.
       // Keep the current edit route/controllers mounted but make all operations

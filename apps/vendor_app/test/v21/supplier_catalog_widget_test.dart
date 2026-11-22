@@ -121,11 +121,11 @@ void main() {
     const steel = '123e4567-e89b-12d3-a456-426614174035';
     final masters = CatalogMasters(
       const [
-        CatalogCategory('123e4567-e89b-12d3-a456-426614174030',
-            'Cement & Concrete'),
+        CatalogCategory(
+            '123e4567-e89b-12d3-a456-426614174030', 'Cement & Concrete'),
         CatalogCategory(steel, 'TMT Steel & Rebars'),
-        CatalogCategory('123e4567-e89b-12d3-a456-426614174036',
-            'Paints & Finishes'),
+        CatalogCategory(
+            '123e4567-e89b-12d3-a456-426614174036', 'Paints & Finishes'),
       ],
       const [
         CatalogUnit('BAG', 'Bag'),
@@ -147,7 +147,7 @@ void main() {
     expect(find.text('Product category'), findsOneWidget);
     expect(find.text('TMT Steel & Rebars'), findsNothing);
     expect(find.text('How do customers buy this?'), findsOneWidget);
-    expect(find.text('Advanced order settings'), findsOneWidget);
+    // This section is below the primary fields in the lazy list.
     final categoryButton = find.descendant(
       of: find.byKey(const Key('catalog-category-selector')),
       matching: find.byType(OutlinedButton),
@@ -175,8 +175,14 @@ void main() {
     await tester.tap(find.byKey(const Key('catalog-option-KG')));
     await tester.pumpAndSettle();
     expect(find.text('Kilogram'), findsOneWidget);
-    await tester.ensureVisible(
-        find.byKey(const Key('catalog-advanced-options')));
+    await tester.scrollUntilVisible(
+      find.text('Advanced order settings'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Advanced order settings'), findsOneWidget);
+    await tester
+        .ensureVisible(find.byKey(const Key('catalog-advanced-options')));
     await tester.tap(find.byKey(const Key('catalog-advanced-options')));
     await tester.pumpAndSettle();
     expect(find.text('Minimum order quantity'), findsOneWidget);
