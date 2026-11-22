@@ -145,6 +145,18 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('Product category'), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('catalog-field-Product name')), 'Test cement bag');
+    await tester.tap(find.byTooltip('Close product form'));
+    await tester.pumpAndSettle();
+    expect(find.text('Leave product form?'), findsOneWidget);
+    await tester.tap(find.text('Continue editing'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextFormField>(
+          find.byKey(const Key('catalog-field-Product name'))).controller!.text,
+      'Test cement bag',
+    );
     expect(find.text('TMT Steel & Rebars'), findsNothing);
     expect(find.text('How do customers buy this?'), findsOneWidget);
     // This section is below the primary fields in the lazy list.
