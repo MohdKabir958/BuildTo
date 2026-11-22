@@ -17,6 +17,7 @@ type Detail=Supplier&{
  contactEmail:string|null;contactPhone:string|null;businessType:string|null;
  billingAddress:unknown;owners:{userId:string;active:boolean;displayName:string;email:string|null}[];
  documents:Doc[];
+ reviewPolicy?:{stagingTestWithoutDocuments:boolean};
 };
 type Page={items:Supplier[];nextCursor:string|null};
 type Review={type:'supplier'|'document';decision:string;documentId?:string;reason:string};
@@ -88,7 +89,8 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
  const [downloading,setDownloading]=useState<string|null>(null);
  const [lastRequestId,setLastRequestId]=useState('');
  const evidence=detail?requiredEvidence(detail):[];
- const approvalReady=evidence.every(e=>e.verified)&&Boolean(detail?.contactEmail)&&Boolean(detail?.billingAddress)&&Boolean(detail?.owners.length);
+ const stagingTestApproval=detail?.reviewPolicy?.stagingTestWithoutDocuments===true;
+ const approvalReady=(stagingTestApproval||evidence.every(e=>e.verified))&&Boolean(detail?.contactEmail)&&Boolean(detail?.billingAddress)&&Boolean(detail?.owners.length);
  const filteredItems=items.filter(s=>[s.displayName,s.legalName,s.slug].join(' ').toLowerCase().includes(search.trim().toLowerCase()));
  const download=async(doc:Doc)=>{
   if(!doc.downloadPath||downloading)return;
@@ -151,7 +153,9 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
     ?base+'/documents/'+encodeURIComponent(review.documentId||'')+'/review':base+'/review';
    await api.write('POST',path,{decision:review.decision,reason:review.reason.trim()});
    setReview(null);
-   setInfo('Review saved with an audit reason. No payment or supplier data was changed.');
+   setInfo(stagingTestApproval&&review.type==='supplier'&&review.decision==='APPROVED'
+    ?'Test approval saved on staging without document verification. This supplier is NOT KYC-verified. The exception is recorded in the audit log.'
+    :'Review saved with an audit reason. No payment or supplier data was changed.');
    await Promise.all([load(true),loadDetail(detail.id)]);
   }catch(e){setError(message(e));if(e instanceof V21ApiError)setLastRequestId(e.requestId);}
   finally{setBusy(false);}
@@ -214,12 +218,16 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
      </div>
      <div className="flex items-center gap-3"><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusColor(detail.approval)}`}>{statusLabel(detail.approval)}</span><button type="button" onClick={()=>{setSelectedId('');setDetail(null);setReview(null);setError('');}} className="v21-outline-button"><XCircle size={16}/>Close</button></div>
     </div>
-    <div className={`mt-6 rounded-2xl border p-5 ${approvalReady?'border-emerald-200 bg-emerald-50':'border-amber-200 bg-[#fffbeb]'}`} aria-label="Approval readiness">
+    {stagingTestApproval&&<div role="status" className="mt-6 flex gap-3 rounded-2xl border border-orange-300 bg-orange-50 p-5 text-sm text-orange-950">
+     <ShieldAlert size={21} className="mt-0.5 shrink-0"/>
+     <div><strong className="block">Staging testing mode is active</strong><p className="mt-1 leading-6">You can approve a test supplier without uploaded documents. This approval is NOT evidence of KYC verification. Admin permissions, independent review, required business details and an audit reason still apply. Production verification is unchanged.</p></div>
+    </div>}
+    <div className={`mt-6 rounded-2xl border p-5 ${stagingTestApproval?'border-orange-200 bg-[#fffaf1]':approvalReady?'border-emerald-200 bg-emerald-50':'border-amber-200 bg-[#fffbeb]'}`} aria-label="Approval readiness">
      <div className="flex items-start gap-3">
       {approvalReady?<ShieldCheck className="mt-0.5 shrink-0 text-emerald-700" size={22}/>:<ShieldAlert className="mt-0.5 shrink-0 text-amber-800" size={22}/>}
       <div className="flex-1">
-       <h4 className="font-extrabold text-[#173251]">{approvalReady?'Documents ready for independent review':'Approval requirements not yet complete'}</h4>
-       <p className="mt-1 text-sm leading-6 text-slate-700">{approvalReady?'The required evidence is recorded as verified. Review the uploaded files and audit reason before granting access.':'Approval cannot proceed until every required document is uploaded and independently verified. The applicant can add missing evidence in the supplier app.'}</p>
+       <h4 className="font-extrabold text-[#173251]">{stagingTestApproval?'Document requirement waived for staging test':approvalReady?'Documents ready for independent review':'Approval requirements not yet complete'}</h4>
+       <p className="mt-1 text-sm leading-6 text-slate-700">{stagingTestApproval?'Documents are optional for this temporary staging test; missing documents are still shown below. Do not represent this approval as verified.':approvalReady?'The required evidence is recorded as verified. Review the uploaded files and audit reason before granting access.':'Approval cannot proceed until every required document is uploaded and independently verified. The applicant can add missing evidence in the supplier app.'}</p>
        <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {evidence.map(item=><div key={item.type} className="flex items-start gap-2 rounded-xl border border-black/5 bg-white/80 px-3 py-3">
          {item.verified?<CheckCircle2 className="mt-0.5 shrink-0 text-emerald-700" size={18}/>:item.uploaded?<FileWarning className="mt-0.5 shrink-0 text-amber-700" size={18}/>:<XCircle className="mt-0.5 shrink-0 text-rose-700" size={18}/>}
@@ -264,13 +272,13 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
     {self?<p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">You are a member of this supplier. Independent review is required.</p>:
      <div className="mt-7 rounded-2xl border border-slate-200 bg-[#f8fafd] p-5">
       <h4 className="font-extrabold text-[#173251]">Decision and next steps</h4>
-      <p className="mt-1 text-sm text-slate-600">Choose a permitted transition. Approval requires independently verified evidence and a written audit reason.</p>
+      <p className="mt-1 text-sm text-slate-600">Choose a permitted transition. {stagingTestApproval?'Staging test approval skips only document verification.':'Approval requires independently verified evidence.'} A written audit reason is always mandatory.</p>
       <div className="mt-4 flex flex-wrap gap-2">
        {allowed(detail.approval).map(decision=>{
         const disabled=decision==='APPROVED'&&!approvalReady;
         return <button type="button" key={decision} disabled={disabled} title={disabled?'Verify all required evidence before approval':undefined}
          onClick={()=>{setError('');setReview({type:'supplier',decision,reason:''});}}
-         className={`v21-outline-button ${decision==='APPROVED'?'border-emerald-300 text-emerald-800':''} disabled:cursor-not-allowed disabled:opacity-50`}>{statusLabel(decision)}</button>;
+         className={`v21-outline-button ${decision==='APPROVED'?'border-emerald-300 text-emerald-800':''} disabled:cursor-not-allowed disabled:opacity-50`}>{decision==='APPROVED'&&stagingTestApproval?'Approve (test only)':statusLabel(decision)}</button>;
        })}
       </div>
       {!approvalReady&&allowed(detail.approval).includes('APPROVED')&&<p className="mt-3 flex items-center gap-2 text-xs font-semibold text-amber-800"><ShieldAlert size={15}/> Approve is disabled until all required evidence is verified.</p>}
@@ -279,7 +287,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
     {info&&<div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 size={18} className="mr-2 inline"/> {info}</div>}
     {review&&<form onSubmit={e=>void submitReview(e)} className="mt-6 rounded-2xl border border-[#b8ceee] bg-[#f4f8ff] p-6">
      <p className="font-extrabold text-[#163765]">{review.type==='supplier'?'Supplier':'Document'} decision: {statusLabel(review.decision)}</p>
-     <p className="mt-2 text-sm text-slate-600">This action will be recorded in the audit log. Verify the business evidence before confirming.</p>
+     <p className="mt-2 text-sm text-slate-600">{review.type==='supplier'&&review.decision==='APPROVED'&&stagingTestApproval?'Staging testing mode: your approval will bypass document checks and be flagged as unverified in the audit log.':'This action will be recorded in the audit log. Verify the business evidence before confirming.'}</p>
      <label htmlFor="review-reason" className="mt-4 block text-sm font-semibold">Mandatory audit reason (8–400 characters)</label>
      <textarea id="review-reason" value={review.reason} onChange={e=>setReview({...review,reason:e.target.value})} rows={3} maxLength={400} minLength={8} required placeholder="Explain the evidence reviewed and the reason for this decision…" className="v21-input mt-2 min-h-[110px] w-full resize-y p-3 text-sm"/>
      <div className="mt-4 flex flex-wrap gap-3"><button type="submit" disabled={busy||review.reason.trim().length<8||(review.type==='supplier'&&review.decision==='APPROVED'&&!approvalReady)} className="v21-primary-button disabled:opacity-50">{busy?'Saving review…':'Confirm reviewed decision'}</button>
