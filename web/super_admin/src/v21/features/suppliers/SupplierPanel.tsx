@@ -205,31 +205,51 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
    </div>
   </section>
 
-  {selectedId&&<section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" aria-label="Selected supplier details">
+  {selectedId&&<section className="v21-surface scroll-mt-28 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8" aria-label="Selected supplier details">
    {detailLoading&&!detail?<p role="status">Loading verified supplier details…</p>:detail&&<>
-    <div className="flex items-start justify-between gap-3">
-     <div><h3 className="text-lg font-extrabold">{detail.displayName}</h3><p className="text-sm text-slate-500">{detail.legalName} · {detail.slug}</p></div>
-     <button type="button" onClick={()=>{setSelectedId('');setDetail(null);setReview(null);}} className="text-sm font-semibold text-[#174C86]">Close</button>
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
+     <div className="flex items-start gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e9f1ff] text-[#123a75]"><Building2 size={23}/></div>
+      <div><p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Application review</p><h3 className="mt-1 text-xl font-extrabold tracking-tight text-[#142e53]">{detail.displayName}</h3><p className="mt-1 text-sm text-slate-500">{detail.legalName} · {detail.slug}</p></div>
+     </div>
+     <div className="flex items-center gap-3"><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusColor(detail.approval)}`}>{statusLabel(detail.approval)}</span><button type="button" onClick={()=>{setSelectedId('');setDetail(null);setReview(null);setError('');}} className="v21-outline-button"><XCircle size={16}/>Close</button></div>
     </div>
-    <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+    <div className={`mt-6 rounded-2xl border p-5 ${approvalReady?'border-emerald-200 bg-emerald-50':'border-amber-200 bg-[#fffbeb]'}`} aria-label="Approval readiness">
+     <div className="flex items-start gap-3">
+      {approvalReady?<ShieldCheck className="mt-0.5 shrink-0 text-emerald-700" size={22}/>:<ShieldAlert className="mt-0.5 shrink-0 text-amber-800" size={22}/>}
+      <div className="flex-1">
+       <h4 className="font-extrabold text-[#173251]">{approvalReady?'Documents ready for independent review':'Approval requirements not yet complete'}</h4>
+       <p className="mt-1 text-sm leading-6 text-slate-700">{approvalReady?'The required evidence is recorded as verified. Review the uploaded files and audit reason before granting access.':'Approval cannot proceed until every required document is uploaded and independently verified. The applicant can add missing evidence in the supplier app.'}</p>
+       <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {evidence.map(item=><div key={item.type} className="flex items-start gap-2 rounded-xl border border-black/5 bg-white/80 px-3 py-3">
+         {item.verified?<CheckCircle2 className="mt-0.5 shrink-0 text-emerald-700" size={18}/>:item.uploaded?<FileWarning className="mt-0.5 shrink-0 text-amber-700" size={18}/>:<XCircle className="mt-0.5 shrink-0 text-rose-700" size={18}/>}
+         <div><p className="text-sm font-semibold text-slate-800">{item.label}</p><p className="mt-0.5 text-xs text-slate-600">{item.verified?'Verified':item.uploaded?'Uploaded — awaiting verification':'Not uploaded by supplier'}</p></div>
+        </div>)}
+       </div>
+      </div>
+     </div>
+    </div>
+    <h4 className="mt-7 text-sm font-extrabold uppercase tracking-wide text-slate-700">Business details</h4>
+    <dl className="mt-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-5 text-sm sm:grid-cols-2">
      <div><dt className="text-slate-500">Approval</dt><dd className="font-bold">{detail.approval}</dd></div>
      <div><dt className="text-slate-500">GST registration</dt><dd className="font-bold">{detail.gstRegistration}</dd></div>
      <div><dt className="text-slate-500">GSTIN supplied</dt><dd className="font-bold">{detail.gstin||'Not registered'}</dd></div>
-     <div><dt className="text-slate-500">Contact email</dt><dd className="font-bold">{detail.contactEmail||'Not provided'}</dd></div>
+     <div><dt className="text-slate-500">Contact email</dt><dd className="mt-1 font-bold">{detail.contactEmail||'Not provided'}</dd></div>
+     <div><dt className="text-slate-500">Phone number</dt><dd className="mt-1 font-bold">{detail.contactPhone||'Not provided'}</dd></div>
      <div><dt className="text-slate-500">Verified on</dt><dd>{date(detail.verifiedAt)}</dd></div>
      <div><dt className="text-slate-500">Suspended on</dt><dd>{date(detail.suspendedAt)}</dd></div>
     </dl>
     <div className="mt-6">
-     <h4 className="mb-3 font-bold">Ownership</h4>
+     <h4 className="mb-3 font-extrabold text-[#173251]">Business ownership</h4>
      {detail.owners.map(o=><p key={o.userId} className="text-sm">{o.displayName} · {o.email||'No verified email'} · {o.active?'Active':'Pending approval'}</p>)}
     </div>
     <div className="mt-6">
-     <div className="flex items-center gap-2"><ClipboardCheck size={18}/><h4 className="font-bold">Evidence checklist</h4></div>
+     <div className="flex items-center gap-2 text-[#173251]"><ClipboardCheck size={20}/><h4 className="text-lg font-extrabold">Evidence checklist</h4></div>
      <p className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900"><ShieldAlert size={16} className="shrink-0"/>Evidence is private. Download and inspect each document before recording a review decision. Downloads require your current reviewer session.</p>
-     {detail.documents.length===0?<p className="mt-3 text-sm text-slate-500">No documents attached yet. Approval is blocked until evidence is verified.</p>:
-      <ul className="mt-3 space-y-3">{detail.documents.map(d=><li key={d.id} className="rounded-xl border border-slate-200 p-4">
+     {detail.documents.length===0?<div className="mt-3 flex items-start gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-5 text-sm text-amber-950"><FileWarning size={21} className="shrink-0"/>No documents have been uploaded. Ask the supplier to add the required files in their registration application. Approval is blocked until an independent reviewer verifies them.</div> :
+      <ul className="mt-3 space-y-3">{detail.documents.map(d=><li key={d.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
        <div className="flex flex-wrap justify-between gap-3"><div>
-        <p className="font-semibold">{d.documentType.replace(/_/g,' ')}</p>
+        <p className="flex items-center gap-2 font-bold text-[#173251]"><FileCheck2 size={18}/>{statusLabel(d.documentType)} <span className={`rounded-full border px-2 py-0.5 text-[11px] ${statusColor(d.status)}`}>{statusLabel(d.status)}</span></p>
         <p className="text-xs text-slate-500">{d.mimeType} · {d.sizeBytes} bytes · Digest {d.digestAvailable?'recorded':'missing'} · {d.status}</p>
         {!self&&d.downloadPath&&<button type="button" disabled={downloading!==null} onClick={()=>void download(d)} className="mt-2 rounded-lg border px-3 py-2 text-xs font-bold">{downloading===d.id?'Downloading…':'Download private document'}</button>}
         {d.expiresAt&&<p className="text-xs text-slate-500">Expires: {date(d.expiresAt)}</p>}
@@ -241,16 +261,27 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
        </div>
       </li>)}</ul>}
     </div>
-    {self?<p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">You are a member of this supplier. Independent review is required.</p>:
-     <div className="mt-6 flex flex-wrap gap-2">
-      {allowed(detail.approval).map(decision=><button type="button" key={decision} onClick={()=>setReview({type:'supplier',decision,reason:''})} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50">{decision.replace(/_/g,' ')}</button>)}
+    {self?<p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">You are a member of this supplier. Independent review is required.</p>:
+     <div className="mt-7 rounded-2xl border border-slate-200 bg-[#f8fafd] p-5">
+      <h4 className="font-extrabold text-[#173251]">Decision and next steps</h4>
+      <p className="mt-1 text-sm text-slate-600">Choose a permitted transition. Approval requires independently verified evidence and a written audit reason.</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+       {allowed(detail.approval).map(decision=>{
+        const disabled=decision==='APPROVED'&&!approvalReady;
+        return <button type="button" key={decision} disabled={disabled} title={disabled?'Verify all required evidence before approval':undefined}
+         onClick={()=>{setError('');setReview({type:'supplier',decision,reason:''});}}
+         className={`v21-outline-button ${decision==='APPROVED'?'border-emerald-300 text-emerald-800':''} disabled:cursor-not-allowed disabled:opacity-50`}>{statusLabel(decision)}</button>;
+       })}
+      </div>
+      {!approvalReady&&allowed(detail.approval).includes('APPROVED')&&<p className="mt-3 flex items-center gap-2 text-xs font-semibold text-amber-800"><ShieldAlert size={15}/> Approve is disabled until all required evidence is verified.</p>}
      </div>}
-    {review&&<form onSubmit={e=>void submitReview(e)} className="mt-6 rounded-xl border border-[#B7C9DD] bg-[#F4F8FC] p-5">
-     <p className="font-bold">{review.type==='supplier'?'Supplier':'Document'} decision: {review.decision}</p>
+    {review&&<form onSubmit={e=>void submitReview(e)} className="mt-6 rounded-2xl border border-[#b8ceee] bg-[#f4f8ff] p-6">
+     <p className="font-extrabold text-[#163765]">{review.type==='supplier'?'Supplier':'Document'} decision: {statusLabel(review.decision)}</p>
+     <p className="mt-2 text-sm text-slate-600">This action will be recorded in the audit log. Verify the business evidence before confirming.</p>
      <label htmlFor="review-reason" className="mt-4 block text-sm font-semibold">Mandatory audit reason (8–400 characters)</label>
-     <textarea id="review-reason" value={review.reason} onChange={e=>setReview({...review,reason:e.target.value})} rows={3} maxLength={400} minLength={8} required className="mt-2 w-full rounded-lg border border-slate-300 p-3 text-sm"/>
-     <div className="mt-3 flex gap-3"><button type="submit" disabled={busy||review.reason.trim().length<8} className="rounded-lg bg-[#174C86] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Confirm reviewed decision</button>
-      <button type="button" onClick={()=>setReview(null)} className="rounded-lg border px-4 py-2 text-sm font-semibold">Cancel</button></div>
+     <textarea id="review-reason" value={review.reason} onChange={e=>setReview({...review,reason:e.target.value})} rows={3} maxLength={400} minLength={8} required placeholder="Explain the evidence reviewed and the reason for this decision…" className="v21-input mt-2 min-h-[110px] w-full resize-y p-3 text-sm"/>
+     <div className="mt-4 flex flex-wrap gap-3"><button type="submit" disabled={busy||review.reason.trim().length<8||(review.type==='supplier'&&review.decision==='APPROVED'&&!approvalReady)} className="v21-primary-button disabled:opacity-50">{busy?'Saving review…':'Confirm reviewed decision'}</button>
+      <button type="button" onClick={()=>setReview(null)} className="v21-outline-button">Cancel</button></div>
     </form>}
    </>}
   </section>}
