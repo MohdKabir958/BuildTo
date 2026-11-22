@@ -156,7 +156,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
   }catch(e){setError(message(e));if(e instanceof V21ApiError)setLastRequestId(e.requestId);}
   finally{setBusy(false);}
  }
- return <div className="space-y-6">
+ return <div className={selectedId?'grid items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]':'space-y-6'}>
   <section className="v21-surface overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
    <div className="flex flex-wrap items-start justify-between gap-4 bg-gradient-to-br from-[#f6f9ff] via-white to-white px-6 py-7 sm:px-8">
     <div className="flex items-start gap-4">
@@ -188,8 +188,8 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
      </select>
     </div>
    </div>
-   {error&&<div role="alert" className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"><AlertCircle className="mt-0.5 shrink-0" size={19}/><div><strong className="block">Action could not be completed</strong><p className="mt-1 leading-6">{error}</p>{lastRequestId&&<p className="mt-2 text-xs text-rose-700">Support reference: {lastRequestId}</p>}</div></div>}
-   {info&&<div role="status" className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 size={18}/>{info}</div>}
+   {error&&!selectedId&&<div role="alert" className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"><AlertCircle className="mt-0.5 shrink-0" size={19}/><div><strong className="block">Action could not be completed</strong><p className="mt-1 leading-6">{error}</p>{lastRequestId&&<p className="mt-2 text-xs text-rose-700">Support reference: {lastRequestId}</p>}</div></div>}
+   {info&&!selectedId&&<div role="status" className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 size={18}/>{info}</div>}
    {loading&&items.length===0?<p role="status" className="mt-6 text-sm text-slate-500">Loading supplier applications…</p>:
     <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200"><table className="w-full min-w-[560px] text-left text-sm">
      <thead><tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500"><th scope="col" className="px-5 py-4">Supplier</th><th scope="col" className="px-4 py-4">GST</th><th scope="col" className="px-4 py-4">Status</th><th scope="col" className="px-5 py-4 text-right">Action</th></tr></thead>
@@ -205,7 +205,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
    </div>
   </section>
 
-  {selectedId&&<section className="v21-surface scroll-mt-28 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8" aria-label="Selected supplier details">
+  {selectedId&&<section className="v21-surface scroll-mt-28 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8 xl:sticky xl:top-[106px] xl:max-h-[calc(100vh-125px)] xl:overflow-y-auto" aria-label="Selected supplier details">
    {detailLoading&&!detail?<p role="status">Loading verified supplier details…</p>:detail&&<>
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
      <div className="flex items-start gap-3">
@@ -275,6 +275,8 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}){
       </div>
       {!approvalReady&&allowed(detail.approval).includes('APPROVED')&&<p className="mt-3 flex items-center gap-2 text-xs font-semibold text-amber-800"><ShieldAlert size={15}/> Approve is disabled until all required evidence is verified.</p>}
      </div>}
+    {error&&<div role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"><div className="flex items-start gap-3"><AlertCircle size={19} className="mt-0.5 shrink-0"/><div><p className="font-extrabold">Review was not saved</p><p className="mt-1 leading-6">{error}</p>{lastRequestId&&<p className="mt-2 text-xs text-rose-700">Support reference: {lastRequestId}</p>}</div></div></div>}
+    {info&&<div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><CheckCircle2 size={18} className="mr-2 inline"/> {info}</div>}
     {review&&<form onSubmit={e=>void submitReview(e)} className="mt-6 rounded-2xl border border-[#b8ceee] bg-[#f4f8ff] p-6">
      <p className="font-extrabold text-[#163765]">{review.type==='supplier'?'Supplier':'Document'} decision: {statusLabel(review.decision)}</p>
      <p className="mt-2 text-sm text-slate-600">This action will be recorded in the audit log. Verify the business evidence before confirming.</p>
