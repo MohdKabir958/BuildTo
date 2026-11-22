@@ -2,7 +2,7 @@ import {useCallback,useEffect,useMemo,useState} from 'react';
 import type {FormEvent} from 'react';
 import {
  AlertCircle,ArrowRight,Building2,CheckCircle2,ClipboardCheck,Clock3,
- Download,FileCheck2,FileClock2,FileWarning,Mail,RefreshCw,Search,
+ Download,FileCheck2,FileClock,FileWarning,Mail,RefreshCw,Search,
  ShieldAlert,ShieldCheck,Store,UserRound,X,
 } from 'lucide-react';
 import {useV21Api} from '../../lib/ApiProvider';
@@ -352,7 +352,7 @@ export function SupplierPanel({currentAdminId}:{currentAdminId:string}) {
         {readiness?.required.map(req=>{
          const state=evidenceState(detail,req.type);
          return <div key={req.type} className="flex items-start justify-between gap-2 rounded-xl border border-[#e7edf5] bg-[#f9fbfe] p-3">
-          <span className="flex min-w-0 items-center gap-2 text-sm font-bold">{state==='VERIFIED'?<CheckCircle2 size={19} className="shrink-0 text-emerald-600"/>:state==='MISSING'?<FileWarning size={19} className="shrink-0 text-amber-600"/>:<FileClock2 size={19} className="shrink-0 text-[#2a5b87]"/>}{req.label}</span>
+          <span className="flex min-w-0 items-center gap-2 text-sm font-bold">{state==='VERIFIED'?<CheckCircle2 size={19} className="shrink-0 text-emerald-600"/>:state==='MISSING'?<FileWarning size={19} className="shrink-0 text-amber-600"/>:<FileClock size={19} className="shrink-0 text-[#2a5b87]"/>}{req.label}</span>
           <Status state={state}/>
          </div>;
         })}
