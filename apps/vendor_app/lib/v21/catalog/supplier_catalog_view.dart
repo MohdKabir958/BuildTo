@@ -106,7 +106,9 @@ class _SupplierCatalogViewState extends State<SupplierCatalogView> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      isDismissible: false,
+      enableDrag: false,
+      showDragHandle: false,
       builder: (sheetContext) => Padding(
         // Reduce the actual sheet height when the keyboard is open, instead
         // of allowing the last fields/buttons to disappear under the IME.
