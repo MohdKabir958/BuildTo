@@ -16,7 +16,7 @@ const err=(e:unknown)=>e instanceof V21ApiError?
  e.status===409?'Another change conflicts with this catalog record. Reload and verify current data.':
  e.status===403?'You do not have catalog approval permission.':e.message:
  'Catalog request failed; check the connection and retry.';
-const fieldClass='w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm';
+const fieldClass='w-full v21-input';
 
 export function CatalogAdminPanel(){
  const api=useV21Api();
@@ -105,11 +105,11 @@ export function CatalogAdminPanel(){
  }
  const table='w-full min-w-[550px] text-left text-sm';
  return <div className="space-y-6">
-  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <section className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
    <div className="flex flex-wrap justify-between gap-3"><div className="flex items-center gap-3">
-    <Layers3 className="text-[#174C86]"/><div><h2 className="text-lg font-extrabold">Construction materials catalog</h2>
+    <Layers3 className="text-[#174C86]"/><div><h2 className="text-xl font-extrabold tracking-tight text-[#173251]">Construction materials catalog</h2>
      <p className="text-sm text-slate-500">Suppliers add their own products. Categories and brands are managed here.</p></div>
-   </div><button type="button" disabled={loading} onClick={()=>void load()} className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
+   </div><button type="button" disabled={loading} onClick={()=>void load()} className="v21-outline-button disabled:opacity-50"><RefreshCw size={16} className="mr-2 inline"/>Refresh</button></div>
    <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Catalog modules">
     {(Object.keys(LABELS) as Tab[]).map(t=><button type="button" key={t} role="tab" aria-selected={tab===t}
      className={'rounded-lg px-4 py-2 text-sm font-bold '+(tab===t?'bg-[#174C86] text-white':'border border-slate-200 text-slate-700')}
@@ -140,7 +140,7 @@ export function CatalogAdminPanel(){
     {tab!=='listings'&&page[tab]&&<button type="button" onClick={()=>void more(tab)} disabled={busy} className="mt-3 rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">Load more {tab}</button>}
    </>}
   </section>
-  {tab==='products'&&<form onSubmit={conversion} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  {tab==='products'&&<form onSubmit={conversion} className="v21-surface rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
    <div className="flex items-center gap-2"><PackageCheck size={18}/><h3 className="font-bold">Exact product unit conversion</h3></div>
    <p className="mt-2 text-xs text-slate-500">This only converts units for a product that already exists, such as bag to kg.</p>
    <div className="mt-4 grid gap-3 sm:grid-cols-4">
