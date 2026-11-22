@@ -12,33 +12,41 @@ const cementCategoryId = '123e4567-e89b-12d3-a456-426614174030';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('search picker filters and returns the selected backend value',
-      (tester) async {
+  testWidgets('search picker filters and returns the selected backend value', (
+    tester,
+  ) async {
     String? result;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(builder: (context) => TextButton(
-          onPressed: () async {
-            result = await showModalBottomSheet<String>(
-              context: context,
-              isScrollControlled: true,
-              builder: (_) => const CatalogSearchSheet(
-                title: 'Select product category',
-                options: [
-                  CatalogSearchOption('cement', 'Cement'),
-                  CatalogSearchOption('steel', 'Steel'),
-                  CatalogSearchOption('sand', 'Sand'),
-                ],
-              ),
-            );
-          },
-          child: const Text('Open category picker'),
-        )),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<String>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const CatalogSearchSheet(
+                    title: 'Select product category',
+                    options: [
+                      CatalogSearchOption('cement', 'Cement'),
+                      CatalogSearchOption('steel', 'Steel'),
+                      CatalogSearchOption('sand', 'Sand'),
+                    ],
+                  ),
+                );
+              },
+              child: const Text('Open category picker'),
+            ),
+          ),
+        ),
       ),
-    ));
+    );
     await tester.tap(find.text('Open category picker'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('catalog-option-search')), 'ste');
+    await tester.enterText(
+      find.byKey(const Key('catalog-option-search')),
+      'ste',
+    );
     await tester.pumpAndSettle();
     expect(find.text('Steel'), findsOneWidget);
     expect(find.text('Cement'), findsNothing);
@@ -48,8 +56,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('add product puts photo first and uses searchable selectors',
-      (tester) async {
+  testWidgets('add product puts photo first and uses searchable selectors', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -63,18 +72,20 @@ void main() {
     );
     addTearDown(api.close);
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: SupplierListingEditor(
-          supplierId: supplierId,
-          repository: SupplierCatalogRepository(api),
-          masters: const CatalogMasters(
-            [CatalogCategory(cementCategoryId, 'Cement')],
-            [CatalogUnit('BAG', 'Bag'), CatalogUnit('KG', 'Kilogram')],
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SupplierListingEditor(
+            supplierId: supplierId,
+            repository: SupplierCatalogRepository(api),
+            masters: const CatalogMasters(
+              [CatalogCategory(cementCategoryId, 'Cement')],
+              [CatalogUnit('BAG', 'Bag'), CatalogUnit('KG', 'Kilogram')],
+            ),
           ),
         ),
       ),
-    ));
+    );
     expect(find.text('PRODUCT PHOTO'), findsOneWidget);
     expect(find.text('Select category'), findsOneWidget);
     expect(find.textContaining('Select unit'), findsOneWidget);
