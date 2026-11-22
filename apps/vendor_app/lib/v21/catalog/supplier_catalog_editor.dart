@@ -593,245 +593,250 @@ class _SupplierListingEditorState extends State<SupplierListingEditor> {
           if (!didPop) unawaited(_confirmDiscard());
         },
         child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Form(
-            key: form,
-            child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.only(bottom: 36),
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: BuildToSectionHeading(
-                          title: widget.original == null
-                              ? 'Add a product'
-                              : 'Update this product',
-                          subtitle: 'Customers can see it as soon as you save.',
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Form(
+              key: form,
+              child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.only(bottom: 36),
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: BuildToSectionHeading(
+                            title: widget.original == null
+                                ? 'Add a product'
+                                : 'Update this product',
+                            subtitle:
+                                'Customers can see it as soon as you save.',
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        tooltip: 'Close product form',
-                        onPressed: busy ? null : () => unawaited(_confirmDiscard()),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  if (photoBytes != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.memory(
-                        photoBytes!,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox(
+                        IconButton(
+                          tooltip: 'Close product form',
+                          onPressed:
+                              busy ? null : () => unawaited(_confirmDiscard()),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (photoBytes != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.memory(
+                          photoBytes!,
                           height: 180,
-                          child: Center(child: Text('Photo selected')),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox(
+                            height: 180,
+                            child: Center(child: Text('Photo selected')),
+                          ),
+                        ),
+                      )
+                    else if (widget.original?.imageUrl != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          SupplierV21Config.origin
+                              .resolve(widget.original!.imageUrl!)
+                              .toString(),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
-                    )
-                  else if (widget.original?.imageUrl != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        SupplierV21Config.origin
-                            .resolve(widget.original!.imageUrl!)
-                            .toString(),
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: busy ? null : () => unawaited(pickPhoto()),
+                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                        label: Text(photoBytes == null &&
+                                widget.original?.imageUrl == null
+                            ? 'Add a photo'
+                            : 'Change photo'),
                       ),
                     ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton.icon(
-                      onPressed: busy ? null : () => unawaited(pickPhoto()),
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: Text(photoBytes == null &&
-                              widget.original?.imageUrl == null
-                          ? 'Add a photo'
-                          : 'Change photo'),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Optional · Up to 8 MB. Add a clear photo of the product.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Optional · Up to 8 MB. Add a clear photo of the product.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  const SizedBox(height: 12),
-                  if (widget.original == null) ...[
+                    const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    if (widget.original == null) ...[
+                      _field(
+                        'Product name',
+                        productName,
+                        type: TextInputType.text,
+                        hint: 'e.g. UltraTech OPC Cement 50 kg',
+                        helper: 'Enter the name customers should see.',
+                        validator: (value) {
+                          final text = (value ?? '').trim();
+                          if (text.isEmpty) return 'Enter the product name.';
+                          if (text.length > 240) return 'Use a shorter name.';
+                          return null;
+                        },
+                      ),
+                      _selectionField(
+                        fieldKey: 'catalog-category-selector',
+                        label: 'Product category',
+                        placeholder: 'Select a category',
+                        current: categoryId,
+                        choices: widget.masters.categories
+                            .map((category) =>
+                                _CatalogChoice(category.id, category.name))
+                            .toList(),
+                        onChanged: (value) => categoryId = value,
+                      ),
+                      _selectionField(
+                        fieldKey: 'catalog-unit-selector',
+                        label: 'How do customers buy this?',
+                        placeholder:
+                            'Select a selling unit (bag, kg, piece...)',
+                        current: unit,
+                        choices: sellingUnits
+                            .map((sellingUnit) => _CatalogChoice(
+                                sellingUnit.code, sellingUnit.name))
+                            .toList(),
+                        onChanged: (value) => unit = value,
+                      ),
+                    ] else
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Sold as ${widget.original!.unitCode}. '
+                          'To use another unit, add it as a new product.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
                     _field(
-                      'Product name',
-                      productName,
-                      type: TextInputType.text,
-                      hint: 'e.g. UltraTech OPC Cement 50 kg',
-                      helper: 'Enter the name customers should see.',
-                      validator: (value) {
-                        final text = (value ?? '').trim();
-                        if (text.isEmpty) return 'Enter the product name.';
-                        if (text.length > 240) return 'Use a shorter name.';
-                        return null;
-                      },
+                      'Selling price (₹)',
+                      price,
+                      hint: 'e.g. 350',
+                      helper: 'Price for one selected selling unit.',
+                      validator: _price,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    _selectionField(
-                      fieldKey: 'catalog-category-selector',
-                      label: 'Product category',
-                      placeholder: 'Select a category',
-                      current: categoryId,
-                      choices: widget.masters.categories
-                          .map((category) =>
-                              _CatalogChoice(category.id, category.name))
-                          .toList(),
-                      onChanged: (value) => categoryId = value,
+                    Text('GST', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final rate in const ['0', '5', '12', '18', '28'])
+                          ChoiceChip(
+                            label: Text('$rate%'),
+                            selected: taxBps.text.trim() == rate,
+                            onSelected: busy
+                                ? null
+                                : (selected) {
+                                    if (!selected) return;
+                                    setState(() => taxBps.text = rate);
+                                  },
+                          ),
+                      ],
                     ),
-                    _selectionField(
-                      fieldKey: 'catalog-unit-selector',
-                      label: 'How do customers buy this?',
-                      placeholder: 'Select a selling unit (bag, kg, piece...)',
-                      current: unit,
-                      choices: sellingUnits
-                          .map((sellingUnit) => _CatalogChoice(
-                              sellingUnit.code, sellingUnit.name))
-                          .toList(),
-                      onChanged: (value) => unit = value,
-                    ),
-                  ] else
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'Sold as ${widget.original!.unitCode}. '
-                        'To use another unit, add it as a new product.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  _field(
-                    'Selling price (₹)',
-                    price,
-                    hint: 'e.g. 350',
-                    helper: 'Price for one selected selling unit.',
-                    validator: _price,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text('GST', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final rate in const ['0', '5', '12', '18', '28'])
-                        ChoiceChip(
-                          label: Text('$rate%'),
-                          selected: taxBps.text.trim() == rate,
-                          onSelected: busy
-                              ? null
-                              : (selected) {
-                                  if (!selected) return;
-                                  setState(() => taxBps.text = rate);
-                                },
-                        ),
-                    ],
-                  ),
-                  if (!const ['0', '5', '12', '18', '28']
-                      .contains(taxBps.text.trim()))
-                    _field('GST %', taxBps, validator: (value) {
-                      try {
-                        catalogTaxBasisPoints((value ?? '').trim());
-                        return null;
-                      } on FormatException {
-                        return 'Enter a GST rate from 0 to 100.';
-                      }
-                    }),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('This price already includes GST'),
-                    value: inclusive,
-                    onChanged: busy
-                        ? null
-                        : (value) => setState(() => inclusive = value),
-                  ),
-                  ExpansionTile(
-                    key: const Key('catalog-advanced-options'),
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Advanced order settings'),
-                    subtitle: const Text(
-                        'Optional. Default values work for most products.'),
-                    children: [
-                      _field(
-                        'Units per pack',
-                        pack,
-                        hint: '1',
-                        helper: 'Number of selected selling units in one pack. '
-                            'Usually 1 for bags, pieces or rolls.',
-                        validator: _quantity,
-                      ),
-                      _field(
-                        'Minimum order quantity',
-                        minimum,
-                        hint: '1',
-                        helper: 'Smallest quantity a customer may order. '
-                            'Example: 5 bags.',
-                        validator: _quantity,
-                      ),
-                      _field(
-                        'Order quantity increments',
-                        step,
-                        hint: '1',
-                        helper: 'How many units to add each time. '
-                            'Example: 5 means 5, 10, 15...',
-                        validator: _quantity,
-                      ),
-                      _field(
-                        'Maximum order quantity',
-                        maximum,
-                        optional: true,
-                        hint: 'No limit',
-                        helper: 'Leave blank when there is no per-order limit.',
-                        validator: (value) => (value ?? '').trim().isEmpty
-                            ? null
-                            : _quantity(value),
-                      ),
-                      _field('Printed MRP (₹)', mrp,
-                          optional: true,
-                          hint: 'e.g. 399',
-                          helper: 'Maximum retail price shown on packaging.',
-                          validator: (value) {
-                        if ((value ?? '').trim().isEmpty) return null;
+                    if (!const ['0', '5', '12', '18', '28']
+                        .contains(taxBps.text.trim()))
+                      _field('GST %', taxBps, validator: (value) {
                         try {
-                          catalogPaiseFromRupees(value!.trim());
+                          catalogTaxBasisPoints((value ?? '').trim());
                           return null;
                         } on FormatException {
-                          return 'Enter rupees, such as 399 or 399.50.';
+                          return 'Enter a GST rate from 0 to 100.';
                         }
                       }),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('This price already includes GST'),
+                      value: inclusive,
+                      onChanged: busy
+                          ? null
+                          : (value) => setState(() => inclusive = value),
+                    ),
+                    ExpansionTile(
+                      key: const Key('catalog-advanced-options'),
+                      tilePadding: EdgeInsets.zero,
+                      title: const Text('Advanced order settings'),
+                      subtitle: const Text(
+                          'Optional. Default values work for most products.'),
+                      children: [
+                        _field(
+                          'Units per pack',
+                          pack,
+                          hint: '1',
+                          helper:
+                              'Number of selected selling units in one pack. '
+                              'Usually 1 for bags, pieces or rolls.',
+                          validator: _quantity,
+                        ),
+                        _field(
+                          'Minimum order quantity',
+                          minimum,
+                          hint: '1',
+                          helper: 'Smallest quantity a customer may order. '
+                              'Example: 5 bags.',
+                          validator: _quantity,
+                        ),
+                        _field(
+                          'Order quantity increments',
+                          step,
+                          hint: '1',
+                          helper: 'How many units to add each time. '
+                              'Example: 5 means 5, 10, 15...',
+                          validator: _quantity,
+                        ),
+                        _field(
+                          'Maximum order quantity',
+                          maximum,
+                          optional: true,
+                          hint: 'No limit',
+                          helper:
+                              'Leave blank when there is no per-order limit.',
+                          validator: (value) => (value ?? '').trim().isEmpty
+                              ? null
+                              : _quantity(value),
+                        ),
+                        _field('Printed MRP (₹)', mrp,
+                            optional: true,
+                            hint: 'e.g. 399',
+                            helper: 'Maximum retail price shown on packaging.',
+                            validator: (value) {
+                          if ((value ?? '').trim().isEmpty) return null;
+                          try {
+                            catalogPaiseFromRupees(value!.trim());
+                            return null;
+                          } on FormatException {
+                            return 'Enter rupees, such as 399 or 399.50.';
+                          }
+                        }),
+                      ],
+                    ),
+                    if (error != null) ...[
+                      const SizedBox(height: 6),
+                      Text(error!,
+                          key: const Key('catalog-editor-error'),
+                          style: const TextStyle(color: BuildToPalette.danger)),
                     ],
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 6),
-                    Text(error!,
-                        key: const Key('catalog-editor-error'),
-                        style: const TextStyle(color: BuildToPalette.danger)),
-                  ],
-                  const SizedBox(height: 16),
-                  BuildToPrimaryButton(
-                    label: widget.original == null
-                        ? 'Show to customers'
-                        : 'Save changes',
-                    icon: Icons.check_rounded,
-                    busy: busy,
-                    onPressed:
-                        busy || uncertain ? null : () => unawaited(save()),
-                  ),
-                ]),
+                    const SizedBox(height: 16),
+                    BuildToPrimaryButton(
+                      label: widget.original == null
+                          ? 'Show to customers'
+                          : 'Save changes',
+                      icon: Icons.check_rounded,
+                      busy: busy,
+                      onPressed:
+                          busy || uncertain ? null : () => unawaited(save()),
+                    ),
+                  ]),
+            ),
           ),
         ),
-      ),
-    );
+      );
 }

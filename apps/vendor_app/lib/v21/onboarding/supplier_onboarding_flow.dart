@@ -216,151 +216,155 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
         a.approval == SupplierApplicationStatus.pending ||
         a.approval == SupplierApplicationStatus.underReview);
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) unawaited(_confirmDiscardDraft());
-      },
-      child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Supplier registration'),
-        leading: IconButton(
-            tooltip: 'Back',
-            onPressed: _confirmDiscardDraft,
-            icon: const Icon(Icons.arrow_back_rounded)),
-        actions: [
-          IconButton(
-              tooltip: 'Refresh applications',
-              onPressed: loading || showWizard ? null : () => load(),
-              icon: const Icon(Icons.refresh_rounded))
-        ],
-      ),
-      body: SafeArea(
-          child: BuildToPageWidth(
-              child: loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: load,
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
-                        children: [
-                          const BuildToSectionHeading(
-                            title: 'Grow with Splyzo',
-                            subtitle:
-                                'Register your construction-material business and follow independent verification.',
-                          ),
-                          const SizedBox(height: 18),
-                          _NavyBanner(email: widget.controller.signedInEmail),
-                          const SizedBox(height: 22),
-                          if (documentWarning != null) ...[
-                            BuildToCard(
-                              child: Row(children: [
-                                const Icon(Icons.info_outline,
-                                    color: BuildToPalette.orange),
-                                const SizedBox(width: 10),
-                                Expanded(child: Text(documentWarning!)),
-                              ]),
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                          if (error != null) ...[
-                            BuildToCard(
-                                child: Row(children: [
-                              const Icon(Icons.error_outline,
-                                  color: BuildToPalette.danger),
-                              const SizedBox(width: 10),
-                              Expanded(child: Text(error!)),
-                            ])),
-                            const SizedBox(height: 14),
-                          ],
-                          if (showWizard)
-                            SupplierRegistrationWizard(
-                              email: widget.controller.signedInEmail,
-                              cancel: _confirmDiscardDraft,
-                              submit: widget.api.submit,
-                              uploadEvidence: widget.api.uploadEvidence,
-                              attachEvidence: (supplierId, mediaId, type) async {
-                                await widget.api.attachExistingEvidence(
-                                  supplierId: supplierId,
-                                  mediaId: mediaId,
-                                  type: type,
-                                );
-                              },
-                              attachmentWarning: (warning) {
-                                if (mounted) {
-                                  setState(() => documentWarning = warning);
-                                }
-                              },
-                              completed: (submitted) {
-                                if (!mounted) return;
-                                setState(() => selectedId = submitted.id);
-                                load(openId: submitted.id);
-                              },
-                            )
-                          else if (details != null) ...[
-                            _ReviewDetail(
-                                detail: details!,
-                                onRefresh: () =>
-                                    load(openId: details!.summary.id),
-                                onRecheckAccess: widget.controller.refresh,
-                                onLinkEvidence:
-                                    linking ? null : () => linkMedia(details!)),
-                            const SizedBox(height: 18),
-                            OutlinedButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    details = null;
-                                    selectedId = null;
-                                  });
-                                },
-                                icon: const Icon(Icons.list_alt_outlined),
-                                label: const Text('All applications')),
-                          ] else ...[
-                            const BuildToSectionHeading(
-                                title: 'Your applications'),
-                            const SizedBox(height: 12),
-                            if (applications.isEmpty)
-                              const BuildToStatePanel(
-                                  title: 'No application submitted yet',
-                                  message:
-                                      'Complete the business registration form below. '
-                                      'Admin review begins only after you submit.',
-                                  icon: Icons.storefront_outlined),
-                            for (final app in applications) ...[
-                              BuildToCard(
-                                  child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.domain_rounded,
-                                    color: BuildToPalette.navy),
-                                title: Text(app.displayName,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium),
-                                subtitle: Text(app.approval.name
-                                    .toUpperCase()
-                                    .replaceAll('UNDERREVIEW', 'UNDER REVIEW')),
-                                trailing:
-                                    const Icon(Icons.chevron_right_rounded),
-                                onTap: () => load(openId: app.id),
-                              )),
-                              const SizedBox(height: 10),
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) unawaited(_confirmDiscardDraft());
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Supplier registration'),
+            leading: IconButton(
+                tooltip: 'Back',
+                onPressed: _confirmDiscardDraft,
+                icon: const Icon(Icons.arrow_back_rounded)),
+            actions: [
+              IconButton(
+                  tooltip: 'Refresh applications',
+                  onPressed: loading || showWizard ? null : () => load(),
+                  icon: const Icon(Icons.refresh_rounded))
+            ],
+          ),
+          body: SafeArea(
+              child: BuildToPageWidth(
+                  child: loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                          onRefresh: load,
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
+                            children: [
+                              const BuildToSectionHeading(
+                                title: 'Grow with Splyzo',
+                                subtitle:
+                                    'Register your construction-material business and follow independent verification.',
+                              ),
+                              const SizedBox(height: 18),
+                              _NavyBanner(
+                                  email: widget.controller.signedInEmail),
+                              const SizedBox(height: 22),
+                              if (documentWarning != null) ...[
+                                BuildToCard(
+                                  child: Row(children: [
+                                    const Icon(Icons.info_outline,
+                                        color: BuildToPalette.orange),
+                                    const SizedBox(width: 10),
+                                    Expanded(child: Text(documentWarning!)),
+                                  ]),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                              if (error != null) ...[
+                                BuildToCard(
+                                    child: Row(children: [
+                                  const Icon(Icons.error_outline,
+                                      color: BuildToPalette.danger),
+                                  const SizedBox(width: 10),
+                                  Expanded(child: Text(error!)),
+                                ])),
+                                const SizedBox(height: 14),
+                              ],
+                              if (showWizard)
+                                SupplierRegistrationWizard(
+                                  email: widget.controller.signedInEmail,
+                                  cancel: _confirmDiscardDraft,
+                                  submit: widget.api.submit,
+                                  uploadEvidence: widget.api.uploadEvidence,
+                                  attachEvidence:
+                                      (supplierId, mediaId, type) async {
+                                    await widget.api.attachExistingEvidence(
+                                      supplierId: supplierId,
+                                      mediaId: mediaId,
+                                      type: type,
+                                    );
+                                  },
+                                  attachmentWarning: (warning) {
+                                    if (mounted) {
+                                      setState(() => documentWarning = warning);
+                                    }
+                                  },
+                                  completed: (submitted) {
+                                    if (!mounted) return;
+                                    setState(() => selectedId = submitted.id);
+                                    load(openId: submitted.id);
+                                  },
+                                )
+                              else if (details != null) ...[
+                                _ReviewDetail(
+                                    detail: details!,
+                                    onRefresh: () =>
+                                        load(openId: details!.summary.id),
+                                    onRecheckAccess: widget.controller.refresh,
+                                    onLinkEvidence: linking
+                                        ? null
+                                        : () => linkMedia(details!)),
+                                const SizedBox(height: 18),
+                                OutlinedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        details = null;
+                                        selectedId = null;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.list_alt_outlined),
+                                    label: const Text('All applications')),
+                              ] else ...[
+                                const BuildToSectionHeading(
+                                    title: 'Your applications'),
+                                const SizedBox(height: 12),
+                                if (applications.isEmpty)
+                                  const BuildToStatePanel(
+                                      title: 'No application submitted yet',
+                                      message:
+                                          'Complete the business registration form below. '
+                                          'Admin review begins only after you submit.',
+                                      icon: Icons.storefront_outlined),
+                                for (final app in applications) ...[
+                                  BuildToCard(
+                                      child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: const Icon(Icons.domain_rounded,
+                                        color: BuildToPalette.navy),
+                                    title: Text(app.displayName,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium),
+                                    subtitle: Text(app.approval.name
+                                        .toUpperCase()
+                                        .replaceAll(
+                                            'UNDERREVIEW', 'UNDER REVIEW')),
+                                    trailing:
+                                        const Icon(Icons.chevron_right_rounded),
+                                    onTap: () => load(openId: app.id),
+                                  )),
+                                  const SizedBox(height: 10),
+                                ],
+                                const SizedBox(height: 20),
+                                if (!pending)
+                                  BuildToPrimaryButton(
+                                      label: 'Start supplier application',
+                                      icon: Icons.add_business_rounded,
+                                      onPressed: () =>
+                                          setState(() => showWizard = true))
+                                else
+                                  const BuildToCard(
+                                      child: Text(
+                                    'An application is awaiting review. Open it to track progress. '
+                                    'The backend prevents another pending application for this owner.',
+                                  )),
+                              ],
                             ],
-                            const SizedBox(height: 20),
-                            if (!pending)
-                              BuildToPrimaryButton(
-                                  label: 'Start supplier application',
-                                  icon: Icons.add_business_rounded,
-                                  onPressed: () =>
-                                      setState(() => showWizard = true))
-                            else
-                              const BuildToCard(
-                                  child: Text(
-                                'An application is awaiting review. Open it to track progress. '
-                                'The backend prevents another pending application for this owner.',
-                              )),
-                          ],
-                        ],
-                      )))),
-    ));
+                          )))),
+        ));
   }
 }
 
@@ -443,8 +447,8 @@ class _ReviewDetail extends StatelessWidget {
       if (application.gstRegistration.needsGstin)
         SupplierEvidenceType.gstCertificate,
     ];
-    final documentsReceived = requiredDocuments.every((type) =>
-        detail.documents.any((document) =>
+    final documentsReceived =
+        requiredDocuments.every((type) => detail.documents.any((document) =>
             document.type == type &&
             [
               SupplierEvidenceStatus.uploaded,

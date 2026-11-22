@@ -153,8 +153,11 @@ void main() {
     await tester.tap(find.text('Continue editing'));
     await tester.pumpAndSettle();
     expect(
-      tester.widget<TextFormField>(
-          find.byKey(const Key('catalog-field-Product name'))).controller!.text,
+      tester
+          .widget<TextFormField>(
+              find.byKey(const Key('catalog-field-Product name')))
+          .controller!
+          .text,
       'Test cement bag',
     );
     expect(find.text('TMT Steel & Rebars'), findsNothing);
