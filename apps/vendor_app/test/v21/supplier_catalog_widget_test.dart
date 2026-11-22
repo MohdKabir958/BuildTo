@@ -119,15 +119,15 @@ void main() {
       (tester) async {
     final server = CatalogServer();
     const steel = '123e4567-e89b-12d3-a456-426614174035';
-    final masters = CatalogMasters(
-      const [
+    const masters = CatalogMasters(
+      [
         CatalogCategory(
             '123e4567-e89b-12d3-a456-426614174030', 'Cement & Concrete'),
         CatalogCategory(steel, 'TMT Steel & Rebars'),
         CatalogCategory(
             '123e4567-e89b-12d3-a456-426614174036', 'Paints & Finishes'),
       ],
-      const [
+      [
         CatalogUnit('BAG', 'Bag'),
         CatalogUnit('KG', 'Kilogram'),
         CatalogUnit('PIECE', 'Piece'),
