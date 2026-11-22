@@ -17,9 +17,9 @@ const document={id:'44444444-4444-4444-a444-444444444444',documentType:'BUSINESS
 const detail={...row,contactEmail:'contact@example.test',contactPhone:null,businessType:null,billingAddress:{line1:'Office'},
  owners:[{userId:owner,displayName:'Supplier Owner',email:'owner@example.test',active:false}],documents:[document]};
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
-function setup(myId=reviewer){
+function setup(myId=reviewer, supplierDetail:typeof detail & {reviewPolicy?:{stagingTestWithoutDocuments:boolean}}=detail){
  const api={
-  get:vi.fn(async(path:string)=>path.includes(supplier)?{data:detail,requestId:'detail'}:
+  get:vi.fn(async(path:string)=>path.includes(supplier)?{data:supplierDetail,requestId:'detail'}:
    {data:{items:[row],nextCursor:null},requestId:'list'}),
   write:vi.fn(async()=>({data:{},requestId:'saved'}))
  };
@@ -47,6 +47,21 @@ describe('A06 supplier approval UI',()=>{
   expect(screen.getByText(/Approve is disabled until all required evidence/)).toBeTruthy();
  });
 
+ it('allows a clearly labeled staging-only test approval when backend authorizes the bypass',async()=>{
+  const api=setup(reviewer,{...detail,documents:[],reviewPolicy:{stagingTestWithoutDocuments:true}});
+  await screen.findByText('Example Cement');
+  fireEvent.click(screen.getByRole('button',{name:'View details'}));
+  await screen.findByText('Staging testing mode is active');
+  expect(screen.getByText('Document requirement waived for staging test')).toBeTruthy();
+  const approve=screen.getByRole('button',{name:'Approve (test only)'});
+  expect(approve.hasAttribute('disabled')).toBe(false);
+  fireEvent.click(approve);
+  fireEvent.change(screen.getByLabelText(/Mandatory audit reason/),{target:{value:'Temporary staging supplier workflow test only'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm reviewed decision'}));
+  await waitFor(()=>expect(api.write).toHaveBeenCalledWith('POST',
+   '/api/v2/admin/suppliers/'+supplier+'/review',
+   {decision:'APPROVED',reason:'Temporary staging supplier workflow test only'}));
+ });
  it('shows real queue, private evidence review instructions and audit reason before actions',async()=>{
   const api=setup();
   await screen.findByText('Example Cement');

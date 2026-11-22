@@ -6,6 +6,25 @@ import {serializable} from './transaction';
 const STATES=['DRAFT','PENDING','UNDER_REVIEW','APPROVED','REJECTED','SUSPENDED'] as const;
 type State=typeof STATES[number];
 const GST=['REGULAR','COMPOSITION','UNREGISTERED','EXEMPT'] as const;
+
+// Strictly temporary UAT override: only the approved V2.1 staging runtime may
+// read this expiring staging-database setting. Production never trusts it.
+// Does NOT bypass authenticated admin permission, independent review,
+// required applicant details, active owner, or the required audit reason.
+export const SUPPLIER_TEST_BYPASS_KEY='staging.supplierDocumentReviewBypass.v1';
+export function isStagingSupplierTestBypass(value:unknown,environment:string|undefined,now=Date.now()):boolean{
+ if(environment!=='staging'||!value||typeof value!=='object'||Array.isArray(value))return false;
+ const p=value as Record<string,unknown>;
+ if(p.enabled!==true||p.scope!=='SUPPLIER_APPROVAL_WITHOUT_DOCUMENTS_UAT'||
+    typeof p.expiresAt!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(p.expiresAt))return false;
+ const until=Date.parse(p.expiresAt);
+ return Number.isFinite(until)&&until>now&&until<=now+7*24*60*60*1000;
+}
+async function stagingDocumentBypassEnabled(db:PrismaClient|Prisma.TransactionClient):Promise<boolean>{
+ if(process.env.BUILDTO_V21_ENV!=='staging')return false;
+ const policy=await db.appSetting.findUnique({where:{key:SUPPLIER_TEST_BYPASS_KEY},select:{value:true}});
+ return isStagingSupplierTestBypass(policy?.value,process.env.BUILDTO_V21_ENV);
+}
 const no=(code:string,message:string,status=400):never=>{throw new ApiError(status,code,message);};
 const obj=(x:unknown):Record<string,unknown>=>
  x&&typeof x==='object'&&!Array.isArray(x)?x as Record<string,unknown>:no('INVALID_INPUT','JSON object required.');
@@ -176,6 +195,7 @@ export async function adminSupplierDetail(db:PrismaClient,actor:string,id:string
  if(!found)throw new ApiError(404,'NOT_FOUND','Supplier not found.');
  const {members,documents,businessType,contactEmail,contactPhone,billingAddress,...base}=found;
  return {...summary(base),businessType,contactEmail,contactPhone,billingAddress,
+  reviewPolicy:{stagingTestWithoutDocuments:await stagingDocumentBypassEnabled(db)},
   owners:members.map(x=>({userId:x.userId,active:x.active,displayName:x.user.displayName,email:x.user.email})),
   documents:documents.map(x=>({id:x.id,documentType:x.documentType,status:x.status,reviewNote:x.reviewNote,
    expiresAt:iso(x.expiresAt),createdAt:x.createdAt.toISOString(),
@@ -220,16 +240,20 @@ export async function reviewSupplierApplication(db:PrismaClient,actor:string,id:
   };
   if(!transitions[old.approval]?.includes(decision))
    no('ILLEGAL_TRANSITION','Supplier review transition is not permitted.',409);
+  let stagingDocumentBypassUsed=false;
   if(decision==='APPROVED'){
    if(!old.contactEmail||!old.billingAddress)
     no('INCOMPLETE_APPLICATION','Verified contact and billing address required.',409);
    const ownerCount=await tx.supplierMember.count({where:{supplierId:id,role:'OWNER',revokedAt:null}});
    if(ownerCount<1)no('OWNER_REQUIRED','Supplier requires an owner.',409);
-   const required=['BUSINESS_REGISTRATION',...(['REGULAR','COMPOSITION'].includes(old.gstRegistration)?['GST_CERTIFICATE']:[])];
-   const documents=await tx.supplierDocument.findMany({where:{supplierId:id,status:'VERIFIED',
-    OR:[{expiresAt:null},{expiresAt:{gt:new Date()}}]},select:{documentType:true,verifiedById:true,media:{select:{sha256:true}}}});
-   for(const type of required)if(!documents.some(doc=>doc.documentType===type&&doc.verifiedById&&doc.media.sha256))
-    no('VERIFIED_DOCUMENTS_REQUIRED','Current independently verified business and applicable GST evidence required.',409);
+   stagingDocumentBypassUsed=await stagingDocumentBypassEnabled(tx);
+   if(!stagingDocumentBypassUsed){
+    const required=['BUSINESS_REGISTRATION',...(['REGULAR','COMPOSITION'].includes(old.gstRegistration)?['GST_CERTIFICATE']:[])];
+    const documents=await tx.supplierDocument.findMany({where:{supplierId:id,status:'VERIFIED',
+     OR:[{expiresAt:null},{expiresAt:{gt:new Date()}}]},select:{documentType:true,verifiedById:true,media:{select:{sha256:true}}}});
+    for(const type of required)if(!documents.some(doc=>doc.documentType===type&&doc.verifiedById&&doc.media.sha256))
+     no('VERIFIED_DOCUMENTS_REQUIRED','Current independently verified business and applicable GST evidence required.',409);
+   }
   }
   const saved=await tx.supplier.update({where:{id},data:{
    approval:decision,
@@ -243,7 +267,12 @@ export async function reviewSupplierApplication(db:PrismaClient,actor:string,id:
    supplierId:id,role:'OWNER',revokedAt:null
   },data:{active:true}});
   await audit(tx,actor,id,'SUPPLIER_APPROVAL_CHANGED',
-   {approval:old.approval},{approval:decision,reason:why});
+   {approval:old.approval},{approval:decision,reason:why,
+    stagingUnverifiedDocumentsBypass:stagingDocumentBypassUsed});
+  if(stagingDocumentBypassUsed)
+   await audit(tx,actor,id,'STAGING_SUPPLIER_APPROVAL_WITHOUT_DOCUMENTS',
+    {approval:old.approval},{approval:decision,reason:why,
+     testOnly:true,productionVerificationNotCompleted:true});
   return summary(saved);
  });
 }
