@@ -252,21 +252,25 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
               const SizedBox(height: 16),
               ActionButton('Resume existing payment', () async {
                 final attempts = rows(
-                    await api.call('/api/v2/orders/${widget.id}/payments'));
+                  await api.call('/api/v2/orders/${widget.id}/payments'),
+                );
                 final active = attempts
                     .where((p) => ['CREATED', 'PENDING'].contains(p['status']))
                     .toList();
                 if (active.isEmpty) {
                   throw const CustomerProblem(
-                      'No active payment window was found. Refresh this order for its latest status.');
+                    'No active payment window was found. Refresh this order for its latest status.',
+                  );
                 }
                 await launchCustomerPayment(active.first);
                 if (context.mounted) refresh();
               }, icon: Icons.lock_outline),
               const SizedBox(height: 10),
-              ActionButton('Review payment attempts',
-                  () async => push(context, PaymentAttemptsPage(widget.id)),
-                  tonal: true),
+              ActionButton(
+                'Review payment attempts',
+                () async => push(context, PaymentAttemptsPage(widget.id)),
+                tonal: true,
+              ),
             ],
             if (canPay) ...[
               const Section('Complete your order'),
@@ -274,7 +278,8 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
                 isExpanded: true,
                 initialValue: method,
                 decoration: const InputDecoration(
-                    label: RequiredLabel('Payment method')),
+                  label: RequiredLabel('Payment method'),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'UPI', child: Text('UPI')),
                   DropdownMenuItem(value: 'CARD', child: Text('Card')),
@@ -413,12 +418,15 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
             }),
             if (suppliers.any((s) => s['status'] == 'DELIVERED')) ...[
               ActionButton(
-                  'Review a supplier',
-                  () async => push(context,
-                      ReviewPage(orderId: widget.id, suppliers: suppliers)),
-                  icon: Icons.star_border,
-                  tonal: true),
-              const SizedBox(height: 10)
+                'Review a supplier',
+                () async => push(
+                  context,
+                  ReviewPage(orderId: widget.id, suppliers: suppliers),
+                ),
+                icon: Icons.star_border,
+                tonal: true,
+              ),
+              const SizedBox(height: 10),
             ],
             ActionButton(
               'Track shipments',
@@ -445,9 +453,12 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
               tonal: true,
             ),
             const SizedBox(height: 10),
-            ActionButton('Refund status',
-                () async => push(context, RefundsPage(widget.id)),
-                icon: Icons.payments_outlined, tonal: true),
+            ActionButton(
+              'Refund status',
+              () async => push(context, RefundsPage(widget.id)),
+              icon: Icons.payments_outlined,
+              tonal: true,
+            ),
             const SizedBox(height: 10),
             ActionButton(
               'Return requests',
@@ -907,59 +918,74 @@ class _ReturnEditorState extends State<ReturnEditor> {
           ),
           const SizedBox(height: 20),
           ActionButton(
-              'Attach photo or PDF',
-              evidence.length >= 8
-                  ? null
-                  : () async {
-                      final file = await openFile(acceptedTypeGroups: [
-                        const XTypeGroup(label: 'Photos and PDFs', extensions: [
-                          'jpg',
-                          'jpeg',
-                          'png',
-                          'pdf'
-                        ], mimeTypes: [
-                          'image/jpeg',
-                          'image/png',
-                          'application/pdf'
-                        ])
-                      ]);
-                      if (file == null) return;
-                      if (await file.length() > 10 * 1024 * 1024) {
-                        throw const CustomerProblem(
-                            'Choose a file smaller than 10 MiB.');
-                      }
-                      final ext = file.name.split('.').last.toLowerCase();
-                      final mime = ext == 'pdf'
-                          ? 'application/pdf'
-                          : ext == 'png'
-                              ? 'image/png'
-                              : ext == 'jpg' || ext == 'jpeg'
-                                  ? 'image/jpeg'
-                                  : null;
-                      if (mime == null) {
-                        throw const CustomerProblem(
-                            'Choose a JPEG, PNG or PDF.');
-                      }
-                      final asset = object(await api
-                          .call('/api/v2/media', method: 'POST', body: {
-                        'purpose': 'EVIDENCE',
-                        'mimeType': mime,
-                        'base64': base64Encode(await file.readAsBytes())
-                      }));
-                      if (mounted) {
-                        setState(() => evidence
-                            .add({'id': asset['id'], 'name': file.name}));
-                      }
-                    },
-              icon: Icons.attach_file,
-              tonal: true),
-          ...evidence.map((e) => ListTile(
+            'Attach photo or PDF',
+            evidence.length >= 8
+                ? null
+                : () async {
+                    final file = await openFile(
+                      acceptedTypeGroups: [
+                        const XTypeGroup(
+                          label: 'Photos and PDFs',
+                          extensions: ['jpg', 'jpeg', 'png', 'pdf'],
+                          mimeTypes: [
+                            'image/jpeg',
+                            'image/png',
+                            'application/pdf',
+                          ],
+                        ),
+                      ],
+                    );
+                    if (file == null) return;
+                    if (await file.length() > 10 * 1024 * 1024) {
+                      throw const CustomerProblem(
+                        'Choose a file smaller than 10 MiB.',
+                      );
+                    }
+                    final ext = file.name.split('.').last.toLowerCase();
+                    final mime = ext == 'pdf'
+                        ? 'application/pdf'
+                        : ext == 'png'
+                            ? 'image/png'
+                            : ext == 'jpg' || ext == 'jpeg'
+                                ? 'image/jpeg'
+                                : null;
+                    if (mime == null) {
+                      throw const CustomerProblem('Choose a JPEG, PNG or PDF.');
+                    }
+                    final asset = object(
+                      await api.call(
+                        '/api/v2/media',
+                        method: 'POST',
+                        body: {
+                          'purpose': 'EVIDENCE',
+                          'mimeType': mime,
+                          'base64': base64Encode(await file.readAsBytes()),
+                        },
+                      ),
+                    );
+                    if (mounted) {
+                      setState(
+                        () => evidence.add({
+                          'id': asset['id'],
+                          'name': file.name,
+                        }),
+                      );
+                    }
+                  },
+            icon: Icons.attach_file,
+            tonal: true,
+          ),
+          ...evidence.map(
+            (e) => ListTile(
               title: Text(field(e, 'name')),
               leading: const Icon(Icons.verified_user_outlined, color: green),
               trailing: IconButton(
-                  tooltip: 'Remove attachment',
-                  onPressed: () => setState(() => evidence.remove(e)),
-                  icon: const Icon(Icons.close)))),
+                tooltip: 'Remove attachment',
+                onPressed: () => setState(() => evidence.remove(e)),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
           ActionButton('Submit return request', () async {
             if (selected.isEmpty || reason.text.trim().length < 12) {
@@ -1028,44 +1054,57 @@ class _ReviewPageState extends State<ReviewPage> {
   Widget build(BuildContext c) {
     final api = CustomerScope.of(c).api;
     return Scaffold(
-        appBar: AppBar(title: const Text('Review your supplier')),
-        body: ListView(padding: const EdgeInsets.all(22), children: [
-          Text('Help others build better.',
-              style: Theme.of(c).textTheme.headlineSmall),
+      appBar: AppBar(title: const Text('Review your supplier')),
+      body: ListView(
+        padding: const EdgeInsets.all(22),
+        children: [
+          Text(
+            'Help others build better.',
+            style: Theme.of(c).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 18),
           DropdownButtonFormField<String>(
-              isExpanded: true,
-              decoration: const InputDecoration(
-                  label: RequiredLabel('Delivered supplier order')),
-              items: widget.suppliers
-                  .asMap()
-                  .entries
-                  .where((e) => e.value['status'] == 'DELIVERED')
-                  .map((e) => DropdownMenuItem(
-                      value: field(e.value, 'id'),
-                      child: Text('Supplier order ${e.key + 1}')))
-                  .toList(),
-              onChanged: (v) => supplierOrder = v),
+            isExpanded: true,
+            decoration: const InputDecoration(
+              label: RequiredLabel('Delivered supplier order'),
+            ),
+            items: widget.suppliers
+                .asMap()
+                .entries
+                .where((e) => e.value['status'] == 'DELIVERED')
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: field(e.value, 'id'),
+                    child: Text('Supplier order ${e.key + 1}'),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) => supplierOrder = v,
+          ),
           const SizedBox(height: 20),
           Wrap(
-              children: List.generate(
-                  5,
-                  (i) => IconButton(
-                      tooltip: '${i + 1} stars',
-                      onPressed: () => setState(() => rating = i + 1),
-                      icon: Icon(
-                          i < rating
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
-                          color: accent,
-                          size: 32)))),
+            children: List.generate(
+              5,
+              (i) => IconButton(
+                tooltip: '${i + 1} stars',
+                onPressed: () => setState(() => rating = i + 1),
+                icon: Icon(
+                  i < rating ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: accent,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 20),
           TextField(
-              controller: comment,
-              maxLength: 1500,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                  labelText: 'Your experience (optional, 8+ characters)')),
+            controller: comment,
+            maxLength: 1500,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Your experience (optional, 8+ characters)',
+            ),
+          ),
           const SizedBox(height: 20),
           ActionButton('Submit review', () async {
             if (supplierOrder == null) {
@@ -1074,22 +1113,27 @@ class _ReviewPageState extends State<ReviewPage> {
             if (comment.text.trim().isNotEmpty &&
                 comment.text.trim().length < 8) {
               throw const CustomerProblem(
-                  'Use at least 8 characters for your review.');
+                'Use at least 8 characters for your review.',
+              );
             }
-            await api.call('/api/v2/orders/${widget.orderId}/reviews',
-                method: 'POST',
-                body: {
-                  'supplierOrderId': supplierOrder,
-                  'rating': rating,
-                  if (comment.text.trim().isNotEmpty)
-                    'comment': comment.text.trim()
-                });
+            await api.call(
+              '/api/v2/orders/${widget.orderId}/reviews',
+              method: 'POST',
+              body: {
+                'supplierOrderId': supplierOrder,
+                'rating': rating,
+                if (comment.text.trim().isNotEmpty)
+                  'comment': comment.text.trim(),
+              },
+            );
             if (c.mounted) {
               notice(c, 'Review submitted for moderation.');
               Navigator.pop(c);
             }
           }),
-        ]));
+        ],
+      ),
+    );
   }
 }
 
@@ -1100,39 +1144,54 @@ class RefundsPage extends StatelessWidget {
   Widget build(BuildContext c) {
     final api = CustomerScope.of(c).api;
     return RemotePage<List<Data>>(
-        title: 'Refund status',
-        load: () async => rows(await api.call('/api/v2/orders/$id/refunds')),
-        builder: (list, reload) =>
-            ListView(padding: const EdgeInsets.all(22), children: [
-              const Text(
-                  'Refunds are shown when recorded by the payment and reconciliation workflow. Return approval does not mean a refund is complete.',
-                  style: TextStyle(color: muted)),
-              if (list.isEmpty)
-                const EmptyState('No refunds recorded',
-                    'Contact support if you need help with a payment or return.'),
-              ...list.map((r) => Padding(
-                  padding: const EdgeInsets.only(top: 15),
-                  child: Panel(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                        StatusPill(field(r, 'status')),
-                        const SizedBox(height: 15),
-                        Text(money(r['amountPaise']),
-                            style: Theme.of(c).textTheme.headlineSmall),
-                        const SizedBox(height: 10),
-                        Text(field(r, 'reason')),
-                        if (r['customerBankCredit'] == 'NOT_VERIFIED')
-                          const Text('Bank credit awaiting confirmation',
-                              style: TextStyle(fontSize: 12, color: muted)),
-                        if (r['providerRefundId'] != null)
-                          SelectableText('Reference: ${r['providerRefundId']}'),
-                        if (r['providerCompletedAt'] != null)
-                          Text(
-                              'Processed by payment provider: ${field(r, 'providerCompletedAt').split('T').first}',
-                              style:
-                                  const TextStyle(fontSize: 12, color: muted))
-                      ])))),
-            ]));
+      title: 'Refund status',
+      load: () async => rows(await api.call('/api/v2/orders/$id/refunds')),
+      builder: (list, reload) => ListView(
+        padding: const EdgeInsets.all(22),
+        children: [
+          const Text(
+            'Refunds are shown when recorded by the payment and reconciliation workflow. Return approval does not mean a refund is complete.',
+            style: TextStyle(color: muted),
+          ),
+          if (list.isEmpty)
+            const EmptyState(
+              'No refunds recorded',
+              'Contact support if you need help with a payment or return.',
+            ),
+          ...list.map(
+            (r) => Padding(
+              padding: const EdgeInsets.only(top: 15),
+              child: Panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    StatusPill(field(r, 'status')),
+                    const SizedBox(height: 15),
+                    Text(
+                      money(r['amountPaise']),
+                      style: Theme.of(c).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(field(r, 'reason')),
+                    if (r['customerBankCredit'] == 'NOT_VERIFIED')
+                      const Text(
+                        'Bank credit awaiting confirmation',
+                        style: TextStyle(fontSize: 12, color: muted),
+                      ),
+                    if (r['providerRefundId'] != null)
+                      SelectableText('Reference: ${r['providerRefundId']}'),
+                    if (r['providerCompletedAt'] != null)
+                      Text(
+                        'Processed by payment provider: ${field(r, 'providerCompletedAt').split('T').first}',
+                        style: const TextStyle(fontSize: 12, color: muted),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

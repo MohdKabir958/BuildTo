@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+
 import 'customer_api.dart';
 import 'customer_session.dart';
+import 'customer_reference_auth.dart';
 
-const ink = Color(0xFF152A3A),
-    accent = Color(0xFFF17436),
-    paper = Color(0xFFF7F7F2),
-    muted = Color(0xFF64747C),
-    line = Color(0xFFE4E9E5),
-    green = Color(0xFF23745D);
+const ink = Color(0xFF071B4C),
+    accent = Color(0xFFFF7000),
+    paper = Colors.white,
+    muted = Color(0xFF455472),
+    line = Color(0xFFD7E2F4),
+    green = Color(0xFF079D62);
 ThemeData customerTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: ink,
@@ -55,7 +57,7 @@ ThemeData customerTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: const Color(0xFFECF3FD),
       contentPadding: const EdgeInsets.all(17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -68,14 +70,15 @@ ThemeData customerTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: ink,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         minimumSize: const Size(48, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            fontFamily: 'packages/kraveo_ui/Jakarta'),
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+          fontFamily: 'packages/kraveo_ui/Jakarta',
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -93,12 +96,15 @@ ThemeData customerTheme() {
       ),
     ),
     chipTheme: ChipThemeData(
-        selectedColor: accent.withValues(alpha: .13),
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: line),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        labelStyle: const TextStyle(
-            fontFamily: 'packages/kraveo_ui/Jakarta', color: ink)),
+      selectedColor: accent.withValues(alpha: .13),
+      backgroundColor: Colors.white,
+      side: const BorderSide(color: line),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      labelStyle: const TextStyle(
+        fontFamily: 'packages/kraveo_ui/Jakarta',
+        color: ink,
+      ),
+    ),
     dividerColor: line,
   );
 }
@@ -203,8 +209,9 @@ class Panel extends StatelessWidget {
         color: color,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: line)),
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: line),
+        ),
         child: Padding(padding: EdgeInsets.all(padding), child: child),
       );
 }
@@ -215,15 +222,18 @@ class RequiredLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text.rich(
-        TextSpan(children: [
-          TextSpan(text: text),
-          TextSpan(
-            text: ' *',
-            style: TextStyle(
+        TextSpan(
+          children: [
+            TextSpan(text: text),
+            TextSpan(
+              text: ' *',
+              style: TextStyle(
                 color: Theme.of(context).colorScheme.error,
-                fontWeight: FontWeight.w800),
-          ),
-        ]),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
         semanticsLabel: '$text, required',
       );
 }
@@ -262,7 +272,7 @@ class StatusPill extends StatelessWidget {
           'CAPTURED',
           'COD_VERIFIED',
           'PROCESSED',
-          'ACCEPTED'
+          'ACCEPTED',
         ].contains(status)
           ? green
           : const Color(0xFF8A5B14);
@@ -275,11 +285,8 @@ class StatusPill extends StatelessWidget {
         ),
         child: Text(
           label(status),
-          style: TextStyle(
-            color: tone,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
+          style:
+              TextStyle(color: tone, fontSize: 11, fontWeight: FontWeight.w700),
         ),
       );
 }
@@ -419,7 +426,7 @@ class SignedIn extends StatelessWidget {
                 icon: Icons.person_outline_rounded,
                 action: ActionButton(
                   'Sign in securely',
-                  s.signIn,
+                  () async => push(context, const SplyzoReferenceAuthScreen()),
                   icon: Icons.arrow_forward,
                 ),
               ),

@@ -272,12 +272,14 @@ class _CustomerHomeState extends State<CustomerHome> {
                             : 'Shop by category',
                         action: widget.categoriesOnly ? null : 'View all',
                         onTap: () => push(
-                            context,
-                            Scaffold(
-                              appBar: AppBar(title: const Text('Categories')),
-                              body: const SafeArea(
-                                  child: CustomerHome(categoriesOnly: true)),
-                            )),
+                          context,
+                          Scaffold(
+                            appBar: AppBar(title: const Text('Categories')),
+                            body: const SafeArea(
+                              child: CustomerHome(categoriesOnly: true),
+                            ),
+                          ),
+                        ),
                       ),
                       if (categories.isEmpty)
                         const Text(
@@ -487,14 +489,17 @@ class CategoryGrid extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 7),
-                    Text(entry.key,
-                        textAlign: TextAlign.center,
-                        maxLines: horizontal ? 2 : null,
-                        overflow: horizontal ? TextOverflow.ellipsis : null,
-                        style: const TextStyle(
-                            fontSize: 12,
-                            height: 1.25,
-                            fontWeight: FontWeight.w800)),
+                    Text(
+                      entry.key,
+                      textAlign: TextAlign.center,
+                      maxLines: horizontal ? 2 : null,
+                      overflow: horizontal ? TextOverflow.ellipsis : null,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -517,31 +522,33 @@ class CategoryGrid extends StatelessWidget {
         ),
       );
     }
-    return LayoutBuilder(builder: (context, constraints) {
-      const gap = 10.0;
-      final width = (constraints.maxWidth - gap) / 2;
-      final entries = departments.entries.toList();
-      return Column(
-        children: [
-          for (var i = 0; i < entries.length; i += 2)
-            Padding(
-              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    tile(entries[i], width),
-                    if (i + 1 < entries.length) ...[
-                      const SizedBox(width: gap),
-                      tile(entries[i + 1], width),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final width = (constraints.maxWidth - gap) / 2;
+        final entries = departments.entries.toList();
+        return Column(
+          children: [
+            for (var i = 0; i < entries.length; i += 2)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      tile(entries[i], width),
+                      if (i + 1 < entries.length) ...[
+                        const SizedBox(width: gap),
+                        tile(entries[i + 1], width),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
 
