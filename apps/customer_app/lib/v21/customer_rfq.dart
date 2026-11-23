@@ -171,27 +171,27 @@ class _NewRfqPageState extends State<NewRfqPage> {
                   children: [
                     const Section('Materials'),
                     ...lines.asMap().entries.map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Panel(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${e.value['description']}\n${e.value['quantity']} ${e.value['unitCode']}',
-                                ),
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Panel(
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${e.value['description']}\n${e.value['quantity']} ${e.value['unitCode']}',
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Remove material',
+                                    onPressed: () =>
+                                        setState(() => lines.removeAt(e.key)),
+                                    icon: const Icon(Icons.close),
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                tooltip: 'Remove material',
-                                onPressed: () =>
-                                    setState(() => lines.removeAt(e.key)),
-                                icon: const Icon(Icons.close),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
                     if (lines.length < 30)
                       ActionButton(
                         'Add material',
@@ -290,12 +290,13 @@ class _NewRfqPageState extends State<NewRfqPage> {
                         'siteSnapshot': {
                           'city': a['cityName'],
                           'postalCode': a['postalCode'],
-                          'siteNotes': '${a['line1']}, ${a['locality']}'
-                              .substring(
-                                0,
-                                ('${a['line1']}, ${a['locality']}').length
-                                    .clamp(0, 300),
-                              ),
+                          'siteNotes':
+                              '${a['line1']}, ${a['locality']}'.substring(
+                            0,
+                            ('${a['line1']}, ${a['locality']}')
+                                .length
+                                .clamp(0, 300),
+                          ),
                         },
                         'items': lines
                             .map((l) => Map<String, dynamic>.from(l))
@@ -465,8 +466,8 @@ class RfqDetailPage extends StatelessWidget {
         quotes.sort(
           (a, b) => (BigInt.tryParse(field(a, 'totalPaise')) ?? BigInt.zero)
               .compareTo(
-                BigInt.tryParse(field(b, 'totalPaise')) ?? BigInt.zero,
-              ),
+            BigInt.tryParse(field(b, 'totalPaise')) ?? BigInt.zero,
+          ),
         );
         return ListView(
           padding: const EdgeInsets.all(22),
