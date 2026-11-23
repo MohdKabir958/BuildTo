@@ -375,9 +375,9 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                     ),
                   ),
                   const SizedBox(height: 26),
-                  Row(
+                  const Row(
                     children: [
-                      const Expanded(child: Divider(color: Color(0xFFAAB9D5))),
+                      Expanded(child: Divider(color: Color(0xFFAAB9D5))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 9),
                         child: Text(
