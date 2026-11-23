@@ -448,8 +448,9 @@ class _AddressEditorState extends State<AddressEditor> {
                         return 'Enter a 6-digit PIN code';
                       }
                       if (e.key == 'phoneE164' &&
-                          !RegExp(r'^[6-9]\d{9}$')
-                              .hasMatch(indianMobileDigits(v))) {
+                          !RegExp(
+                            r'^[6-9]\d{9}$',
+                          ).hasMatch(indianMobileDigits(v))) {
                         return 'Enter a valid 10-digit mobile number';
                       }
                       return null;
