@@ -333,7 +333,7 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                   const Expanded(child: SplyzoReferenceLogo()),
                   Material(
                     color: Colors.white,
-                    shape: StadiumBorder(
+                    shape: const StadiumBorder(
                       side: BorderSide(color: SplyzoReferenceColors.border),
                     ),
                     child: InkWell(
