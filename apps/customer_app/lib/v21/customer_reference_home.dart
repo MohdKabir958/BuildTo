@@ -194,9 +194,8 @@ class SplyzoReferenceBanner extends StatelessWidget {
                         ),
                         maxLines: auth ? 3 : 2,
                         style: TextStyle(
-                          fontSize: auth
-                              ? (compact ? 15 : 18)
-                              : (compact ? 14 : 16),
+                          fontSize:
+                              auth ? (compact ? 15 : 18) : (compact ? 14 : 16),
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           height: 1.12,
@@ -512,8 +511,7 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                         ),
                         _Categories(
                           categories: data?.categories ?? [],
-                          loading:
-                              data == null &&
+                          loading: data == null &&
                               snapshot.connectionState != ConnectionState.done,
                         ),
                         _SectionTitle(
@@ -568,55 +566,55 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(1, 17, 0, 10),
-    child: Row(
-      children: [
-        Container(
-          width: 5,
-          height: 23,
-          decoration: BoxDecoration(
-            color: SplyzoReferenceColors.orange,
-            borderRadius: BorderRadius.circular(5),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            style: const TextStyle(
-              color: SplyzoReferenceColors.navy,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -.4,
+        padding: const EdgeInsets.fromLTRB(1, 17, 0, 10),
+        child: Row(
+          children: [
+            Container(
+              width: 5,
+              height: 23,
+              decoration: BoxDecoration(
+                color: SplyzoReferenceColors.orange,
+                borderRadius: BorderRadius.circular(5),
+              ),
             ),
-          ),
-        ),
-        TextButton(
-          onPressed: onTap,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            foregroundColor: SplyzoReferenceColors.orange,
-            padding: const EdgeInsets.only(left: 4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                action,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  color: SplyzoReferenceColors.navy,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -.4,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.arrow_forward_rounded, size: 17),
-            ],
-          ),
+            ),
+            TextButton(
+              onPressed: onTap,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: SplyzoReferenceColors.orange,
+                padding: const EdgeInsets.only(left: 4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    action,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 17),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _EmptyRow extends StatelessWidget {
@@ -625,29 +623,29 @@ class _EmptyRow extends StatelessWidget {
   final IconData icon;
   @override
   Widget build(BuildContext context) => Container(
-    height: 105,
-    padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(
-      color: SplyzoReferenceColors.field,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: SplyzoReferenceColors.border),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, color: SplyzoReferenceColors.navy),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(
-              color: SplyzoReferenceColors.secondary,
-              fontSize: 12,
-            ),
-          ),
+        height: 105,
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: SplyzoReferenceColors.field,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: SplyzoReferenceColors.border),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          children: [
+            Icon(icon, color: SplyzoReferenceColors.navy),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: SplyzoReferenceColors.secondary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _SupplierCard extends StatelessWidget {
@@ -771,19 +769,19 @@ class _SupplierDirectory extends StatelessWidget {
   const _SupplierDirectory();
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Nearby Suppliers')),
-    body: ListView(
-      padding: const EdgeInsets.all(18),
-      children: const [
-        Text(
-          'Browse verified supplier storefronts and available materials.',
-          style: TextStyle(color: SplyzoReferenceColors.secondary),
+        appBar: AppBar(title: const Text('Nearby Suppliers')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: const [
+            Text(
+              'Browse verified supplier storefronts and available materials.',
+              style: TextStyle(color: SplyzoReferenceColors.secondary),
+            ),
+            SizedBox(height: 16),
+            SupplierStrip(),
+          ],
         ),
-        SizedBox(height: 16),
-        SupplierStrip(),
-      ],
-    ),
-  );
+      );
 }
 
 class _Categories extends StatelessWidget {
@@ -897,12 +895,12 @@ class _DealCard extends StatelessWidget {
     final image = lower.contains('cement')
         ? 'ultratech_cement.jpg'
         : lower.contains('brick')
-        ? 'red_bricks.jpg'
-        : lower.contains('steel') || lower.contains('tmt')
-        ? 'tmt_steel_bars.jpg'
-        : lower.contains('sand')
-        ? 'sand_aggregates.jpg'
-        : 'construction_hero_banner.jpg';
+            ? 'red_bricks.jpg'
+            : lower.contains('steel') || lower.contains('tmt')
+                ? 'tmt_steel_bars.jpg'
+                : lower.contains('sand')
+                    ? 'sand_aggregates.jpg'
+                    : 'construction_hero_banner.jpg';
     return SizedBox(
       width: 120,
       child: Material(
