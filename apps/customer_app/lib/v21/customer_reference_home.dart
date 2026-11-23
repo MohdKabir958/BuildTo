@@ -27,7 +27,7 @@ class SplyzoReferenceLogo extends StatelessWidget {
     final height = large ? 55.0 : 39.0;
     return SizedBox(
       height: height,
-      child: FittedBox(
+      child: const FittedBox(
         fit: BoxFit.contain,
         alignment: Alignment.centerLeft,
         child: Row(
@@ -477,7 +477,7 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                             child: Center(child: CircularProgressIndicator()),
                           )
                         else if (data == null || data.suppliers.isEmpty)
-                          _EmptyRow(
+                          const _EmptyRow(
                             'Approved suppliers will appear here when available.',
                             icon: Icons.storefront_outlined,
                           )
@@ -524,7 +524,7 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                             child: Center(child: CircularProgressIndicator()),
                           )
                         else if (data == null || data.products.isEmpty)
-                          _EmptyRow(
+                          const _EmptyRow(
                             'Products and live prices will appear here.',
                             icon: Icons.inventory_2_outlined,
                           )
