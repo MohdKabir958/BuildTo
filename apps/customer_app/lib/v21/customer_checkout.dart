@@ -110,7 +110,9 @@ class _CartContentsState extends State<_CartContents> {
       (groups[field(item, 'supplierId')] ??= []).add(item);
     }
     final subtotal = items.fold<BigInt>(
-        BigInt.zero, (sum, item) => sum + estimatedLinePaise(item));
+      BigInt.zero,
+      (sum, item) => sum + estimatedLinePaise(item),
+    );
     final canCheckout =
         pending == null && items.every((item) => item['available'] == true);
     return Column(
@@ -121,13 +123,16 @@ class _CartContentsState extends State<_CartContents> {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               if (widget.embedded)
-                Text('Your cart',
-                    style: Theme.of(context).textTheme.headlineLarge),
+                Text(
+                  'Your cart',
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
               if (items.isNotEmpty) ...[
                 Text(
-                    '${items.length} ${items.length == 1 ? 'item' : 'items'} · '
-                    '${groups.length} ${groups.length == 1 ? 'supplier' : 'suppliers'}',
-                    style: const TextStyle(color: muted)),
+                  '${items.length} ${items.length == 1 ? 'item' : 'items'} · '
+                  '${groups.length} ${groups.length == 1 ? 'supplier' : 'suppliers'}',
+                  style: const TextStyle(color: muted),
+                ),
                 const SizedBox(height: 16),
                 Panel(
                   color: const Color(0xFFEAF2EE),
@@ -138,11 +143,11 @@ class _CartContentsState extends State<_CartContents> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                            session.address == null
-                                ? 'Choose a delivery address at checkout'
-                                : 'Deliver to ${field(session.address!, 'label')}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
+                          session.address == null
+                              ? 'Choose a delivery address at checkout'
+                              : 'Deliver to ${field(session.address!, 'label')}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ],
                   ),
@@ -153,10 +158,12 @@ class _CartContentsState extends State<_CartContents> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Semantics(
                     liveRegion: true,
-                    child: Text(error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        )),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
                   ),
                 ),
               if (items.isEmpty)
@@ -165,7 +172,8 @@ class _CartContentsState extends State<_CartContents> {
                   'Browse materials to get started.',
                   icon: Icons.shopping_bag_outlined,
                   action: OutlinedButton(
-                    onPressed: widget.onBrowse ??
+                    onPressed:
+                        widget.onBrowse ??
                         () => Navigator.of(context).maybePop(),
                     child: const Text('Browse materials'),
                   ),
@@ -180,15 +188,20 @@ class _CartContentsState extends State<_CartContents> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.storefront_outlined,
-                                color: green, size: 19),
+                            const Icon(
+                              Icons.storefront_outlined,
+                              color: green,
+                              size: 19,
+                            ),
                             const SizedBox(width: 9),
                             Expanded(
-                                child: Text(
-                                    field(group.first, 'supplierName',
-                                        'Supplier'),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w800))),
+                              child: Text(
+                                field(group.first, 'supplierName', 'Supplier'),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         for (final item in group) ...[
@@ -220,18 +233,22 @@ class _CartContentsState extends State<_CartContents> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AmountRow('Materials subtotal', subtotal, total: true),
-                  const Text('Delivery and taxes are calculated at checkout.',
-                      style: TextStyle(color: muted, fontSize: 11)),
+                  const Text(
+                    'Delivery and taxes are calculated at checkout.',
+                    style: TextStyle(color: muted, fontSize: 11),
+                  ),
                   const SizedBox(height: 10),
                   ActionButton(
                     'Review checkout',
                     canCheckout
                         ? () async {
-                            await Navigator.of(context)
-                                .push(MaterialPageRoute<void>(
-                              builder: (_) => CheckoutPage(
-                                  cartVersion: cart['version'] as int),
-                            ));
+                            await Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => CheckoutPage(
+                                  cartVersion: cart['version'] as int,
+                                ),
+                              ),
+                            );
                             if (mounted) widget.reload();
                           }
                         : null,
@@ -247,13 +264,14 @@ class _CartContentsState extends State<_CartContents> {
 }
 
 class _CartItem extends StatelessWidget {
-  const _CartItem(
-      {required this.item,
-      required this.enabled,
-      required this.saving,
-      required this.onQuantity,
-      required this.onEdit,
-      required this.onRemove});
+  const _CartItem({
+    required this.item,
+    required this.enabled,
+    required this.saving,
+    required this.onQuantity,
+    required this.onEdit,
+    required this.onRemove,
+  });
   final Data item;
   final bool enabled, saving;
   final ValueChanged<String> onQuantity;
@@ -268,14 +286,20 @@ class _CartItem extends StatelessWidget {
       final minimum = item['minOrderQty'];
       final step = item['stepQty'];
       if (minimum == null || step == null) return null;
-      final value = quantityStep(quantity, '$minimum', '$step',
-          item['maxOrderQty']?.toString(), direction);
+      final value = quantityStep(
+        quantity,
+        '$minimum',
+        '$step',
+        item['maxOrderQty']?.toString(),
+        direction,
+      );
       return scaled(value, 3) == scaled(quantity, 3) ? null : value;
     }
 
     final less = next(-1), more = next(1);
-    final uri =
-        CustomerScope.of(context).api.imageUri(item['imageUrl']?.toString());
+    final uri = CustomerScope.of(
+      context,
+    ).api.imageUri(item['imageUrl']?.toString());
     const fallback = Icon(Icons.inventory_2_outlined, color: muted);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +312,9 @@ class _CartItem extends StatelessWidget {
               height: 64,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                  color: paper, borderRadius: BorderRadius.circular(12)),
+                color: paper,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: uri == null
                   ? fallback
                   : Image.network(
@@ -299,20 +325,28 @@ class _CartItem extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-                child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(field(item, 'displayName'),
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text('${price(item['unitPrice'])} / $unit',
-                    style: const TextStyle(color: muted, fontSize: 12)),
-                if (!available)
-                  Text('Currently unavailable',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    field(item, 'displayName'),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${price(item['unitPrice'])} / $unit',
+                    style: const TextStyle(color: muted, fontSize: 12),
+                  ),
+                  if (!available)
+                    Text(
+                      'Currently unavailable',
                       style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)),
-              ],
-            )),
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                ],
+              ),
+            ),
             IconButton(
               tooltip: 'Remove item',
               onPressed: enabled ? onRemove : null,
@@ -328,7 +362,9 @@ class _CartItem extends StatelessWidget {
           children: [
             DecoratedBox(
               decoration: BoxDecoration(
-                  color: paper, borderRadius: BorderRadius.circular(12)),
+                color: paper,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -342,9 +378,11 @@ class _CartItem extends StatelessWidget {
                   Flexible(
                     child: TextButton(
                       onPressed: enabled && available ? onEdit : null,
-                      child: Text('$quantity $unit',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      child: Text(
+                        '$quantity $unit',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                   IconButton(
@@ -359,13 +397,18 @@ class _CartItem extends StatelessWidget {
             ),
             if (saving)
               const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             else
-              Text(money(estimatedLinePaise(item)),
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w800)),
+              Text(
+                money(estimatedLinePaise(item)),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
           ],
         ),
       ],
@@ -383,8 +426,9 @@ class _QuantitySheet extends StatefulWidget {
 
 class _QuantitySheetState extends State<_QuantitySheet> {
   final form = GlobalKey<FormState>();
-  late final controller =
-      TextEditingController(text: field(widget.item, 'quantity'));
+  late final controller = TextEditingController(
+    text: field(widget.item, 'quantity'),
+  );
 
   @override
   void dispose() {
@@ -407,7 +451,11 @@ class _QuantitySheetState extends State<_QuantitySheet> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-            22, 0, 22, 20 + MediaQuery.viewInsetsOf(context).bottom),
+          22,
+          0,
+          22,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: Form(
           key: form,
           autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -415,22 +463,28 @@ class _QuantitySheetState extends State<_QuantitySheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Update quantity',
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Update quantity',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 6),
-              Text(field(item, 'displayName'),
-                  style: const TextStyle(color: muted)),
+              Text(
+                field(item, 'displayName'),
+                style: const TextStyle(color: muted),
+              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: controller,
                 autofocus: true,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
-                    label: const RequiredLabel('Quantity'),
-                    suffixText: unit,
-                    errorMaxLines: 3),
+                  label: const RequiredLabel('Quantity'),
+                  suffixText: unit,
+                  errorMaxLines: 3,
+                ),
                 onFieldSubmitted: (_) => submit(),
                 validator: (value) {
                   try {
@@ -458,7 +512,9 @@ class _QuantitySheetState extends State<_QuantitySheet> {
               ),
               const SizedBox(height: 16),
               FilledButton(
-                  onPressed: submit, child: const Text('Save quantity')),
+                onPressed: submit,
+                child: const Text('Save quantity'),
+              ),
             ],
           ),
         ),
@@ -559,30 +615,38 @@ class _CheckoutPageState extends State<CheckoutPage> {
               'Choose an active delivery city and save your site details.',
             ),
           RadioGroup<String>(
-              groupValue: addressId,
-              onChanged: (value) => setState(() {
-                    addressId = value;
-                    siteId = null;
-                    quote = null;
-                    previewKey = requestKey();
-                  }),
-              child: Column(
-                  children: addresses
-                      .map((a) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Panel(
-                              padding: 4,
-                              child: RadioListTile<String>(
-                                  value: field(a, 'id'),
-                                  title: Text(field(a, 'label'),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w700)),
-                                  subtitle: Text(
-                                      '${a['recipientName']}\n${a['line1']}, ${a['locality']}\n${a['cityName']} ${a['postalCode']}',
-                                      style: const TextStyle(
-                                          fontSize: 12, color: muted)),
-                                  isThreeLine: true))))
-                      .toList())),
+            groupValue: addressId,
+            onChanged: (value) => setState(() {
+              addressId = value;
+              siteId = null;
+              quote = null;
+              previewKey = requestKey();
+            }),
+            child: Column(
+              children: addresses
+                  .map(
+                    (a) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Panel(
+                        padding: 4,
+                        child: RadioListTile<String>(
+                          value: field(a, 'id'),
+                          title: Text(
+                            field(a, 'label'),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            '${a['recipientName']}\n${a['line1']}, ${a['locality']}\n${a['cityName']} ${a['postalCode']}',
+                            style: const TextStyle(fontSize: 12, color: muted),
+                          ),
+                          isThreeLine: true,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
           ActionButton(
             'Add address',
             () async {
@@ -683,10 +747,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 'https://buildto-v21-staging.onrender.com' &&
                             problem.code ==
                                 'COMMISSION_POLICY_NOT_CONFIGURED') {
-                          await Navigator.of(context)
-                              .push(MaterialPageRoute<void>(
-                            builder: (_) => const _DemoOrderPage(),
-                          ));
+                          await Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const _DemoOrderPage(),
+                            ),
+                          );
                           return;
                         }
                         rethrow;
@@ -781,49 +846,51 @@ class _DemoOrderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Order preview')),
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(22),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Panel(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const CircleAvatar(
-                        radius: 38,
-                        backgroundColor: Color(0xFFEAF2EE),
-                        child:
-                            Icon(Icons.check_rounded, color: green, size: 40),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text('STAGING PREVIEW',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: green, fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
-                      Text('Order placed',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'This is a demo confirmation. Your cart is still saved. No real order or payment was created.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: muted),
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Back'),
-                      ),
-                    ],
+    appBar: AppBar(title: const Text('Order preview')),
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(22),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Panel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const CircleAvatar(
+                    radius: 38,
+                    backgroundColor: Color(0xFFEAF2EE),
+                    child: Icon(Icons.check_rounded, color: green, size: 40),
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'STAGING PREVIEW',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: green, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Order placed',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'This is a demo confirmation. Your cart is still saved. No real order or payment was created.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Back'),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
