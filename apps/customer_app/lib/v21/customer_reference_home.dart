@@ -33,13 +33,13 @@ class SplyzoReferenceLogo extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
+            SizedBox(
               width: 87,
               height: 62,
               child: CustomPaint(painter: _SplyzoSkyline()),
             ),
-            const SizedBox(width: 4),
-            const Text(
+            SizedBox(width: 4),
+            Text(
               'Splyzo',
               style: TextStyle(
                 fontFamily: 'packages/kraveo_ui/Bricolage',
@@ -49,8 +49,8 @@ class SplyzoReferenceLogo extends StatelessWidget {
                 color: SplyzoReferenceColors.navy,
               ),
             ),
-            const SizedBox(width: 2),
-            const Icon(
+            SizedBox(width: 2),
+            Icon(
               Icons.location_on_rounded,
               size: 35,
               color: SplyzoReferenceColors.orange,
