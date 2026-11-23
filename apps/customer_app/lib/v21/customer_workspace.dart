@@ -411,13 +411,13 @@ class _AddressEditorState extends State<AddressEditor> {
                         : TextInputAction.next,
                     textCapitalization:
                         const ['phoneE164', 'postalCode'].contains(e.key)
-                        ? TextCapitalization.none
-                        : TextCapitalization.words,
+                            ? TextCapitalization.none
+                            : TextCapitalization.words,
                     keyboardType: e.key == 'postalCode'
                         ? TextInputType.number
                         : e.key == 'phoneE164'
-                        ? TextInputType.phone
-                        : TextInputType.streetAddress,
+                            ? TextInputType.phone
+                            : TextInputType.streetAddress,
                     decoration: InputDecoration(
                       label: e.key == 'line2'
                           ? const Text('Landmark (optional)')
@@ -640,8 +640,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     body: {},
                                   );
                                   setState(
-                                    () => n['readAt'] = DateTime.now()
-                                        .toIso8601String(),
+                                    () => n['readAt'] =
+                                        DateTime.now().toIso8601String(),
                                   );
                                 },
                           tonal: true,
