@@ -172,8 +172,7 @@ class _CartContentsState extends State<_CartContents> {
                   'Browse materials to get started.',
                   icon: Icons.shopping_bag_outlined,
                   action: OutlinedButton(
-                    onPressed:
-                        widget.onBrowse ??
+                    onPressed: widget.onBrowse ??
                         () => Navigator.of(context).maybePop(),
                     child: const Text('Browse materials'),
                   ),
@@ -846,51 +845,53 @@ class _DemoOrderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Order preview')),
-    body: SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(22),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Panel(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const CircleAvatar(
-                    radius: 38,
-                    backgroundColor: Color(0xFFEAF2EE),
-                    child: Icon(Icons.check_rounded, color: green, size: 40),
+        appBar: AppBar(title: const Text('Order preview')),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Panel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const CircleAvatar(
+                        radius: 38,
+                        backgroundColor: Color(0xFFEAF2EE),
+                        child:
+                            Icon(Icons.check_rounded, color: green, size: 40),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'STAGING PREVIEW',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: green, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Order placed',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'This is a demo confirmation. Your cart is still saved. No real order or payment was created.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: muted),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Back'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'STAGING PREVIEW',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: green, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Order placed',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'This is a demo confirmation. Your cart is still saved. No real order or payment was created.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: muted),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Back'),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
