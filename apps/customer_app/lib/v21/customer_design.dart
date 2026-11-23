@@ -121,8 +121,8 @@ class CustomerScope extends InheritedNotifier<CustomerSession> {
 
 void push(BuildContext c, Widget page) =>
     Navigator.of(c).push(MaterialPageRoute(builder: (_) => page));
-void notice(BuildContext c, String message) => ScaffoldMessenger.of(c)
-    .showSnackBar(
+void notice(BuildContext c, String message) =>
+    ScaffoldMessenger.of(c).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
 
