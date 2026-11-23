@@ -173,8 +173,8 @@ class _ActionButtonState extends State<ActionButton> {
             e is CustomerProblem
                 ? e.message
                 : e is FormatException
-                ? e.message
-                : 'Unable to complete this action. Please retry.',
+                    ? e.message
+                    : 'Unable to complete this action. Please retry.',
           );
         }
       } finally {
@@ -206,14 +206,14 @@ class Panel extends StatelessWidget {
   final double padding;
   @override
   Widget build(BuildContext context) => Material(
-    color: color,
-    clipBehavior: Clip.antiAlias,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(22),
-      side: const BorderSide(color: line),
-    ),
-    child: Padding(padding: EdgeInsets.all(padding), child: child),
-  );
+        color: color,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: line),
+        ),
+        child: Padding(padding: EdgeInsets.all(padding), child: child),
+      );
 }
 
 class RequiredLabel extends StatelessWidget {
@@ -222,20 +222,20 @@ class RequiredLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text.rich(
-    TextSpan(
-      children: [
-        TextSpan(text: text),
         TextSpan(
-          text: ' *',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.error,
-            fontWeight: FontWeight.w800,
-          ),
+          children: [
+            TextSpan(text: text),
+            TextSpan(
+              text: ' *',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-    semanticsLabel: '$text, required',
-  );
+        semanticsLabel: '$text, required',
+      );
 }
 
 class Section extends StatelessWidget {
@@ -245,16 +245,17 @@ class Section extends StatelessWidget {
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 26, bottom: 14),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        padding: const EdgeInsets.only(top: 26, bottom: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            ),
+            if (action != null)
+              TextButton(onPressed: onTap, child: Text(action!)),
+          ],
         ),
-        if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
-      ],
-    ),
-  );
+      );
 }
 
 class StatusPill extends StatelessWidget {
@@ -273,20 +274,21 @@ class StatusPill extends StatelessWidget {
           'PROCESSED',
           'ACCEPTED',
         ].contains(status)
-      ? green
-      : const Color(0xFF8A5B14);
+          ? green
+          : const Color(0xFF8A5B14);
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: tone.withValues(alpha: .08),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      label(status),
-      style: TextStyle(color: tone, fontSize: 11, fontWeight: FontWeight.w700),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: tone.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label(status),
+          style:
+              TextStyle(color: tone, fontSize: 11, fontWeight: FontWeight.w700),
+        ),
+      );
 }
 
 class EmptyState extends StatelessWidget {
@@ -302,31 +304,31 @@ class EmptyState extends StatelessWidget {
   final Widget? action;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 38, horizontal: 20),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircleAvatar(
-          radius: 34,
-          backgroundColor: accent.withValues(alpha: .1),
-          child: Icon(icon, size: 30, color: accent),
+        padding: const EdgeInsets.symmetric(vertical: 38, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 34,
+              backgroundColor: accent.withValues(alpha: .1),
+              child: Icon(icon, size: 30, color: accent),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 9),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: muted, height: 1.6),
+            ),
+            if (action != null) ...[const SizedBox(height: 22), action!],
+          ],
         ),
-        const SizedBox(height: 20),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 9),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: muted, height: 1.6),
-        ),
-        if (action != null) ...[const SizedBox(height: 22), action!],
-      ],
-    ),
-  );
+      );
 }
 
 class RemotePage<T> extends StatefulWidget {
@@ -445,38 +447,38 @@ class AmountRow extends StatelessWidget {
   final bool total;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: total ? ink : muted,
-              fontWeight: total ? FontWeight.w800 : FontWeight.w400,
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: total ? ink : muted,
+                  fontWeight: total ? FontWeight.w800 : FontWeight.w400,
+                ),
+              ),
             ),
-          ),
+            Text(
+              money(amount),
+              style: TextStyle(
+                fontSize: total ? 22 : 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
-        Text(
-          money(amount),
-          style: TextStyle(
-            fontSize: total ? 22 : 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 Widget totals(Data d) => Column(
-  children: [
-    AmountRow('Materials', d['subtotalPaise']),
-    if ('${d['discountPaise'] ?? 0}' != '0')
-      AmountRow('Discount', d['discountPaise']),
-    AmountRow('Tax', d['taxPaise']),
-    AmountRow('Delivery', d['deliveryPaise']),
-    const Divider(),
-    AmountRow('Total', d['totalPaise'], total: true),
-  ],
-);
+      children: [
+        AmountRow('Materials', d['subtotalPaise']),
+        if ('${d['discountPaise'] ?? 0}' != '0')
+          AmountRow('Discount', d['discountPaise']),
+        AmountRow('Tax', d['taxPaise']),
+        AmountRow('Delivery', d['deliveryPaise']),
+        const Divider(),
+        AmountRow('Total', d['totalPaise'], total: true),
+      ],
+    );
