@@ -36,9 +36,8 @@ class _SplyzoCustomerAppState extends State<SplyzoCustomerApp>
       } else {
         const configured = String.fromEnvironment(
           'BUILDTO_V21_API_BASE_URL',
-          defaultValue: kReleaseMode
-              ? ''
-              : 'https://buildto-v21-staging.onrender.com',
+          defaultValue:
+              kReleaseMode ? '' : 'https://buildto-v21-staging.onrender.com',
         );
         final origin = CustomerApi.parseOrigin(configured);
         if (kReleaseMode) {
@@ -137,67 +136,68 @@ class _CustomerShellState extends State<CustomerShell> {
   int tab = 0;
   @override
   Widget build(BuildContext c) => Scaffold(
-    body: SafeArea(
-      bottom: false,
-      child: KeyedSubtree(
-        key: ValueKey(tab),
-        child: [
-          const SplyzoReferenceHome(),
-          const CustomerHome(categoriesOnly: true),
-          CartPage(embedded: true, onBrowse: () => setState(() => tab = 0)),
-          const OrdersPage(),
-          const ProfilePage(),
-        ][tab],
-      ),
-    ),
-    bottomNavigationBar: SafeArea(
-      top: false,
-      child: Container(
-        height: 67,
-        padding: const EdgeInsets.only(top: 7, bottom: 2),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE9EDF5))),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x100B214E),
-              blurRadius: 9,
-              offset: Offset(0, -3),
-            ),
-          ],
+        body: SafeArea(
+          bottom: false,
+          child: KeyedSubtree(
+            key: ValueKey(tab),
+            child: [
+              const SplyzoReferenceHome(),
+              const CustomerHome(categoriesOnly: true),
+              CartPage(embedded: true, onBrowse: () => setState(() => tab = 0)),
+              const OrdersPage(),
+              const ProfilePage(),
+            ][tab],
+          ),
         ),
-        child: Row(
-          children: [
-            _referenceTab(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-            _referenceTab(
-              1,
-              Icons.grid_view_outlined,
-              Icons.grid_view_rounded,
-              'Categories',
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            height: 67,
+            padding: const EdgeInsets.only(top: 7, bottom: 2),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFE9EDF5))),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x100B214E),
+                  blurRadius: 9,
+                  offset: Offset(0, -3),
+                ),
+              ],
             ),
-            _referenceTab(
-              2,
-              Icons.shopping_cart_outlined,
-              Icons.shopping_cart_rounded,
-              'Cart',
+            child: Row(
+              children: [
+                _referenceTab(
+                    0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+                _referenceTab(
+                  1,
+                  Icons.grid_view_outlined,
+                  Icons.grid_view_rounded,
+                  'Categories',
+                ),
+                _referenceTab(
+                  2,
+                  Icons.shopping_cart_outlined,
+                  Icons.shopping_cart_rounded,
+                  'Cart',
+                ),
+                _referenceTab(
+                  3,
+                  Icons.storefront_outlined,
+                  Icons.storefront_rounded,
+                  'Orders',
+                ),
+                _referenceTab(
+                  4,
+                  Icons.person_outline_rounded,
+                  Icons.person_rounded,
+                  'Profile',
+                ),
+              ],
             ),
-            _referenceTab(
-              3,
-              Icons.storefront_outlined,
-              Icons.storefront_rounded,
-              'Orders',
-            ),
-            _referenceTab(
-              4,
-              Icons.person_outline_rounded,
-              Icons.person_rounded,
-              'Profile',
-            ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
   Widget _referenceTab(
     int index,
     IconData idleIcon,
@@ -205,9 +205,8 @@ class _CustomerShellState extends State<CustomerShell> {
     String label,
   ) {
     final chosen = tab == index;
-    final color = chosen
-        ? SplyzoReferenceColors.orange
-        : SplyzoReferenceColors.navy;
+    final color =
+        chosen ? SplyzoReferenceColors.orange : SplyzoReferenceColors.navy;
     return Expanded(
       child: Semantics(
         selected: chosen,
