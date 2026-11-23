@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kraveo_ui/kraveo_ui.dart' show GrozoAuthConfig;
+
 import 'customer_api.dart';
 import 'customer_session.dart';
 import 'customer_design.dart';
@@ -34,8 +36,9 @@ class _SplyzoCustomerAppState extends State<SplyzoCustomerApp>
       } else {
         const configured = String.fromEnvironment(
           'BUILDTO_V21_API_BASE_URL',
-          defaultValue:
-              kReleaseMode ? '' : 'https://buildto-v21-staging.onrender.com',
+          defaultValue: kReleaseMode
+              ? ''
+              : 'https://buildto-v21-staging.onrender.com',
         );
         final origin = CustomerApi.parseOrigin(configured);
         if (kReleaseMode) {
@@ -134,53 +137,73 @@ class _CustomerShellState extends State<CustomerShell> {
   int tab = 0;
   @override
   Widget build(BuildContext c) => Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: KeyedSubtree(
-            key: ValueKey(tab),
-            child: [
-              const SplyzoReferenceHome(),
-              const CustomerHome(categoriesOnly: true),
-              CartPage(embedded: true, onBrowse: () => setState(() => tab = 0)),
-              const OrdersPage(),
-              const ProfilePage(),
-            ][tab],
-          ),
-        ),
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Container(
-            height: 67,
-            padding: const EdgeInsets.only(top: 7, bottom: 2),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE9EDF5))),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x100B214E),
-                  blurRadius: 9,
-                  offset: Offset(0, -3),
-                ),
-              ],
+    body: SafeArea(
+      bottom: false,
+      child: KeyedSubtree(
+        key: ValueKey(tab),
+        child: [
+          const SplyzoReferenceHome(),
+          const CustomerHome(categoriesOnly: true),
+          CartPage(embedded: true, onBrowse: () => setState(() => tab = 0)),
+          const OrdersPage(),
+          const ProfilePage(),
+        ][tab],
+      ),
+    ),
+    bottomNavigationBar: SafeArea(
+      top: false,
+      child: Container(
+        height: 67,
+        padding: const EdgeInsets.only(top: 7, bottom: 2),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE9EDF5))),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x100B214E),
+              blurRadius: 9,
+              offset: Offset(0, -3),
             ),
-            child: Row(
-              children: [
-                _referenceTab(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-                _referenceTab(1, Icons.grid_view_outlined,
-                    Icons.grid_view_rounded, 'Categories'),
-                _referenceTab(2, Icons.shopping_cart_outlined,
-                    Icons.shopping_cart_rounded, 'Cart'),
-                _referenceTab(3, Icons.storefront_outlined,
-                    Icons.storefront_rounded, 'Orders'),
-                _referenceTab(4, Icons.person_outline_rounded,
-                    Icons.person_rounded, 'Profile'),
-              ],
-            ),
-          ),
+          ],
         ),
-      );
+        child: Row(
+          children: [
+            _referenceTab(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+            _referenceTab(
+              1,
+              Icons.grid_view_outlined,
+              Icons.grid_view_rounded,
+              'Categories',
+            ),
+            _referenceTab(
+              2,
+              Icons.shopping_cart_outlined,
+              Icons.shopping_cart_rounded,
+              'Cart',
+            ),
+            _referenceTab(
+              3,
+              Icons.storefront_outlined,
+              Icons.storefront_rounded,
+              'Orders',
+            ),
+            _referenceTab(
+              4,
+              Icons.person_outline_rounded,
+              Icons.person_rounded,
+              'Profile',
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
   Widget _referenceTab(
-      int index, IconData idleIcon, IconData selectedIcon, String label) {
+    int index,
+    IconData idleIcon,
+    IconData selectedIcon,
+    String label,
+  ) {
     final chosen = tab == index;
     final color = chosen
         ? SplyzoReferenceColors.orange
@@ -195,25 +218,27 @@ class _CustomerShellState extends State<CustomerShell> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(chosen ? selectedIcon : idleIcon,
-                  color: color, size: 24),
+              Icon(chosen ? selectedIcon : idleIcon, color: color, size: 24),
               const SizedBox(height: 2),
-              Text(label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: chosen ? FontWeight.w800 : FontWeight.w500,
-                    color: color,
-                  )),
+              Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: chosen ? FontWeight.w800 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
               const SizedBox(height: 3),
               Container(
                 height: 2.5,
                 width: 42,
                 decoration: BoxDecoration(
-                    color: chosen
-                        ? SplyzoReferenceColors.orange
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(4)),
+                  color: chosen
+                      ? SplyzoReferenceColors.orange
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ],
           ),
@@ -221,5 +246,4 @@ class _CustomerShellState extends State<CustomerShell> {
       ),
     );
   }
-
 }
