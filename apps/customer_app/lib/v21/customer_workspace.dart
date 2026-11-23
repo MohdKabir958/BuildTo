@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'customer_api.dart';
 import 'customer_design.dart';
 import 'customer_checkout.dart';
@@ -58,9 +59,16 @@ class ProfilePage extends StatelessWidget {
         ),
         if (!s.signedIn) ...[
           const SizedBox(height: 15),
-          ActionButton('Sign in securely', () async => push(c, const SplyzoReferenceAuthScreen())),
+          ActionButton(
+            'Sign in securely',
+            () async => push(c, const SplyzoReferenceAuthScreen()),
+          ),
           const SizedBox(height: 8),
-          ActionButton('Create account', () async => push(c, const SplyzoReferenceAuthScreen(signUp: true)), tonal: true),
+          ActionButton(
+            'Create account',
+            () async => push(c, const SplyzoReferenceAuthScreen(signUp: true)),
+            tonal: true,
+          ),
         ],
         const Section('Your workspace'),
         Panel(
@@ -323,9 +331,10 @@ class _AddressEditorState extends State<AddressEditor> {
     ]) {
       final value = field(widget.address ?? {}, k);
       controls[k] = TextEditingController(
-          text: k == 'phoneE164'
-              ? value.replaceFirst(RegExp(r'^\+91(?=\d{10}$)'), '')
-              : value);
+        text: k == 'phoneE164'
+            ? value.replaceFirst(RegExp(r'^\+91(?=\d{10}$)'), '')
+            : value,
+      );
     }
     city = widget.address?['cityId']?.toString();
     defaultAddress = widget.address?['isDefault'] == true;
@@ -361,14 +370,17 @@ class _AddressEditorState extends State<AddressEditor> {
                 style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              const Text('Add the site address and a contact for the delivery.',
-                  style: TextStyle(color: muted)),
+              const Text(
+                'Add the site address and a contact for the delivery.',
+                style: TextStyle(color: muted),
+              ),
               const SizedBox(height: 20),
               DropdownButtonFormField<String>(
                 initialValue: cities.any((e) => e['id'] == city) ? city : null,
                 isExpanded: true,
                 decoration: const InputDecoration(
-                    label: RequiredLabel('Delivery city')),
+                  label: RequiredLabel('Delivery city'),
+                ),
                 items: cities
                     .map(
                       (a) => DropdownMenuItem(
@@ -399,24 +411,26 @@ class _AddressEditorState extends State<AddressEditor> {
                         : TextInputAction.next,
                     textCapitalization:
                         const ['phoneE164', 'postalCode'].contains(e.key)
-                            ? TextCapitalization.none
-                            : TextCapitalization.words,
+                        ? TextCapitalization.none
+                        : TextCapitalization.words,
                     keyboardType: e.key == 'postalCode'
                         ? TextInputType.number
                         : e.key == 'phoneE164'
-                            ? TextInputType.phone
-                            : TextInputType.streetAddress,
+                        ? TextInputType.phone
+                        : TextInputType.streetAddress,
                     decoration: InputDecoration(
                       label: e.key == 'line2'
                           ? const Text('Landmark (optional)')
-                          : RequiredLabel(const {
-                              'label': 'Address label',
-                              'recipientName': 'Recipient name',
-                              'phoneE164': 'Mobile number',
-                              'line1': 'Building, plot or street',
-                              'locality': 'Area or locality',
-                              'postalCode': 'PIN code',
-                            }[e.key]!),
+                          : RequiredLabel(
+                              const {
+                                'label': 'Address label',
+                                'recipientName': 'Recipient name',
+                                'phoneE164': 'Mobile number',
+                                'line1': 'Building, plot or street',
+                                'locality': 'Area or locality',
+                                'postalCode': 'PIN code',
+                              }[e.key]!,
+                            ),
                       prefixText: e.key == 'phoneE164' ? '+91  ' : null,
                       floatingLabelBehavior: FloatingLabelBehavior.always,
                       hintText: const {
@@ -625,8 +639,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     body: {},
                                   );
                                   setState(
-                                    () => n['readAt'] =
-                                        DateTime.now().toIso8601String(),
+                                    () => n['readAt'] = DateTime.now()
+                                        .toIso8601String(),
                                   );
                                 },
                           tonal: true,
@@ -850,8 +864,9 @@ class _ConversationPageState extends State<ConversationPage> {
               controller: text,
               maxLines: 3,
               maxLength: 3000,
-              decoration:
-                  const InputDecoration(label: RequiredLabel('Your reply')),
+              decoration: const InputDecoration(
+                label: RequiredLabel('Your reply'),
+              ),
             ),
             const SizedBox(height: 12),
             ActionButton('Send reply', () async {
@@ -1022,14 +1037,16 @@ class _NewSitePageState extends State<NewSitePage> {
           TextField(
             controller: name,
             maxLength: 200,
-            decoration:
-                const InputDecoration(label: RequiredLabel('Site name')),
+            decoration: const InputDecoration(
+              label: RequiredLabel('Site name'),
+            ),
           ),
           const SizedBox(height: 15),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            decoration:
-                const InputDecoration(label: RequiredLabel('Delivery address')),
+            decoration: const InputDecoration(
+              label: RequiredLabel('Delivery address'),
+            ),
             items: list
                 .map(
                   (a) => DropdownMenuItem(
