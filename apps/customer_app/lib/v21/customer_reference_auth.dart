@@ -388,7 +388,7 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                           ),
                         ),
                       ),
-                      const Expanded(child: Divider(color: Color(0xFFAAB9D5))),
+                      Expanded(child: Divider(color: Color(0xFFAAB9D5))),
                     ],
                   ),
                   const SizedBox(height: 18),
