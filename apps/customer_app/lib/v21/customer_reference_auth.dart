@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'customer_api.dart';
 import 'customer_design.dart';
 import 'customer_session.dart';
@@ -20,15 +21,17 @@ class SplyzoReferenceAuthScreen extends StatefulWidget {
       _SplyzoReferenceAuthScreenState();
 }
 
-class _SplyzoReferenceAuthScreenState
-    extends State<SplyzoReferenceAuthScreen> {
+class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
   bool busy = false;
   bool agreed = false;
 
   Future<void> _openSecureAuth({String? mode}) async {
     if (busy) return;
     if (widget.signUp && !agreed) {
-      notice(context, 'Please accept the Terms & Conditions to create an account.');
+      notice(
+        context,
+        'Please accept the Terms & Conditions to create an account.',
+      );
       return;
     }
     setState(() => busy = true);
@@ -37,8 +40,9 @@ class _SplyzoReferenceAuthScreenState
       if (s.auth is NativeCustomerIdentity) {
         final native = s.auth as NativeCustomerIdentity;
         await native.initialize();
-        final authenticated = await native.sessions
-            .authenticate(mode: mode ?? (widget.signUp ? 'signUp' : 'signIn'));
+        final authenticated = await native.sessions.authenticate(
+          mode: mode ?? (widget.signUp ? 'signUp' : 'signIn'),
+        );
         if (authenticated) await s.restore();
       } else {
         // Real test seam: fakes use their own sign-in implementation.
@@ -68,85 +72,84 @@ class _SplyzoReferenceAuthScreenState
     required IconData icon,
     required String label,
     bool obscured = false,
-  }) =>
-      Semantics(
-        button: true,
-        label: '$label. Opens secure ${widget.signUp ? 'registration' : 'sign-in'}',
-        child: Material(
-          color: const Color(0xFFEFF5FF),
-          borderRadius: BorderRadius.circular(18),
-          child: InkWell(
-            key: Key('auth-field-$label'),
+  }) => Semantics(
+    button: true,
+    label: '$label. Opens secure ${widget.signUp ? 'registration' : 'sign-in'}',
+    child: Material(
+      color: const Color(0xFFEFF5FF),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        key: Key('auth-field-$label'),
+        borderRadius: BorderRadius.circular(18),
+        onTap: busy ? null : _openSecureAuth,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 55),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: SplyzoReferenceColors.border),
             borderRadius: BorderRadius.circular(18),
-            onTap: busy ? null : _openSecureAuth,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 55),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: SplyzoReferenceColors.border),
-                borderRadius: BorderRadius.circular(18),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF6FAFF), Color(0xFFE8F0FC)],
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(icon, color: SplyzoReferenceColors.navy, size: 22),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: SplyzoReferenceColors.secondary,
-                      ),
-                    ),
-                  ),
-                  if (obscured)
-                    const Icon(Icons.visibility_outlined,
-                        size: 21, color: SplyzoReferenceColors.secondary),
-                ],
-              ),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF6FAFF), Color(0xFFE8F0FC)],
             ),
-          ),
-        ),
-      );
-
-  Widget _socialButton(String label, Widget emblem) => Expanded(
-        child: OutlinedButton(
-          onPressed: busy ? null : () => _openSecureAuth(),
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(
-                color: SplyzoReferenceColors.border, width: 1),
-            backgroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            minimumSize: const Size.fromHeight(52),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              emblem,
-              const SizedBox(width: 9),
-              Flexible(
+              Icon(icon, color: SplyzoReferenceColors.navy, size: 22),
+              const SizedBox(width: 20),
+              Expanded(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 16,
-                    color: SplyzoReferenceColors.navy,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: SplyzoReferenceColors.secondary,
                   ),
                 ),
               ),
+              if (obscured)
+                const Icon(
+                  Icons.visibility_outlined,
+                  size: 21,
+                  color: SplyzoReferenceColors.secondary,
+                ),
             ],
           ),
         ),
-      );
+      ),
+    ),
+  );
+
+  Widget _socialButton(String label, Widget emblem) => Expanded(
+    child: OutlinedButton(
+      onPressed: busy ? null : () => _openSecureAuth(),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: SplyzoReferenceColors.border, width: 1),
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        minimumSize: const Size.fromHeight(52),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          emblem,
+          const SizedBox(width: 9),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                color: SplyzoReferenceColors.navy,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -163,9 +166,7 @@ class _SplyzoReferenceAuthScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(
-                    child: SplyzoReferenceLogo(large: true),
-                  ),
+                  const Center(child: SplyzoReferenceLogo(large: true)),
                   const SizedBox(height: 24),
                   const SplyzoReferenceBanner(auth: true),
                   SizedBox(height: signUp ? 23 : 32),
@@ -216,30 +217,38 @@ class _SplyzoReferenceAuthScreenState
                   SizedBox(height: signUp ? 20 : 29),
                   if (signUp) ...[
                     _credential(
-                        icon: Icons.person_outline_rounded, label: 'Full Name'),
+                      icon: Icons.person_outline_rounded,
+                      label: 'Full Name',
+                    ),
                     const SizedBox(height: 12),
                     _credential(
-                        icon: Icons.phone_android_rounded,
-                        label: 'Mobile Number'),
+                      icon: Icons.phone_android_rounded,
+                      label: 'Mobile Number',
+                    ),
                     const SizedBox(height: 12),
                     _credential(
-                        icon: Icons.mail_outline_rounded, label: 'Email'),
+                      icon: Icons.mail_outline_rounded,
+                      label: 'Email',
+                    ),
                     const SizedBox(height: 12),
                   ] else
                     _credential(
-                        icon: Icons.phone_android_rounded,
-                        label: 'Mobile Number or Email'),
+                      icon: Icons.phone_android_rounded,
+                      label: 'Mobile Number or Email',
+                    ),
                   const SizedBox(height: 14),
                   _credential(
-                      icon: Icons.lock_outline_rounded,
-                      label: 'Password',
-                      obscured: true),
+                    icon: Icons.lock_outline_rounded,
+                    label: 'Password',
+                    obscured: true,
+                  ),
                   if (signUp) ...[
                     const SizedBox(height: 12),
                     _credential(
-                        icon: Icons.lock_outline_rounded,
-                        label: 'Confirm Password',
-                        obscured: true),
+                      icon: Icons.lock_outline_rounded,
+                      label: 'Confirm Password',
+                      obscured: true,
+                    ),
                     const SizedBox(height: 14),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +259,8 @@ class _SplyzoReferenceAuthScreenState
                           activeColor: SplyzoReferenceColors.orange,
                           onChanged: busy
                               ? null
-                              : (value) => setState(() => agreed = value ?? false),
+                              : (value) =>
+                                    setState(() => agreed = value ?? false),
                           visualDensity: VisualDensity.compact,
                         ),
                         Expanded(
@@ -259,40 +269,55 @@ class _SplyzoReferenceAuthScreenState
                             child: Wrap(
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                const Text('I agree to the ',
-                                    style: TextStyle(
-                                        fontSize: 11.5,
-                                        color: SplyzoReferenceColors.navy)),
-                                InkWell(
-                                  onTap: () => push(
-                                      context,
-                                      const ContentPage('terms-and-conditions',
-                                          'Terms & Conditions')),
-                                  child: const Text('Terms & Conditions',
-                                      style: TextStyle(
-                                        color: SplyzoReferenceColors.orange,
-                                        decoration: TextDecoration.underline,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 11.5,
-                                      )),
+                                const Text(
+                                  'I agree to the ',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: SplyzoReferenceColors.navy,
+                                  ),
                                 ),
-                                const Text(' and ',
-                                    style: TextStyle(
-                                        fontSize: 11.5,
-                                        color: SplyzoReferenceColors.navy)),
                                 InkWell(
                                   onTap: () => push(
                                     context,
                                     const ContentPage(
-                                        'privacy-policy', 'Privacy Policy'),
+                                      'terms-and-conditions',
+                                      'Terms & Conditions',
+                                    ),
                                   ),
-                                  child: const Text('Privacy Policy',
-                                      style: TextStyle(
-                                        color: SplyzoReferenceColors.orange,
-                                        decoration: TextDecoration.underline,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 11.5,
-                                      )),
+                                  child: const Text(
+                                    'Terms & Conditions',
+                                    style: TextStyle(
+                                      color: SplyzoReferenceColors.orange,
+                                      decoration: TextDecoration.underline,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ),
+                                const Text(
+                                  ' and ',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: SplyzoReferenceColors.navy,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () => push(
+                                    context,
+                                    const ContentPage(
+                                      'privacy-policy',
+                                      'Privacy Policy',
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Privacy Policy',
+                                    style: TextStyle(
+                                      color: SplyzoReferenceColors.orange,
+                                      decoration: TextDecoration.underline,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -304,11 +329,16 @@ class _SplyzoReferenceAuthScreenState
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: busy ? null : () => _openSecureAuth(mode: 'signIn'),
+                        onPressed: busy
+                            ? null
+                            : () => _openSecureAuth(mode: 'signIn'),
                         style: TextButton.styleFrom(
-                            foregroundColor: SplyzoReferenceColors.orange),
-                        child: const Text('Forgot Password?',
-                            style: TextStyle(fontSize: 13)),
+                          foregroundColor: SplyzoReferenceColors.orange,
+                        ),
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(fontSize: 13),
+                        ),
                       ),
                     ),
                   SizedBox(height: signUp ? 13 : 8),
@@ -329,34 +359,36 @@ class _SplyzoReferenceAuthScreenState
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white)),
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
                             )
                           : Text(
                               signUp ? 'Sign Up' : 'Login',
                               style: const TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w800),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                     ),
                   ),
                   const SizedBox(height: 26),
                   Row(
                     children: [
-                      const Expanded(
-                        child: Divider(color: Color(0xFFAAB9D5)),
-                      ),
+                      const Expanded(child: Divider(color: Color(0xFFAAB9D5))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 9),
-                        child: Text('or continue with',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: SplyzoReferenceColors.secondary,
-                            )),
+                        child: Text(
+                          'or continue with',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: SplyzoReferenceColors.secondary,
+                          ),
+                        ),
                       ),
-                      const Expanded(
-                        child: Divider(color: Color(0xFFAAB9D5)),
-                      ),
+                      const Expanded(child: Divider(color: Color(0xFFAAB9D5))),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -364,18 +396,19 @@ class _SplyzoReferenceAuthScreenState
                     children: [
                       _socialButton(
                         'Google',
-                        const Text('G',
-                            style: TextStyle(
-                              fontSize: 26,
-                              color: Color(0xFF4285F4),
-                              fontWeight: FontWeight.w800,
-                            )),
+                        const Text(
+                          'G',
+                          style: TextStyle(
+                            fontSize: 26,
+                            color: Color(0xFF4285F4),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 11),
                       _socialButton(
                         'Apple',
-                        const Icon(Icons.apple,
-                            size: 27, color: Colors.black),
+                        const Icon(Icons.apple, size: 27, color: Colors.black),
                       ),
                     ],
                   ),
@@ -389,8 +422,9 @@ class _SplyzoReferenceAuthScreenState
                             ? 'Already have an account? '
                             : 'Don’t have an account? ',
                         style: const TextStyle(
-                            fontSize: 13.5,
-                            color: SplyzoReferenceColors.navy),
+                          fontSize: 13.5,
+                          color: SplyzoReferenceColors.navy,
+                        ),
                       ),
                       InkWell(
                         key: const Key('auth-switch-mode'),
@@ -417,8 +451,9 @@ class _SplyzoReferenceAuthScreenState
                       'Credentials and verification are handled by secure Clerk sign-in.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: SplyzoReferenceColors.secondary
-                            .withValues(alpha: .78),
+                        color: SplyzoReferenceColors.secondary.withValues(
+                          alpha: .78,
+                        ),
                         fontSize: 9,
                       ),
                     ),
