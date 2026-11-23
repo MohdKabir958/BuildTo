@@ -379,7 +379,7 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                     children: [
                       Expanded(child: Divider(color: Color(0xFFAAB9D5))),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 9),
+                        padding: EdgeInsets.symmetric(horizontal: 9),
                         child: Text(
                           'or continue with',
                           style: TextStyle(
