@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'customer_api.dart';
 import 'customer_session.dart';
+import 'customer_reference_auth.dart';
 
-const ink = Color(0xFF152A3A),
-    accent = Color(0xFFF17436),
-    paper = Color(0xFFF7F7F2),
-    muted = Color(0xFF64747C),
-    line = Color(0xFFE4E9E5),
-    green = Color(0xFF23745D);
+const ink = Color(0xFF071B4C),
+    accent = Color(0xFFFF7000),
+    paper = Colors.white,
+    muted = Color(0xFF455472),
+    line = Color(0xFFD7E2F4),
+    green = Color(0xFF079D62);
 ThemeData customerTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: ink,
@@ -55,7 +56,7 @@ ThemeData customerTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: const Color(0xFFECF3FD),
       contentPadding: const EdgeInsets.all(17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -68,7 +69,7 @@ ThemeData customerTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: ink,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         minimumSize: const Size(48, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -419,7 +420,7 @@ class SignedIn extends StatelessWidget {
                 icon: Icons.person_outline_rounded,
                 action: ActionButton(
                   'Sign in securely',
-                  s.signIn,
+                  () async => push(context, const SplyzoReferenceAuthScreen()),
                   icon: Icons.arrow_forward,
                 ),
               ),
