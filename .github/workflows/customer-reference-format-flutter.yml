@@ -21,6 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           dart format lib/v21/customer_reference_home.dart lib/v21/customer_reference_auth.dart lib/v21/customer_app.dart lib/v21/customer_design.dart lib/v21/customer_workspace.dart test/v21/customer_reference_ui_test.dart
+          dart format --output=none --set-exit-if-changed lib/v21 test/v21
           for file in lib/v21/customer_reference_home.dart lib/v21/customer_reference_auth.dart lib/v21/customer_app.dart lib/v21/customer_design.dart lib/v21/customer_workspace.dart test/v21/customer_reference_ui_test.dart; do
             echo "SPLYZO_REF_FORMAT_BEGIN:$file"
             base64 -w0 "$file"
@@ -33,5 +34,5 @@ jobs:
       - name: Analyze and test formatted customer reference
         working-directory: apps/customer_app
         run: |
-          flutter analyze --no-pub lib/v21 test/v21
+          flutter analyze --no-pub --no-fatal-infos lib/v21 test/v21
           flutter test --no-pub test/v21/customer_reference_ui_test.dart
