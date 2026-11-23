@@ -72,84 +72,88 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
     required IconData icon,
     required String label,
     bool obscured = false,
-  }) => Semantics(
-    button: true,
-    label: '$label. Opens secure ${widget.signUp ? 'registration' : 'sign-in'}',
-    child: Material(
-      color: const Color(0xFFEFF5FF),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        key: Key('auth-field-$label'),
-        borderRadius: BorderRadius.circular(18),
-        onTap: busy ? null : _openSecureAuth,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 55),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: SplyzoReferenceColors.border),
+  }) =>
+      Semantics(
+        button: true,
+        label:
+            '$label. Opens secure ${widget.signUp ? 'registration' : 'sign-in'}',
+        child: Material(
+          color: const Color(0xFFEFF5FF),
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            key: Key('auth-field-$label'),
             borderRadius: BorderRadius.circular(18),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFF6FAFF), Color(0xFFE8F0FC)],
+            onTap: busy ? null : _openSecureAuth,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 55),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: SplyzoReferenceColors.border),
+                borderRadius: BorderRadius.circular(18),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF6FAFF), Color(0xFFE8F0FC)],
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: SplyzoReferenceColors.navy, size: 22),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: SplyzoReferenceColors.secondary,
+                      ),
+                    ),
+                  ),
+                  if (obscured)
+                    const Icon(
+                      Icons.visibility_outlined,
+                      size: 21,
+                      color: SplyzoReferenceColors.secondary,
+                    ),
+                ],
+              ),
             ),
           ),
+        ),
+      );
+
+  Widget _socialButton(String label, Widget emblem) => Expanded(
+        child: OutlinedButton(
+          onPressed: busy ? null : () => _openSecureAuth(),
+          style: OutlinedButton.styleFrom(
+            side:
+                const BorderSide(color: SplyzoReferenceColors.border, width: 1),
+            backgroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            minimumSize: const Size.fromHeight(52),
+          ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: SplyzoReferenceColors.navy, size: 22),
-              const SizedBox(width: 20),
-              Expanded(
+              emblem,
+              const SizedBox(width: 9),
+              Flexible(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: SplyzoReferenceColors.secondary,
+                    fontSize: 16,
+                    color: SplyzoReferenceColors.navy,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              if (obscured)
-                const Icon(
-                  Icons.visibility_outlined,
-                  size: 21,
-                  color: SplyzoReferenceColors.secondary,
-                ),
             ],
           ),
         ),
-      ),
-    ),
-  );
-
-  Widget _socialButton(String label, Widget emblem) => Expanded(
-    child: OutlinedButton(
-      onPressed: busy ? null : () => _openSecureAuth(),
-      style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: SplyzoReferenceColors.border, width: 1),
-        backgroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        minimumSize: const Size.fromHeight(52),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          emblem,
-          const SizedBox(width: 9),
-          Flexible(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                color: SplyzoReferenceColors.navy,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +264,7 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                           onChanged: busy
                               ? null
                               : (value) =>
-                                    setState(() => agreed = value ?? false),
+                                  setState(() => agreed = value ?? false),
                           visualDensity: VisualDensity.compact,
                         ),
                         Expanded(
@@ -329,9 +333,8 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: busy
-                            ? null
-                            : () => _openSecureAuth(mode: 'signIn'),
+                        onPressed:
+                            busy ? null : () => _openSecureAuth(mode: 'signIn'),
                         style: TextButton.styleFrom(
                           foregroundColor: SplyzoReferenceColors.orange,
                         ),
