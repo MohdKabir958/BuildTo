@@ -22,7 +22,7 @@ jobs:
           set -euo pipefail
           dart format lib/v21 test/v21
           dart format --output=none --set-exit-if-changed lib/v21 test/v21
-          for file in lib/v21/customer_api.dart lib/v21/customer_catalog.dart lib/v21/customer_checkout.dart lib/v21/customer_orders.dart lib/v21/customer_rfq.dart test/v21/customer_fixture.dart test/v21/customer_flow_test.dart; do
+          for file in lib/v21/customer_reference_home.dart lib/v21/customer_reference_auth.dart; do
             echo "SPLYZO_REF_FORMAT_BEGIN:$file"
             base64 -w0 "$file"
             echo
