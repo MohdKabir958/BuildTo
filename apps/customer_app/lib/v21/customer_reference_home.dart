@@ -203,7 +203,10 @@ class SplyzoReferenceBanner extends StatelessWidget {
                           letterSpacing: -.6,
                         ),
                       ),
-                      Row(
+                      FittedBox(
+                        alignment: Alignment.centerLeft,
+                        fit: BoxFit.scaleDown,
+                        child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
@@ -722,13 +725,18 @@ class _SupplierCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Verified supplier',
-                      style: TextStyle(
-                        color: SplyzoReferenceColors.secondary,
-                        fontSize: 9,
+                    const Expanded(
+                      child: Text(
+                        'Verified supplier',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: SplyzoReferenceColors.secondary,
+                          fontSize: 9,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
