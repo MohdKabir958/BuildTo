@@ -1,0 +1,38 @@
+name: Customer reference canonical Flutter format (temporary)
+on:
+  push:
+    branches: [feat/customer-reference-ui-navy-orange-20261123]
+    paths: ['.github/workflows/customer-reference-canonical-format.yml']
+permissions:
+  contents: read
+jobs:
+  format-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+      - name: Install dependencies before formatting
+        working-directory: apps/customer_app
+        run: flutter pub get --enforce-lockfile
+      - name: Canonically format with resolved package language version
+        working-directory: apps/customer_app
+        run: |
+          set -euo pipefail
+          dart format lib/v21 test/v21
+          dart format --output=none --set-exit-if-changed lib/v21 test/v21
+          for file in lib/v21/customer_api.dart lib/v21/customer_app.dart lib/v21/customer_catalog.dart lib/v21/customer_checkout.dart lib/v21/customer_design.dart lib/v21/customer_orders.dart lib/v21/customer_reference_auth.dart lib/v21/customer_reference_home.dart lib/v21/customer_rfq.dart lib/v21/customer_workspace.dart test/v21/customer_fixture.dart test/v21/customer_flow_test.dart; do
+            echo "SPLYZO_REF_FORMAT_BEGIN:$file"
+            base64 -w0 "$file"
+            echo
+            echo "SPLYZO_REF_FORMAT_END:$file"
+          done
+      - name: Validate source and reference widgets
+        working-directory: apps/customer_app
+        run: |
+          flutter analyze --no-pub lib/v21 test/v21
+          flutter test --no-pub test/v21/customer_reference_ui_test.dart
