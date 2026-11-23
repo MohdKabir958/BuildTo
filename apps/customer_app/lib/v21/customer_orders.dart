@@ -191,8 +191,7 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
         reload = refresh;
         final suppliers = rows(o['suppliers']);
         final payStatus = field(o, 'paymentStatus');
-        final canPay =
-            field(o, 'status') == 'PLACED' &&
+        final canPay = field(o, 'status') == 'PLACED' &&
             ['NOT_STARTED', 'NOT_CAPTURED'].contains(payStatus);
         return ListView(
           padding: const EdgeInsets.all(22),
@@ -524,15 +523,15 @@ class _OrderPageState extends State<OrderPage> with WidgetsBindingObserver {
 }
 
 String addressText(Data a) => [
-  'recipientName',
-  'line1',
-  'line2',
-  'locality',
-  'city',
-  'cityName',
-  'stateCode',
-  'postalCode',
-].map((k) => field(a, k)).where((s) => s.isNotEmpty).join(', ');
+      'recipientName',
+      'line1',
+      'line2',
+      'locality',
+      'city',
+      'cityName',
+      'stateCode',
+      'postalCode',
+    ].map((k) => field(a, k)).where((s) => s.isNotEmpty).join(', ');
 Future<bool> confirm(BuildContext c, String title, String text) async =>
     await showDialog<bool>(
       context: c,
@@ -946,10 +945,10 @@ class _ReturnEditorState extends State<ReturnEditor> {
                     final mime = ext == 'pdf'
                         ? 'application/pdf'
                         : ext == 'png'
-                        ? 'image/png'
-                        : ext == 'jpg' || ext == 'jpeg'
-                        ? 'image/jpeg'
-                        : null;
+                            ? 'image/png'
+                            : ext == 'jpg' || ext == 'jpeg'
+                                ? 'image/jpeg'
+                                : null;
                     if (mime == null) {
                       throw const CustomerProblem('Choose a JPEG, PNG or PDF.');
                     }
