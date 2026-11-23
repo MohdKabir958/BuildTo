@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:customer_app/v21/customer_design.dart';
 import 'package:customer_app/v21/customer_reference_auth.dart';
 import 'package:customer_app/v21/customer_reference_home.dart';
+
 import 'customer_fixture.dart';
 
 Future<void> pumpCustomer(
@@ -15,21 +16,24 @@ Future<void> pumpCustomer(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  await tester.pumpWidget(CustomerScope(
-    session: fixture.session,
-    child: MaterialApp(
-      theme: customerTheme(),
-      home: Scaffold(body: SafeArea(child: child)),
+  await tester.pumpWidget(
+    CustomerScope(
+      session: fixture.session,
+      child: MaterialApp(
+        theme: customerTheme(),
+        home: Scaffold(body: SafeArea(child: child)),
+      ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('reference home displays native navy-orange sections from API',
-      (tester) async {
+  testWidgets('reference home displays native navy-orange sections from API', (
+    tester,
+  ) async {
     final fixture = CustomerFixture();
     addTearDown(fixture.dispose);
     await pumpCustomer(tester, fixture, const SplyzoReferenceHome());
@@ -40,28 +44,35 @@ void main() {
     expect(find.text('Shree Shyam Enterprises'), findsOneWidget);
     expect(find.byKey(const Key('reference-category-Cement')), findsOneWidget);
     expect(find.textContaining('₹390'), findsWidgets);
-    expect(fixture.requests.any(
-        (r) => r.url.path == '/api/v2/catalog/suppliers'), isTrue);
+    expect(
+      fixture.requests.any((r) => r.url.path == '/api/v2/catalog/suppliers'),
+      isTrue,
+    );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('reference home remains laid out at 320 pixel phone width',
-      (tester) async {
+  testWidgets('reference home remains laid out at 320 pixel phone width', (
+    tester,
+  ) async {
     final fixture = CustomerFixture();
     addTearDown(fixture.dispose);
-    await pumpCustomer(tester, fixture, const SplyzoReferenceHome(),
-        size: const Size(320, 680));
+    await pumpCustomer(
+      tester,
+      fixture,
+      const SplyzoReferenceHome(),
+      size: const Size(320, 680),
+    );
     expect(find.text('Nearby Suppliers'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('auth entry switches to signup and requires accepted terms',
-      (tester) async {
+  testWidgets('auth entry switches to signup and requires accepted terms', (
+    tester,
+  ) async {
     final fixture = CustomerFixture();
     fixture.session.user = null;
     addTearDown(fixture.dispose);
-    await pumpCustomer(
-        tester, fixture, const SplyzoReferenceAuthScreen());
+    await pumpCustomer(tester, fixture, const SplyzoReferenceAuthScreen());
     expect(find.text('Welcome Back'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('auth-switch-mode')));
@@ -72,7 +83,8 @@ void main() {
     await tester.tap(find.byKey(const Key('auth-terms-checkbox')));
     await tester.pumpAndSettle();
     final checkbox = tester.widget<Checkbox>(
-        find.byKey(const Key('auth-terms-checkbox')));
+      find.byKey(const Key('auth-terms-checkbox')),
+    );
     expect(checkbox.value, isTrue);
     expect(tester.takeException(), isNull);
   });
