@@ -207,37 +207,37 @@ class SplyzoReferenceBanner extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         fit: BoxFit.scaleDown,
                         child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.verified_user_outlined,
-                            size: compact ? 12 : 15,
-                            color: const Color(0xFFFFB01A),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Verified Suppliers',
-                            style: TextStyle(
-                              fontSize: compact ? 7.5 : 9,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.verified_user_outlined,
+                              size: compact ? 12 : 15,
+                              color: const Color(0xFFFFB01A),
                             ),
-                          ),
-                          SizedBox(width: compact ? 10 : 15),
-                          Icon(
-                            Icons.local_shipping_outlined,
-                            size: compact ? 14 : 17,
-                            color: const Color(0xFFFFB01A),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            'On-time Delivery',
-                            style: TextStyle(
-                              fontSize: compact ? 7.5 : 9,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                            const SizedBox(width: 3),
+                            Text(
+                              'Verified Suppliers',
+                              style: TextStyle(
+                                fontSize: compact ? 7.5 : 9,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
+                            SizedBox(width: compact ? 10 : 15),
+                            Icon(
+                              Icons.local_shipping_outlined,
+                              size: compact ? 14 : 17,
+                              color: const Color(0xFFFFB01A),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'On-time Delivery',
+                              style: TextStyle(
+                                fontSize: compact ? 7.5 : 9,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       ),
