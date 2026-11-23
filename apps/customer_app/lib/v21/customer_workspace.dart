@@ -3,6 +3,7 @@ import 'customer_api.dart';
 import 'customer_design.dart';
 import 'customer_checkout.dart';
 import 'customer_catalog.dart';
+import 'customer_reference_auth.dart';
 import 'customer_orders.dart';
 import 'customer_rfq.dart';
 export 'customer_rfq.dart';
@@ -57,7 +58,9 @@ class ProfilePage extends StatelessWidget {
         ),
         if (!s.signedIn) ...[
           const SizedBox(height: 15),
-          ActionButton('Sign in securely', s.signIn),
+          ActionButton('Sign in securely', () async => push(c, const SplyzoReferenceAuthScreen())),
+          const SizedBox(height: 8),
+          ActionButton('Create account', () async => push(c, const SplyzoReferenceAuthScreen(signUp: true)), tonal: true),
         ],
         const Section('Your workspace'),
         Panel(
