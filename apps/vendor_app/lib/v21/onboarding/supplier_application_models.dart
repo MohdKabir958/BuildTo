@@ -266,11 +266,19 @@ class SupplierRegistrationDraft {
         : null;
   }
 
+  /// Accept a 10-digit Indian mobile number and send canonical E.164.
+  static String normalizePhone(String? value) {
+    final phone = (value ?? '').replaceAll(RegExp(r'[\s()\-]'), '');
+    if (RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) return '+91$phone';
+    return phone;
+  }
+
   static String? validatePhone(String? value) {
-    final phone = (value ?? '').trim();
-    return phone.isNotEmpty && !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(phone)
-        ? 'Use international E.164 format, e.g. +919876543210.'
-        : null;
+    final phone = normalizePhone(value);
+    if (phone.isEmpty) return 'Mobile number is required.';
+    return RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(phone)
+        ? null
+        : 'Enter a valid mobile number, e.g. 9876543210.';
   }
 
   static String? validatePinCode(String? value) =>
@@ -296,8 +304,7 @@ class SupplierRegistrationDraft {
         'legalName': legalName.trim(),
         'displayName': displayName.trim(),
         'contactEmail': contactEmail.trim().toLowerCase(),
-        if (contactPhone?.trim().isNotEmpty ?? false)
-          'contactPhone': contactPhone!.trim(),
+        'contactPhone': normalizePhone(contactPhone),
         'gstRegistration': gstRegistration.apiValue,
         if (gstin?.trim().isNotEmpty ?? false)
           'gstin': gstin!.trim().toUpperCase(),

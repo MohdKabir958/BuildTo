@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/supplier_v21_api.dart';
 import '../auth/supplier_auth_controller.dart';
@@ -35,7 +36,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
   List<SupplierApplicationSummary> applications = const [];
   SupplierApplicationDetail? details;
   bool loading = true, showWizard = false, linking = false;
-  String? selectedId, error;
+  String? selectedId, error, documentWarning;
   int generation = 0;
 
   bool get sessionOk =>
@@ -73,6 +74,8 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
   }
 
   Future<void> load({String? openId}) async {
+    // An accidental refresh must not dispose a form the supplier is editing.
+    if (showWizard && openId == null) return;
     final version = ++generation;
     final session = widget.controller.sessionKey;
     setState(() {
@@ -131,6 +134,30 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
     }
   }
 
+  Future<void> _confirmDiscardDraft() async {
+    if (!showWizard) {
+      widget.onClose();
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave registration?'),
+        content: const Text('Your details stay filled if you switch apps or '
+            'open notifications. Leaving registration will discard the form.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep editing')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Discard form')),
+        ],
+      ),
+    );
+    if (mounted && discard == true) setState(() => showWizard = false);
+  }
+
   Future<void> linkMedia(SupplierApplicationDetail current) async {
     if (linking || !sessionOk) return;
     final session = widget.controller.sessionKey;
@@ -160,6 +187,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
       if (!mounted || !sessionOk || session != widget.controller.sessionKey) {
         return;
       }
+      setState(() => documentWarning = null);
       await load(openId: current.summary.id);
     } catch (failure) {
       if (!mounted || !sessionOk || session != widget.controller.sessionKey) {
@@ -187,17 +215,22 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
     final pending = applications.any((a) =>
         a.approval == SupplierApplicationStatus.pending ||
         a.approval == SupplierApplicationStatus.underReview);
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) unawaited(_confirmDiscardDraft());
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Supplier registration'),
         leading: IconButton(
             tooltip: 'Back',
-            onPressed: widget.onClose,
+            onPressed: _confirmDiscardDraft,
             icon: const Icon(Icons.arrow_back_rounded)),
         actions: [
           IconButton(
               tooltip: 'Refresh applications',
-              onPressed: loading ? null : () => load(),
+              onPressed: loading || showWizard ? null : () => load(),
               icon: const Icon(Icons.refresh_rounded))
         ],
       ),
@@ -218,6 +251,17 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                           const SizedBox(height: 18),
                           _NavyBanner(email: widget.controller.signedInEmail),
                           const SizedBox(height: 22),
+                          if (documentWarning != null) ...[
+                            BuildToCard(
+                              child: Row(children: [
+                                const Icon(Icons.info_outline,
+                                    color: BuildToPalette.orange),
+                                const SizedBox(width: 10),
+                                Expanded(child: Text(documentWarning!)),
+                              ]),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
                           if (error != null) ...[
                             BuildToCard(
                                 child: Row(children: [
@@ -231,8 +275,21 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                           if (showWizard)
                             SupplierRegistrationWizard(
                               email: widget.controller.signedInEmail,
-                              cancel: () => setState(() => showWizard = false),
+                              cancel: _confirmDiscardDraft,
                               submit: widget.api.submit,
+                              uploadEvidence: widget.api.uploadEvidence,
+                              attachEvidence: (supplierId, mediaId, type) async {
+                                await widget.api.attachExistingEvidence(
+                                  supplierId: supplierId,
+                                  mediaId: mediaId,
+                                  type: type,
+                                );
+                              },
+                              attachmentWarning: (warning) {
+                                if (mounted) {
+                                  setState(() => documentWarning = warning);
+                                }
+                              },
                               completed: (submitted) {
                                 if (!mounted) return;
                                 setState(() => selectedId = submitted.id);
@@ -263,10 +320,10 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                             const SizedBox(height: 12),
                             if (applications.isEmpty)
                               const BuildToStatePanel(
-                                  title: 'No application yet',
+                                  title: 'No application submitted yet',
                                   message:
-                                      'Start with your verified business and GST information. '
-                                      'Only Splyzo operations can approve a supplier.',
+                                      'Complete the business registration form below. '
+                                      'Admin review begins only after you submit.',
                                   icon: Icons.storefront_outlined),
                             for (final app in applications) ...[
                               BuildToCard(
@@ -303,7 +360,7 @@ class _SupplierOnboardingFlowState extends State<SupplierOnboardingFlow> {
                           ],
                         ],
                       )))),
-    );
+    ));
   }
 }
 
@@ -379,6 +436,22 @@ class _ReviewDetail extends StatelessWidget {
       SupplierApplicationStatus.underReview,
       SupplierApplicationStatus.rejected,
     ].contains(application.approval);
+    // If all required documents are already attached, don't ask people to
+    // upload GST or business evidence a second time after submission.
+    final requiredDocuments = [
+      SupplierEvidenceType.businessRegistration,
+      if (application.gstRegistration.needsGstin)
+        SupplierEvidenceType.gstCertificate,
+    ];
+    final documentsReceived = requiredDocuments.every((type) =>
+        detail.documents.any((document) =>
+            document.type == type &&
+            [
+              SupplierEvidenceStatus.uploaded,
+              SupplierEvidenceStatus.pending,
+              SupplierEvidenceStatus.reviewed,
+              SupplierEvidenceStatus.verified,
+            ].contains(document.status)));
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       BuildToCard(
           child:
@@ -438,13 +511,18 @@ class _ReviewDetail extends StatelessWidget {
             child: Text('Upload a PDF, JPEG or PNG document up to 10 MB. '
                 'Your documents stay private and are checked by an independent reviewer.')),
       ])),
-      if (canLink) ...[
+      if (canLink && !documentsReceived) ...[
         const SizedBox(height: 14),
         OutlinedButton.icon(
             onPressed: onLinkEvidence,
             icon: const Icon(Icons.attach_file_rounded),
-            label: const Text('Upload verification document')),
-      ],
+            label: const Text('Add missing document')),
+      ] else if (documentsReceived)
+        const Padding(
+          padding: EdgeInsets.only(top: 14),
+          child: Text('Documents received. No further upload is needed '
+              'unless our review team requests a change.'),
+        ),
     ]);
   }
 }

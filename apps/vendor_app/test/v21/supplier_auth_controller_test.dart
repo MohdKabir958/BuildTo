@@ -194,6 +194,63 @@ void main() {
     clerk.state.dispose();
   });
 
+  test('new Clerk signup retries profile synchronization before onboarding',
+      () async {
+    final clerk = FakeClerk();
+    var profileReads = 0;
+    final controller = makeController(
+      clerk,
+      MockClient((request) async {
+        if (request.url.path == '/api/v2/me') {
+          profileReads++;
+          if (profileReads == 1) {
+            return http.Response(
+                '{"error":{"code":"PROFILE_NOT_PROVISIONED"}}', 403);
+          }
+          return me([]);
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+    await controller.start();
+    clerk.login('user_NewSupplier', 'sess_NewSupplier');
+    await until(controller, SupplierAccessStage.noSupplier);
+    expect(profileReads, 2);
+    expect(controller.activeSupplier, isNull);
+    controller.dispose();
+    clerk.state.dispose();
+  });
+
+  test('silent lifecycle refresh keeps applicant stage and form scope',
+      () async {
+    final clerk = FakeClerk();
+    final delayed = Completer<http.Response>();
+    var calls = 0;
+    final controller = makeController(
+      clerk,
+      MockClient((request) async {
+        if (request.url.path == '/api/v2/me') {
+          calls++;
+          return calls == 1 ? me([]) : await delayed.future;
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+    await controller.start();
+    clerk.login('user_NewSupplier', 'sess_NewSupplier');
+    await until(controller, SupplierAccessStage.noSupplier);
+    final keyBefore = controller.sessionKey;
+    final refresh = controller.refresh(silent: true);
+    expect(controller.stage, SupplierAccessStage.noSupplier);
+    expect(controller.sessionKey, keyBefore);
+    delayed.complete(me([]));
+    await refresh;
+    expect(controller.stage, SupplierAccessStage.noSupplier);
+    expect(controller.sessionKey, keyBefore);
+    controller.dispose();
+    clerk.state.dispose();
+  });
+
   test('no approved supplier membership is never authorized', () async {
     final clerk = FakeClerk();
     final controller = makeController(clerk, MockClient((_) async => me([])));

@@ -31,9 +31,22 @@ const auth=(api,method,path,token,body)=>{
 const apply=(applicant)=>({
  slug:'supplier-'+randomUUID().slice(0,8),
  legalName:'Example Materials Pvt Ltd',displayName:'Example Materials',
- contactEmail:applicant.email,gstRegistration:'UNREGISTERED',
+ contactEmail:applicant.email,contactPhone:'+919876543210',gstRegistration:'UNREGISTERED',
  billingAddress:{line1:'Main Building Road 42',city:'Hyderabad',state:'Telangana',pinCode:'500001'}
 });
+test('A05: applicant must supply a valid mobile number',async()=>{
+ const applicant=await user('phone-required');
+ const api=request(app({applicant:applicant.clerkUserId}));
+ const missing=apply(applicant);
+ delete missing.contactPhone;
+ const first=await auth(api,'post','/api/v2/supplier-applications','applicant',missing);
+ assert.equal(first.status,400,JSON.stringify(first.body));
+ assert.equal(first.body.error.code,'PHONE_REQUIRED');
+ const bad={...apply(applicant),contactPhone:'12345'};
+ const second=await auth(api,'post','/api/v2/supplier-applications','applicant',bad);
+ assert.equal(second.status,400);
+});
+
 async function evidence(owner){
  return db.mediaAsset.create({data:{objectKey:'private/suppliers/'+randomUUID(),ownerUserId:owner.id,
   mimeType:'application/pdf',sizeBytes:BigInt(1024),sha256:'a'.repeat(64)}});

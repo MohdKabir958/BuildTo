@@ -17,8 +17,8 @@ Map<String, Object?> summary({String approval = 'PENDING'}) => {
       'legalName': 'Materials Hub Pvt Ltd',
       'displayName': 'Materials Hub',
       'approval': approval,
-      'gstRegistration': 'REGULAR',
-      'gstin': '36ABCDE1234F1Z5',
+      'gstRegistration': 'UNREGISTERED',
+      'gstin': null,
       'createdAt': '2026-11-05T09:00:00.000Z',
       'verifiedAt': null,
       'suspendedAt': null,
@@ -104,7 +104,8 @@ void main() {
         final data = jsonDecode(request.body) as Map<String, dynamic>;
         expect(data['contactEmail'], 'owner@example.test');
         expect(data['slug'], 'materials-hub');
-        expect(data['gstRegistration'], 'REGULAR');
+        expect(data['gstRegistration'], 'UNREGISTERED');
+        expect(data['contactPhone'], '+919876543210');
         expect(data['billingAddress']['pinCode'], '500001');
         submitted = true;
         return http.Response(jsonEncode({'data': summary()}), 201);
@@ -124,8 +125,8 @@ void main() {
         const Size(393, 852));
     await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
-    expect(find.text('Your account is in review'), findsOneWidget);
-    await tester.tap(find.text('Open supplier applications'));
+    expect(find.text('Your email is verified'), findsOneWidget);
+    await tester.tap(find.text('Register or check my business'));
     await tester.pumpAndSettle();
     expect(find.text('Grow with Splyzo'), findsOneWidget);
     expect(find.text('Your business'), findsOneWidget);
@@ -135,12 +136,28 @@ void main() {
         field('Registered legal name'), 'Materials Hub Pvt Ltd');
     await tester.enterText(field('Supplier display name'), 'Materials Hub');
     tester.testTextInput.hide();
+    // Opening the notification shade or switching apps must not destroy the
+    // signup flow and must not create a false admin-review state.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.text('Your account is in review'), findsNothing);
+    expect(
+        tester.widget<TextFormField>(field('Registered legal name')).controller!.text,
+        'Materials Hub Pvt Ltd');
+    // An accidental back press asks before discarding the entered details.
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Leave registration?'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextFormField>(field('Supplier display name')).controller!.text,
+        'Materials Hub');
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    expect(find.text('GST & contact'), findsOneWidget);
-    await tester.enterText(field('15-character GSTIN'), '36ABCDE1234F1Z5');
+    expect(find.text('Phone & GST'), findsOneWidget);
+    await tester.enterText(field('Mobile number *'), '9876543210');
     tester.testTextInput.hide();
     await tester.ensureVisible(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -195,7 +212,7 @@ void main() {
         const Size(320, 800));
     await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Open supplier applications'));
+    await tester.tap(find.text('Register or check my business'));
     await tester.pumpAndSettle();
     expect(find.text('Your business'), findsOneWidget);
     expect(find.text('Approved'), findsNothing);
@@ -253,7 +270,7 @@ void main() {
         const Size(393, 852));
     await tester.tap(find.text('Sign in to my account'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Open supplier applications'));
+    await tester.tap(find.text('Register or check my business'));
     await tester.pumpAndSettle();
     expect(find.text('Supplier registration'), findsNothing);
     expect(find.text('Home'), findsOneWidget);
