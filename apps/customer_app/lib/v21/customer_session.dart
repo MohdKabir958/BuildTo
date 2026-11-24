@@ -12,7 +12,15 @@ abstract class CustomerIdentity {
   Future<bool> signOut();
 }
 
-class NativeCustomerIdentity implements CustomerIdentity {
+abstract class CustomerFormIdentity implements CustomerIdentity {
+  Future<bool> authenticateMode(String mode);
+  Future<({String step, String? attempt})> submitAuth(
+    String action,
+    Map<String, String> fields,
+  );
+}
+
+class NativeCustomerIdentity implements CustomerFormIdentity {
   final sessions = ClerkSessions.instance;
   @override
   ValueListenable<ClerkIdentity> get identity => sessions.identity;
@@ -20,6 +28,15 @@ class NativeCustomerIdentity implements CustomerIdentity {
   Future<void> initialize() => sessions.initialize();
   @override
   Future<bool> authenticate() => sessions.authenticate();
+  @override
+  Future<bool> authenticateMode(String mode) =>
+      sessions.authenticate(mode: mode);
+  @override
+  Future<({String step, String? attempt})> submitAuth(
+    String action,
+    Map<String, String> fields,
+  ) =>
+      sessions.submitCustomerAuth(action, fields);
   @override
   Future<String?> token({bool forceRefresh = false}) =>
       sessions.token(forceRefresh: forceRefresh);
@@ -116,7 +133,7 @@ class CustomerSession extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> signIn() async {
+  Future<void> signIn({Future<bool> Function()? authenticate}) async {
     if (busy) return;
     busy = true;
     _notify();
@@ -134,7 +151,10 @@ class CustomerSession extends ChangeNotifier {
           'Sign-out could not complete. Please retry.',
         );
       }
-      if (!auth.identity.value.signedIn && !await auth.authenticate()) return;
+      if (!auth.identity.value.signedIn &&
+          !await (authenticate ?? auth.authenticate)()) {
+        return;
+      }
       await restore();
       if (user == null) {
         throw CustomerProblem(

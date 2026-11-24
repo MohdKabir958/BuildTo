@@ -8,7 +8,28 @@ import 'package:customer_app/v21/customer_session.dart';
 
 String id(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
 
-class FixtureIdentity implements CustomerIdentity {
+class FixtureIdentity implements CustomerFormIdentity {
+  final authActions = <String>[];
+  Future<({String step, String? attempt})> Function(
+    String action,
+    Map<String, String> fields,
+  )? formHandler;
+
+  @override
+  Future<bool> authenticateMode(String mode) => authenticate();
+
+  @override
+  Future<({String step, String? attempt})> submitAuth(
+    String action,
+    Map<String, String> fields,
+  ) async {
+    authActions.add(action);
+    final result = await formHandler?.call(action, fields) ??
+        (step: 'complete', attempt: null);
+    if (result.step == 'complete') await authenticate();
+    return result;
+  }
+
   @override
   final ValueNotifier<ClerkIdentity> identity = ValueNotifier(
     ClerkIdentity(

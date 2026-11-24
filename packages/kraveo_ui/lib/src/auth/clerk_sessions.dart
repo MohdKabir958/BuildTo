@@ -34,7 +34,7 @@ class ClerkIdentity {
       );
 }
 
-/// Native SDK is the only owner of credentials, persistence, refresh and authentication UI.
+/// Native SDK owns authentication, session persistence and token refresh.
 class ClerkSessions {
   ClerkSessions({MethodChannel? channel, Stream<dynamic>? events})
       : _channel = channel ?? const MethodChannel('in.grozo/clerk'),
@@ -92,6 +92,25 @@ class ClerkSessions {
       if (error.code == 'AUTH_CANCELLED') return false;
       rethrow;
     }
+  }
+
+  Future<({String step, String? attempt})> submitCustomerAuth(
+    String action,
+    Map<String, String> fields,
+  ) async {
+    await initialize();
+    final state = await _channel.invokeMapMethod<String, dynamic>(
+      'customerAuth',
+      {...fields, 'action': action},
+    );
+    if (state?['step'] == 'complete') {
+      _locallySignedOut = false;
+      _accept(state?['identity']);
+    }
+    return (
+      step: state?['step'] as String,
+      attempt: state?['attempt'] as String?
+    );
   }
 
   Future<String?> token({bool forceRefresh = false}) async {

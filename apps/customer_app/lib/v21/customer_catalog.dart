@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'customer_api.dart';
 import 'customer_design.dart';
+import 'customer_reference_colors.dart';
 import 'customer_checkout.dart';
 import 'customer_workspace.dart';
 
@@ -45,83 +46,82 @@ class _CustomerHomeState extends State<CustomerHome> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.categoriesOnly) return const _CategoryBrowser();
     final s = CustomerScope.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1040),
         child: Column(
           children: [
-            if (!widget.categoriesOnly)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(22, 14, 16, 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 43,
-                      height: 43,
-                      decoration: BoxDecoration(
-                        color: ink,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.apartment_rounded,
-                        color: Colors.white,
-                      ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 14, 16, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 43,
+                    height: 43,
+                    decoration: BoxDecoration(
+                      color: ink,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'splyzo',
-                      style: TextStyle(
-                        fontFamily: 'packages/kraveo_ui/Bricolage',
-                        fontSize: 29,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1.3,
-                      ),
+                    child: const Icon(
+                      Icons.apartment_rounded,
+                      color: Colors.white,
                     ),
-                    const Spacer(),
-                    IconButton(
-                      tooltip: 'Notifications',
-                      onPressed: () => push(context, const NotificationsPage()),
-                      icon: const Icon(Icons.notifications_none_rounded),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'splyzo',
+                    style: TextStyle(
+                      fontFamily: 'packages/kraveo_ui/Bricolage',
+                      fontSize: 29,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.3,
                     ),
-                  ],
-                ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Notifications',
+                    onPressed: () => push(context, const NotificationsPage()),
+                    icon: const Icon(Icons.notifications_none_rounded),
+                  ),
+                ],
               ),
-            if (!widget.categoriesOnly)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () => push(context, const AddressesPage()),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 19,
-                          color: accent,
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            s.address == null
-                                ? 'Choose your delivery site'
-                                : '${field(s.address!, 'label')} · ${field(s.address!, 'locality')}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => push(context, const AddressesPage()),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 19,
+                        color: accent,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          s.address == null
+                              ? 'Choose your delivery site'
+                              : '${field(s.address!, 'label')} · ${field(s.address!, 'locality')}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const Icon(Icons.keyboard_arrow_down, size: 18),
-                      ],
-                    ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down, size: 18),
+                    ],
                   ),
                 ),
               ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 8),
               child: TextField(
@@ -144,7 +144,7 @@ class _CustomerHomeState extends State<CustomerHome> {
             ),
             Expanded(
               child: RemotePage<Data>(
-                key: ValueKey('$category|$search|${widget.categoriesOnly}'),
+                key: ValueKey((category, search)),
                 load: () async {
                   final results = await Future.wait<dynamic>([
                     s.api.categories(),
@@ -159,9 +159,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                     padding: const EdgeInsets.fromLTRB(22, 10, 22, 30),
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
-                      if (!widget.categoriesOnly &&
-                          search.isEmpty &&
-                          category == null) ...[
+                      if (search.isEmpty && category == null) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(25),
                           child: Container(
@@ -267,15 +265,12 @@ class _CustomerHomeState extends State<CustomerHome> {
                         ),
                       ],
                       Section(
-                        widget.categoriesOnly
-                            ? 'All categories'
-                            : 'Shop by category',
-                        action: widget.categoriesOnly ? null : 'View all',
+                        'Shop by category',
+                        action: 'View all',
                         onTap: () => push(
                           context,
-                          Scaffold(
-                            appBar: AppBar(title: const Text('Categories')),
-                            body: const SafeArea(
+                          const Scaffold(
+                            body: SafeArea(
                               child: CustomerHome(categoriesOnly: true),
                             ),
                           ),
@@ -289,7 +284,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                       CategoryGrid(
                         categories: categories,
                         selected: category,
-                        horizontal: !widget.categoriesOnly,
+                        horizontal: true,
                         onChanged: (value) => setState(() => category = value),
                       ),
                       Section(
@@ -304,9 +299,7 @@ class _CustomerHomeState extends State<CustomerHome> {
                         empty:
                             'No materials found. Try another category or search.',
                       ),
-                      if (!widget.categoriesOnly &&
-                          search.isEmpty &&
-                          category == null) ...[
+                      if (search.isEmpty && category == null) ...[
                         const Section('Your material partners'),
                         const SupplierStrip(),
                       ],
@@ -370,6 +363,163 @@ class _CustomerHomeState extends State<CustomerHome> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CategoryBrowser extends StatefulWidget {
+  const _CategoryBrowser();
+
+  @override
+  State<_CategoryBrowser> createState() => _CategoryBrowserState();
+}
+
+class _CategoryBrowserState extends State<_CategoryBrowser> {
+  final _search = TextEditingController();
+
+  void _openSearch() {
+    final term = _search.text.trim();
+    if (term.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    push(context, CatalogPage(search: term, title: 'Results for “$term”'));
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final api = CustomerScope.of(context).api;
+    return Column(
+      children: [
+        DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                SplyzoReferenceColors.navy,
+                SplyzoReferenceColors.deepBlue,
+              ],
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1040),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        if (ModalRoute.of(context)?.impliesAppBarDismissal ??
+                            false)
+                          const BackButton(color: Colors.white),
+                        Expanded(
+                          child: Text(
+                            'Categories',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineLarge
+                                ?.copyWith(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _search,
+                      builder: (context, value, _) => Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _search,
+                              textInputAction: TextInputAction.search,
+                              onSubmitted: (_) => _openSearch(),
+                              decoration: InputDecoration(
+                                hintText: 'Search materials',
+                                prefixIcon: const Icon(Icons.search_rounded),
+                                suffixIcon: value.text.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: 'Clear search',
+                                        onPressed: _search.clear,
+                                        icon: const Icon(Icons.close_rounded),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: 'Search catalog',
+                            onPressed:
+                                value.text.trim().isEmpty ? null : _openSearch,
+                            style: IconButton.styleFrom(
+                              backgroundColor: SplyzoReferenceColors.orange,
+                              foregroundColor: SplyzoReferenceColors.navy,
+                              disabledBackgroundColor:
+                                  SplyzoReferenceColors.field,
+                              disabledForegroundColor:
+                                  SplyzoReferenceColors.secondary,
+                              minimumSize: const Size(52, 52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1040),
+              child: RemotePage<List<Data>>(
+                load: api.categories,
+                builder: (categories, _) => ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  children: [
+                    if (categories.isEmpty)
+                      const EmptyState(
+                        'No categories yet',
+                        'Published categories will appear here.',
+                        icon: Icons.category_outlined,
+                      ),
+                    CategoryGrid(
+                      categories: categories,
+                      selected: null,
+                      onChanged: (id) {
+                        FocusScope.of(context).unfocus();
+                        final title = id == null
+                            ? 'All materials'
+                            : field(
+                                categories.firstWhere(
+                                  (item) => item['id'] == id,
+                                ),
+                                'name',
+                              );
+                        push(context, CatalogPage(category: id, title: title));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -448,8 +598,8 @@ class CategoryGrid extends StatelessWidget {
           ? selected == null
           : entry.value.any((category) => category['id'] == selected);
       final asset = switch (entry.key.toLowerCase()) {
-        'cement' => 'cement',
-        'steel & rebar' => 'steel',
+        'cement' || 'cement & concrete' => 'cement',
+        'steel & rebar' || 'steel & tmt' => 'steel',
         'bricks & blocks' => 'bricks',
         'ready-mix concrete' => 'concrete',
         'sand & aggregates' => 'sand',
@@ -459,6 +609,18 @@ class CategoryGrid extends StatelessWidget {
         'tools & hardware' => 'tools',
         _ => 'all',
       };
+      if (!horizontal) {
+        return SizedBox(
+          width: width,
+          child: _DepartmentTile(
+            name: entry.key,
+            asset: asset,
+            featured: entry.value.isEmpty,
+            selected: selected != null && active,
+            onTap: () => select(context, entry.value),
+          ),
+        );
+      }
       return SizedBox(
         width: width,
         child: Semantics(
@@ -482,8 +644,8 @@ class CategoryGrid extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       child: Image.asset(
                         'assets/images/categories/$asset.webp',
-                        width: horizontal ? 76 : 92,
-                        height: horizontal ? 60 : 76,
+                        width: 76,
+                        height: 60,
                         fit: BoxFit.cover,
                         excludeFromSemantics: true,
                       ),
@@ -492,8 +654,8 @@ class CategoryGrid extends StatelessWidget {
                     Text(
                       entry.key,
                       textAlign: TextAlign.center,
-                      maxLines: horizontal ? 2 : null,
-                      overflow: horizontal ? TextOverflow.ellipsis : null,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
                         height: 1.25,
@@ -524,22 +686,25 @@ class CategoryGrid extends StatelessWidget {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = 10.0;
-        final width = (constraints.maxWidth - gap) / 2;
+        const gap = 12.0;
+        final columns =
+            (constraints.maxWidth / 200).floor().clamp(2, 4).toInt();
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
         final entries = departments.entries.toList();
         return Column(
           children: [
-            for (var i = 0; i < entries.length; i += 2)
+            for (var i = 0; i < entries.length; i += columns)
               Padding(
                 padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
                 child: IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      tile(entries[i], width),
-                      if (i + 1 < entries.length) ...[
-                        const SizedBox(width: gap),
-                        tile(entries[i + 1], width),
+                      for (var offset = 0;
+                          offset < columns && i + offset < entries.length;
+                          offset++) ...[
+                        if (offset > 0) const SizedBox(width: gap),
+                        tile(entries[i + offset], width),
                       ],
                     ],
                   ),
@@ -548,6 +713,102 @@ class CategoryGrid extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _DepartmentTile extends StatelessWidget {
+  const _DepartmentTile({
+    required this.name,
+    required this.asset,
+    required this.featured,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String name, asset;
+  final bool featured, selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected ? true : null,
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: featured || selected
+                ? SplyzoReferenceColors.orange
+                : SplyzoReferenceColors.border,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              children: [
+                Ink(
+                  decoration: BoxDecoration(
+                    color: SplyzoReferenceColors.field,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 88,
+                    child: Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          'assets/images/categories/$asset.webp',
+                          height: 82,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 9, 4, 3),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: SplyzoReferenceColors.navy,
+                                  fontSize: 13,
+                                  height: 1.25,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 19,
+                          color: featured
+                              ? SplyzoReferenceColors.orange
+                              : SplyzoReferenceColors.secondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -740,8 +1001,9 @@ class CatalogPage extends StatefulWidget {
     this.search,
     this.supplier,
     this.supplierName,
+    this.title,
   });
-  final String? category, search, supplier, supplierName;
+  final String? category, search, supplier, supplierName, title;
   @override
   State<CatalogPage> createState() => _CatalogPageState();
 }
@@ -754,7 +1016,7 @@ class _CatalogPageState extends State<CatalogPage> {
   Widget build(BuildContext context) {
     final api = CustomerScope.of(context).api;
     return RemotePage<Data>(
-      title: widget.supplierName ?? 'Materials',
+      title: widget.title ?? widget.supplierName ?? 'Materials',
       load: () async {
         final page = await api.products(
           category: widget.category,

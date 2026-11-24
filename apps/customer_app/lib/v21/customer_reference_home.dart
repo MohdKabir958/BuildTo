@@ -4,19 +4,11 @@ import 'package:flutter/material.dart';
 
 import 'customer_api.dart';
 import 'customer_design.dart';
+import 'customer_reference_colors.dart';
 import 'customer_catalog.dart';
 import 'customer_workspace.dart';
 
-/// Navy / orange design language taken from the approved customer mockups.
-/// Keep labels and prices dynamic: screenshot examples are not live suppliers.
-abstract final class SplyzoReferenceColors {
-  static const navy = Color(0xFF071B4C);
-  static const deepBlue = Color(0xFF07336F);
-  static const orange = Color(0xFFFF7000);
-  static const field = Color(0xFFECF3FD);
-  static const border = Color(0xFFD7E2F4);
-  static const secondary = Color(0xFF455472);
-}
+export 'customer_reference_colors.dart';
 
 class SplyzoReferenceLogo extends StatelessWidget {
   const SplyzoReferenceLogo({super.key, this.large = false});
@@ -501,9 +493,8 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                           action: 'View All',
                           onTap: () => push(
                             context,
-                            Scaffold(
-                              appBar: AppBar(title: const Text('Categories')),
-                              body: const SafeArea(
+                            const Scaffold(
+                              body: SafeArea(
                                 child: CustomerHome(categoriesOnly: true),
                               ),
                             ),
