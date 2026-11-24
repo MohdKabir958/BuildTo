@@ -31,13 +31,13 @@ void main() {
   // are required; no legacy session, restaurant push, kitchen queue or socket
   // starts in this mode. Missing configuration fails closed inside the gate.
   if (const bool.fromEnvironment('BUILDTO_SUPPLIER_V21', defaultValue: false)) {
-    runApp(const BuildToSupplierV21App());
+    runApp(const SplyzoStartup(child: BuildToSupplierV21App()));
     return;
   }
   // Explicit isolated S01 preview only. No legacy restaurant auth, socket, push
   // or production supplier claims. The authenticated V2.1 entry is S02.
   if (const bool.fromEnvironment('BUILDTO_SUPPLIER_V21_PREVIEW', defaultValue: false)) {
-    runApp(const BuildToSupplierPreviewApp());
+    runApp(const SplyzoStartup(child: BuildToSupplierPreviewApp()));
     return;
   }
   // Push is an addition: Firebase starts inside the controller (defensively), after the first frame is on its way.
@@ -47,7 +47,7 @@ void main() {
     permissions: const SystemPushPermissions(),
     registry: const HttpDeviceRegistry(),
   );
-  runApp(KraveoVendorApp(push: push));
+  runApp(SplyzoStartup(child: KraveoVendorApp(push: push)));
 }
 
 class KraveoVendorApp extends StatefulWidget {
@@ -295,7 +295,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
       builder: (context, _) {
         switch (_session.status) {
           case SessionStatus.checking:
-            return const _SplashScreen();
+            return const SplyzoSplashScreen();
           case SessionStatus.unreachable:
             return _SessionUnreachable(onRetry: _session.retryRestore);
           case SessionStatus.signedOut:
@@ -323,29 +323,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
             );
         }
       },
-    );
-  }
-}
-
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Semantics(
-          label: 'Loading ${BrandConfig.name} Store Partner',
-          child: const Column(mainAxisSize: MainAxisSize.min, children: [
-            KBrandMark(height: 72),
-            SizedBox(height: 28),
-            SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 3)),
-          ]),
-        ),
-      ),
     );
   }
 }

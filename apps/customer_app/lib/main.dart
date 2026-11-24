@@ -28,7 +28,7 @@ const bool kBuildtoOfflineDemo = bool.fromEnvironment('BUILDTO_OFFLINE_DEMO', de
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (const bool.fromEnvironment('BUILDTO_CUSTOMER_V21', defaultValue: true)) {
-    runApp(const SplyzoCustomerApp());
+    runApp(const SplyzoStartup(child: SplyzoCustomerApp()));
     return;
   }
   // Push is an addition: the real Firebase layer starts after the first frame (AuthGate) and
@@ -38,7 +38,7 @@ void main() {
     local: PlatformLocalNotifier(),
     settings: MethodChannelSystemSettings(),
   );
-  runApp(KraveoCustomerApp(push: push));
+  runApp(SplyzoStartup(child: KraveoCustomerApp(push: push)));
 }
 
 class KraveoCustomerApp extends StatelessWidget {
@@ -218,7 +218,7 @@ class _AuthGateState extends State<AuthGate> {
     if (_push?.pendingTap != null) WidgetsBinding.instance.addPostFrameCallback((_) => _drainPendingTap());
     switch (session.status) {
       case SessionStatus.checking:
-        return const _SplashScreen();
+        return const SplyzoSplashScreen();
       case SessionStatus.unreachable:
         return _SessionUnreachable(onRetry: session.retryRestore, onUseAnotherAccount: session.logout);
       case SessionStatus.signedOut:
@@ -228,23 +228,6 @@ class _AuthGateState extends State<AuthGate> {
       case SessionStatus.signedIn:
         return const HomeScreen();
     }
-  }
-}
-
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          KBrandMark(height: 72),
-          SizedBox(height: 28),
-          SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 3)),
-        ]),
-      ),
-    );
   }
 }
 
