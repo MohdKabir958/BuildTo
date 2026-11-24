@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'v21/screens/supplier_shell.dart';
+import 'v21/demo/supplier_client_preview.dart';
 import 'v21/auth/supplier_auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:kraveo_ui/kraveo_ui.dart';
@@ -27,6 +28,12 @@ import 'session/session_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Client showroom is a separate opt-in build target with local fixtures.
+  // It never initializes Clerk, the BuildTo API or legacy Grozo services.
+  if (const bool.fromEnvironment('BUILDTO_CLIENT_UI_PREVIEW', defaultValue: false)) {
+    runApp(const BuildToSupplierClientPreviewApp());
+    return;
+  }
   // Explicit V2.1 staging mode. The native Clerk SDK and database memberships
   // are required; no legacy session, restaurant push, kitchen queue or socket
   // starts in this mode. Missing configuration fails closed inside the gate.
