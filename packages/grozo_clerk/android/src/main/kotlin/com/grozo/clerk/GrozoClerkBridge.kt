@@ -12,6 +12,7 @@ import com.clerk.api.signup.sendEmailCode
 import com.clerk.api.signup.sendPhoneCode
 import com.clerk.api.signup.verifyCode
 import com.clerk.api.sso.OAuthProvider
+import com.clerk.api.sso.SSOCancellationException
 import com.clerk.api.network.serialization.ClerkResult
 import com.clerk.api.session.GetTokenOptions
 import io.flutter.plugin.common.BinaryMessenger
@@ -27,6 +28,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
@@ -38,6 +40,7 @@ class GrozoClerkBridge(private val activity: Activity, messenger: BinaryMessenge
     private var collector: Job? = null
     private var pending: MethodChannel.Result? = null
     private var customerAuthBusy = false
+    private var customerSocialAuth: Job? = null
     private val authRequest = 41623
     init { methods.setMethodCallHandler(this); events.setStreamHandler(this) }
 
@@ -83,7 +86,15 @@ class GrozoClerkBridge(private val activity: Activity, messenger: BinaryMessenge
                     result.success(mapOf("localCleared" to true,"remoteRevoked" to remote))
                     return@launch
                 }
-                ready(); collectState()
+                if (call.method == "cancelCustomerSocialAuth") {
+                    customerSocialAuth?.cancel()
+                    result.success(null)
+                    return@launch
+                }
+                if (call.method != "customerAuth") {
+                    ready()
+                    collectState()
+                }
                 when(call.method) {
                     "initialize", "session" -> result.success(snapshot())
                     "authenticate" -> {
@@ -97,11 +108,25 @@ class GrozoClerkBridge(private val activity: Activity, messenger: BinaryMessenge
                             return@launch
                         }
                         customerAuthBusy = true
+                        val social = call.argument<String>("action") in listOf("google", "apple")
+                        if (social) customerSocialAuth = coroutineContext.job
                         try {
-                            result.success(withTimeout(180_000) { customerAuth(call) })
+                            ready()
+                            collectState()
+                            result.success(withTimeout(if (social) 90_000L else 30_000L) {
+                                customerAuth(call)
+                            })
+                        } catch (_: SSOCancellationException) {
+                            result.error("AUTH_CANCELLED", "Sign-in was cancelled.", null)
                         } catch (error: CustomerAuthFailure) {
                             result.error("AUTH_FAILED", error.message, null)
+                        } catch (_: TimeoutCancellationException) {
+                            result.error("CLERK_TIMEOUT", "Sign-in took too long. Please try again.", null)
+                        } catch (cancel: CancellationException) {
+                            if (!social) throw cancel
+                            result.error("AUTH_CANCELLED", "Sign-in was cancelled.", null)
                         } finally {
+                            customerSocialAuth = null
                             customerAuthBusy = false
                         }
                     }
@@ -228,8 +253,17 @@ class GrozoClerkBridge(private val activity: Activity, messenger: BinaryMessenge
             }
             "google", "apple" -> {
                 val provider = if (value("action") == "google") OAuthProvider.GOOGLE else OAuthProvider.APPLE
-                val result = Clerk.auth.signInWithOAuth(provider)
-                    .requireSuccess("Social sign-in did not complete. Please try again.")
+                val available = Clerk.socialProviders.values.any {
+                    it.strategy == provider.strategy && it.enabled && it.authenticatable
+                }
+                if (!available) {
+                    throw CustomerAuthFailure("This sign-in provider is unavailable. Use another method.")
+                }
+                val response = Clerk.auth.signInWithOAuth(provider)
+                if (response is ClerkResult.Failure) {
+                    (response.throwable as? SSOCancellationException)?.let { throw it }
+                }
+                val result = response.requireSuccess("Social sign-in did not complete. Please try again.")
                 completeCustomerAuth(result.signIn?.createdSessionId ?: result.signUp?.createdSessionId)
             }
             else -> throw CustomerAuthFailure("Unsupported authentication step.")

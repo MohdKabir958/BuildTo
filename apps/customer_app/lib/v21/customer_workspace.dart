@@ -916,109 +916,153 @@ class ContentPage extends StatelessWidget {
 
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({super.key});
+
   @override
-  Widget build(BuildContext c) {
-    final s = CustomerScope.of(c);
+  Widget build(BuildContext context) {
+    final session = CustomerScope.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Projects & sites')),
       body: SignedIn(
-        child: RemotePage<Data>(
-          load: () async => {
-            'projects': await s.api.call('/api/v2/me/projects'),
-            'sites': await s.api.call('/api/v2/me/sites'),
-          },
-          builder: (data, reload) => ListView(
-            padding: const EdgeInsets.all(22),
-            children: [
-              Text(
-                'Every site, organised.',
-                style: Theme.of(c).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 20),
-              ActionButton(
-                'Create a project',
-                () async {
-                  final name = await ask(c, 'New project', 'Project name');
-                  if (name == null) return;
-                  await s.api.call(
-                    '/api/v2/me/projects',
-                    method: 'POST',
-                    body: {'name': name},
-                  );
-                  reload();
-                },
-                icon: Icons.add,
-                tonal: true,
-              ),
-              const Section('Projects'),
-              ...rows(data['projects']).map(
-                (p) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Panel(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            field(p, 'name'),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        StatusPill(field(p, 'status')),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const Section('Construction sites'),
-              if (rows(data['sites']).isEmpty)
-                const EmptyState(
-                  'Bring your sites together',
-                  'Create a site linked to a delivery address and project.',
-                ),
-              ...rows(data['sites']).map(
-                (p) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Panel(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.apartment_outlined, color: accent),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(field(p, 'name'))),
-                        StatusPill(p['active'] == true ? 'ACTIVE' : 'ARCHIVED'),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-              ActionButton('Add a construction site', () async {
-                await Navigator.push(
-                  c,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        NewSitePage(projects: rows(data['projects'])),
-                  ),
-                );
-                reload();
-              }, icon: Icons.add),
-            ],
-          ),
-        ),
+        child: _ProjectLists(key: ValueKey(session.epoch), api: session.api),
       ),
     );
   }
 }
 
+class _ProjectLists extends StatefulWidget {
+  const _ProjectLists({super.key, required this.api});
+
+  final CustomerApi api;
+
+  @override
+  State<_ProjectLists> createState() => _ProjectListsState();
+}
+
+class _ProjectListsState extends State<_ProjectLists> {
+  final _createdProjects = <Data>[];
+  final _createdSites = <Data>[];
+
+  // Creation returns the saved row. Keep it visible even when its ID is
+  // beyond the first page of the list endpoint.
+  List<Data> _visibleRows(Object? response, List<Data> created) {
+    final listed = rows(response);
+    final listedById = {for (final row in listed) row['id']: row};
+    final createdIds = created.map((row) => row['id']).toSet();
+    return [
+      for (final row in created) listedById[row['id']] ?? row,
+      for (final row in listed)
+        if (!createdIds.contains(row['id'])) row,
+    ];
+  }
+
+  Future<void> _createProject() async {
+    final name = await ask(context, 'New project', 'Project name');
+    if (name == null || !mounted) return;
+    final project = object(await widget.api.call(
+      '/api/v2/me/projects',
+      method: 'POST',
+      body: {'name': name},
+    ));
+    if (mounted) setState(() => _createdProjects.insert(0, project));
+  }
+
+  Future<void> _createSite(List<Data> projects) async {
+    final site = await Navigator.of(context).push<Data>(
+      MaterialPageRoute<Data>(builder: (_) => NewSitePage(projects: projects)),
+    );
+    if (site != null && mounted) setState(() => _createdSites.insert(0, site));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RemotePage<Data>(
+      load: () async => {
+        'projects': await widget.api.call('/api/v2/me/projects'),
+        'sites': await widget.api.call('/api/v2/me/sites'),
+      },
+      builder: (data, _) {
+        final projects = _visibleRows(data['projects'], _createdProjects);
+        final sites = _visibleRows(data['sites'], _createdSites);
+        return ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(22),
+          children: [
+            Text(
+              'Every site, organised.',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 20),
+            ActionButton(
+              'Create a project',
+              _createProject,
+              icon: Icons.add,
+              tonal: true,
+            ),
+            const Section('Projects'),
+            ...projects.map(
+              (p) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Panel(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          field(p, 'name'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      StatusPill(field(p, 'status')),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Section('Construction sites'),
+            if (sites.isEmpty)
+              const EmptyState(
+                'Bring your sites together',
+                'Create a site linked to a delivery address and project.',
+              ),
+            ...sites.map(
+              (p) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Panel(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.apartment_outlined, color: accent),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(field(p, 'name'))),
+                      StatusPill(p['active'] == true ? 'ACTIVE' : 'ARCHIVED'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            ActionButton(
+              'Add a construction site',
+              () => _createSite(projects),
+              icon: Icons.add,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class NewSitePage extends StatefulWidget {
-  const NewSitePage({super.key, required this.projects});
+  const NewSitePage({super.key, required this.projects, this.initialAddressId});
   final List<Data> projects;
+  final String? initialAddressId;
   @override
   State<NewSitePage> createState() => _NewSitePageState();
 }
 
 class _NewSitePageState extends State<NewSitePage> {
   final name = TextEditingController(), notes = TextEditingController();
-  String? address, project;
+  late String? address = widget.initialAddressId;
+  String? project;
   @override
   void dispose() {
     name.dispose();
@@ -1044,6 +1088,8 @@ class _NewSitePageState extends State<NewSitePage> {
           ),
           const SizedBox(height: 15),
           DropdownButtonFormField<String>(
+            initialValue:
+                list.any((item) => item['id'] == address) ? address : null,
             isExpanded: true,
             decoration: const InputDecoration(
               label: RequiredLabel('Delivery address'),
@@ -1089,7 +1135,7 @@ class _NewSitePageState extends State<NewSitePage> {
                 'Enter a site name and choose an address.',
               );
             }
-            await api.call(
+            final site = object(await api.call(
               '/api/v2/me/sites',
               method: 'POST',
               body: {
@@ -1099,8 +1145,10 @@ class _NewSitePageState extends State<NewSitePage> {
                 if (notes.text.trim().isNotEmpty)
                   'accessNotes': notes.text.trim(),
               },
-            );
-            if (c.mounted) Navigator.pop(c);
+            ));
+            if (c.mounted && ModalRoute.of(c)?.isCurrent == true) {
+              Navigator.pop<Data>(c, site);
+            }
           }),
         ],
       ),

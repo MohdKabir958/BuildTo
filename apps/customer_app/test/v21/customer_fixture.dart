@@ -8,7 +8,13 @@ import 'package:customer_app/v21/customer_session.dart';
 
 String id(int n) => '00000000-0000-4000-8000-${n.toString().padLeft(12, '0')}';
 
-class FixtureIdentity implements CustomerFormIdentity {
+class FixtureIdentity
+    implements CustomerFormIdentity, CustomerSocialAuthCancellation {
+  Future<void> Function()? onCancelSocialAuth;
+
+  @override
+  Future<void> cancelSocialAuth() async => onCancelSocialAuth?.call();
+
   final authActions = <String>[];
   Future<({String step, String? attempt})> Function(
     String action,
@@ -64,7 +70,8 @@ class FixtureIdentity implements CustomerFormIdentity {
 
 class CustomerFixture {
   final requests = <http.Request>[];
-  final bool commissionBlocked;
+  final bool commissionBlocked, omitOrderFromList, loseFirstPlacementResponse;
+  String? _placedWithKey;
   int version = 3;
   List<Data> cartItems = [];
   Data? rfq;
@@ -140,6 +147,8 @@ class CustomerFixture {
   CustomerFixture({
     String origin = 'https://api.splyzo.test',
     this.commissionBlocked = false,
+    this.omitOrderFromList = false,
+    this.loseFirstPlacementResponse = false,
   }) {
     api = CustomerApi(
       origin: Uri.parse(origin),
@@ -168,8 +177,19 @@ class CustomerFixture {
     } else if (path == '/api/v2/catalog/suppliers') {
       data = {
         'items': [
-          {'id': id(6), 'displayName': 'Shree Shyam Enterprises'},
-          {'id': id(14), 'displayName': 'ABC Building Materials'},
+          {
+            'id': id(6),
+            'displayName': 'Shree Shyam Enterprises',
+            'latitude': '17.4',
+            'longitude': '78.4',
+            'profileImageUrl': '/api/v2/catalog/images/${id(72)}',
+          },
+          {
+            'id': id(14),
+            'displayName': 'ABC Building Materials',
+            'latitude': '17.45',
+            'longitude': '78.4',
+          },
         ],
         'nextCursor': null,
       };
@@ -231,9 +251,21 @@ class CustomerFixture {
         {'id': id(8), 'name': 'Hyderabad'},
       ];
     } else if (path == '/api/v2/me/sites' || path == '/api/v2/me/projects') {
-      data = {'items': [], 'nextCursor': null};
+      // Keep list replies stale so the UI must use the confirmed create response.
+      data = r.method != 'POST'
+          ? {'items': [], 'nextCursor': null}
+          : {
+              ...body,
+              if (path.endsWith('/projects')) ...{
+                'id': id(70),
+                'status': 'ACTIVE',
+              } else ...{
+                'id': id(71),
+                'active': true,
+              },
+            };
     } else if (path == '/api/v2/orders') {
-      data = [order];
+      data = omitOrderFromList ? [] : [order];
     } else if (path == '/api/v2/orders/${id(9)}') {
       data = order;
     } else if (path == '/api/v2/checkouts') {
@@ -256,6 +288,15 @@ class CustomerFixture {
             .toIso8601String(),
       };
     } else if (path == '/api/v2/checkouts/${id(15)}/place') {
+      final key = r.headers['idempotency-key'];
+      if (_placedWithKey == null) {
+        _placedWithKey = key;
+        cartItems.clear();
+        version++;
+        if (loseFirstPlacementResponse) return http.Response('', 201);
+      } else if (key != _placedWithKey) {
+        return http.Response('{"error":{"code":"CART_VERSION_CONFLICT"}}', 409);
+      }
       data = order;
     } else if (path == '/api/v2/me/wishlist') {
       data = [];

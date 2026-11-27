@@ -12,7 +12,8 @@ export const REVIEWED_V21_MIGRATIONS=[
  '20261107_step1_partial_shipment_allocation',
  '20261111_supplier_product_photo',
  '20261112_media_product_images',
- '20261112_rfq_freight_snapshot'
+ '20261112_rfq_freight_snapshot',
+ '20261125_supplier_storefront'
 ] as const;
 
 type MigrationRecord={

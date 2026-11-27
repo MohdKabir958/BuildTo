@@ -113,6 +113,9 @@ class ClerkSessions {
     );
   }
 
+  Future<void> cancelCustomerSocialAuth() =>
+      _channel.invokeMethod<void>('cancelCustomerSocialAuth');
+
   Future<String?> token({bool forceRefresh = false}) async {
     if (_locallySignedOut) return null;
     await initialize();

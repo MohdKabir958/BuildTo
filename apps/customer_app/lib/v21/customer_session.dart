@@ -20,8 +20,15 @@ abstract class CustomerFormIdentity implements CustomerIdentity {
   );
 }
 
-class NativeCustomerIdentity implements CustomerFormIdentity {
+abstract class CustomerSocialAuthCancellation {
+  Future<void> cancelSocialAuth();
+}
+
+class NativeCustomerIdentity
+    implements CustomerFormIdentity, CustomerSocialAuthCancellation {
   final sessions = ClerkSessions.instance;
+  @override
+  Future<void> cancelSocialAuth() => sessions.cancelCustomerSocialAuth();
   @override
   ValueListenable<ClerkIdentity> get identity => sessions.identity;
   @override

@@ -10,13 +10,22 @@ import 'customer_checkout.dart';
 import 'customer_workspace.dart';
 
 class OrdersPage extends StatelessWidget {
-  const OrdersPage({super.key});
+  const OrdersPage({super.key, this.recentOrder});
+
+  final Data? recentOrder;
   @override
   Widget build(BuildContext context) {
     final s = CustomerScope.of(context);
     return SignedIn(
       child: RemotePage<List<Data>>(
-        load: s.api.orders,
+        load: () async {
+          final orders = await s.api.orders();
+          final recent = recentOrder;
+          return recent != null &&
+                  !orders.any((item) => item['id'] == recent['id'])
+              ? [recent, ...orders]
+              : orders;
+        },
         builder: (orders, reload) => ListView(
           padding: const EdgeInsets.all(22),
           physics: const AlwaysScrollableScrollPhysics(),

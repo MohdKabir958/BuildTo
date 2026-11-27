@@ -134,6 +134,7 @@ class CustomerShell extends StatefulWidget {
 
 class _CustomerShellState extends State<CustomerShell> {
   int tab = 0;
+  Data? recentOrder;
   @override
   Widget build(BuildContext c) => Scaffold(
         body: SafeArea(
@@ -143,8 +144,15 @@ class _CustomerShellState extends State<CustomerShell> {
             child: [
               const SplyzoReferenceHome(),
               const CustomerHome(categoriesOnly: true),
-              CartPage(embedded: true, onBrowse: () => setState(() => tab = 0)),
-              const OrdersPage(),
+              CartPage(
+                embedded: true,
+                onBrowse: () => setState(() => tab = 0),
+                onOrderPlaced: (order) => setState(() {
+                  recentOrder = order;
+                  tab = 3;
+                }),
+              ),
+              OrdersPage(recentOrder: recentOrder),
               const ProfilePage(),
             ][tab],
           ),

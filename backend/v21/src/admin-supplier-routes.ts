@@ -3,7 +3,7 @@ import type {PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {
  submitSupplierApplication,ownSupplierApplications,ownSupplierApplicationDetail,attachSupplierDocument,
- adminSupplierQueue,adminSupplierDetail,reviewSupplierDocument,reviewSupplierApplication
+ adminSupplierQueue,adminSupplierDetail,reviewSupplierDocument,reviewSupplierApplication,updatePublicStorefront
 } from './admin-supplier-service';
 
 const actor=(res:Response)=>{
@@ -33,6 +33,8 @@ export function registerAdminSupplierApplications(app:Express,db:PrismaClient,au
  const admin='/api/v2/admin/suppliers';
  app.get(admin,auth,safe((req,res)=>adminSupplierQueue(db,actor(res),query(req))));
  app.get(admin+'/:supplierId',auth,safe((req,res)=>adminSupplierDetail(db,actor(res),req.params.supplierId)));
+ app.patch(admin+'/:supplierId',auth,safe((req,res)=>
+  updatePublicStorefront(db,actor(res),req.params.supplierId,req.body)));
  app.post(admin+'/:supplierId/documents/:documentId/review',auth,safe((req,res)=>
   reviewSupplierDocument(db,actor(res),req.params.supplierId,req.params.documentId,req.body)));
  app.post(admin+'/:supplierId/review',auth,safe((req,res)=>

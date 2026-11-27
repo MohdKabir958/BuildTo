@@ -73,6 +73,56 @@ Future<void> capture(WidgetTester t, String name) async {
 
 void main() {
   setUpAll(fonts);
+  testWidgets('created projects and sites appear without reopening the list', (
+    t,
+  ) async {
+    final f = CustomerFixture();
+    addTearDown(f.dispose);
+    await page(t, f, const ProjectsPage());
+
+    await t.tap(find.text('Create a project'));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 250));
+    await t.enterText(find.byType(TextField), 'Warehouse project');
+    await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+    expect(find.text('Warehouse project'), findsOneWidget);
+    expect(find.text('Unable to complete this action. Please retry.'),
+        findsNothing);
+
+    final addSite = find.text('Add a construction site');
+    await t.ensureVisible(addSite);
+    await t.tap(addSite);
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField).first, 'Warehouse site');
+
+    final dropdowns = find.byType(DropdownButtonFormField<String>);
+    await t.tap(dropdowns.first);
+    await t.pumpAndSettle();
+    await t.tap(find.text(f.address['label'] as String).last);
+    await t.pumpAndSettle();
+    await t.tap(dropdowns.last);
+    await t.pumpAndSettle();
+    await t.tap(find.text('Warehouse project').last);
+    await t.pumpAndSettle();
+
+    final save = find.text('Save site');
+    await t.ensureVisible(save);
+    await t.tap(save);
+    await t.pumpAndSettle();
+
+    expect(find.text('Projects & sites'), findsOneWidget);
+    expect(find.text('Warehouse project'), findsOneWidget);
+    expect(find.text('Warehouse site'), findsOneWidget);
+    expect(find.text('Bring your sites together'), findsNothing);
+    final post = f.requests.singleWhere(
+      (request) =>
+          request.method == 'POST' && request.url.path.endsWith('/me/sites'),
+    );
+    expect(jsonDecode(post.body)['projectId'], id(70));
+    expect(t.takeException(), isNull);
+  });
+
   testWidgets(
     'home uses catalog and supplier directory, and offers add an exact minimum quantity to cart',
     (t) async {
@@ -159,7 +209,7 @@ void main() {
   );
 
   testWidgets(
-    'staging commission error previews confirmation without placing an order',
+    'staging commission error keeps checkout open without placing an order',
     (t) async {
       final f = CustomerFixture(
         origin: 'https://buildto-v21-staging.onrender.com',
@@ -174,17 +224,50 @@ void main() {
       await t.tap(check);
       await t.pump();
       await t.pump(const Duration(milliseconds: 400));
-      expect(find.text('STAGING PREVIEW'), findsOneWidget);
-      expect(find.text('Order placed'), findsOneWidget);
+      expect(
+        find.text('Checkout is temporarily unavailable. Your cart is saved.'),
+        findsOneWidget,
+      );
+      expect(find.text('Order placed'), findsNothing);
       expect(
         f.requests.where((request) => request.url.path.endsWith('/place')),
         isEmpty,
       );
-      await t.tap(find.widgetWithText(FilledButton, 'Back'));
-      await t.pumpAndSettle();
       expect(find.text('Checkout'), findsOneWidget);
     },
   );
+
+  testWidgets('checkout can create and link a site without leaving checkout', (
+    t,
+  ) async {
+    final f = CustomerFixture();
+    addTearDown(f.dispose);
+    await page(t, f, const CheckoutPage(cartVersion: 3));
+    await t.tap(find.text('New home site'));
+    await t.pumpAndSettle();
+
+    final link = find.text('Link a construction site (optional)');
+    await t.ensureVisible(link);
+    await t.tap(link);
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 300));
+    await t.tap(find.text('Create a construction site'));
+    await t.pumpAndSettle();
+
+    expect(find.text('New construction site'), findsOneWidget);
+    await t.enterText(find.byType(TextField).first, 'Checkout site');
+    final save = find.text('Save site');
+    await t.ensureVisible(save);
+    await t.tap(save);
+    await t.pumpAndSettle();
+
+    expect(find.text('Construction site linked'), findsOneWidget);
+    final create = f.requests.singleWhere(
+      (request) =>
+          request.method == 'POST' && request.url.path.endsWith('/me/sites'),
+    );
+    expect(jsonDecode(create.body)['addressId'], f.address['id']);
+  });
 
   testWidgets('address form submits an Indian number without coordinates', (
     t,
@@ -235,12 +318,17 @@ void main() {
   });
 
   testWidgets(
-    'cart checkout previews server total and places once with an idempotency key',
+    'cart checkout recovers a lost order response using the same key',
     (t) async {
-      final f = CustomerFixture();
+      final f = CustomerFixture(
+        omitOrderFromList: true,
+        loseFirstPlacementResponse: true,
+      );
       addTearDown(f.dispose);
       await f.api.setLine(id(12), '10', 3);
-      await page(t, f, const CartPage());
+      await page(t, f, const CustomerShell());
+      await t.tap(find.text('Cart'));
+      await t.pumpAndSettle();
       await t.tap(find.text('Review checkout'));
       await t.pumpAndSettle();
       await t.tap(find.text('New home site'));
@@ -267,12 +355,28 @@ void main() {
       );
       await t.tap(find.text('Place order · ₹3,950'));
       await t.pumpAndSettle();
+      expect(find.text('Checkout'), findsOneWidget);
+      expect(find.text('SP-2026-1042'), findsNothing);
+      await t.pump(const Duration(seconds: 5));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Place order · ₹3,950'));
+      await t.pumpAndSettle();
       final placement =
           f.requests.where((r) => r.url.path.endsWith('/place')).toList();
-      expect(placement.length, 1);
-      expect(placement.single.headers['idempotency-key'], isNotEmpty);
+      expect(placement.length, 2);
+      final key = placement.first.headers['idempotency-key'];
+      expect(key, isNotEmpty);
+      expect(placement.last.headers['idempotency-key'], key);
+      expect(placement.last.body, placement.first.body);
       expect(find.text('SP-2026-1042'), findsOneWidget);
       expect(find.text('Pending'), findsWidgets);
+      await t.pageBack();
+      await t.pumpAndSettle();
+      expect(find.text('SP-2026-1042'), findsOneWidget);
+      expect(find.text('Your first order awaits'), findsNothing);
+      await t.tap(find.text('Cart'));
+      await t.pumpAndSettle();
+      expect(find.text('Your cart is empty'), findsOneWidget);
       expect(t.takeException(), isNull);
     },
   );

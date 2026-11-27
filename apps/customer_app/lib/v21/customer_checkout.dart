@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'customer_api.dart';
 import 'customer_design.dart';
@@ -6,9 +5,11 @@ import 'customer_orders.dart';
 import 'customer_workspace.dart';
 
 class CartPage extends StatelessWidget {
-  const CartPage({super.key, this.embedded = false, this.onBrowse});
+  const CartPage(
+      {super.key, this.embedded = false, this.onBrowse, this.onOrderPlaced});
   final bool embedded;
   final VoidCallback? onBrowse;
+  final ValueChanged<Data>? onOrderPlaced;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +23,7 @@ class CartPage extends StatelessWidget {
           reload: reload,
           embedded: embedded,
           onBrowse: onBrowse,
+          onOrderPlaced: onOrderPlaced,
         ),
       ),
     );
@@ -35,11 +37,13 @@ class _CartContents extends StatefulWidget {
     required this.reload,
     required this.embedded,
     required this.onBrowse,
+    required this.onOrderPlaced,
   });
   final Data cart;
   final VoidCallback reload;
   final bool embedded;
   final VoidCallback? onBrowse;
+  final ValueChanged<Data>? onOrderPlaced;
 
   @override
   State<_CartContents> createState() => _CartContentsState();
@@ -241,14 +245,38 @@ class _CartContentsState extends State<_CartContents> {
                     'Review checkout',
                     canCheckout
                         ? () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute<void>(
+                            final navigator = Navigator.of(context);
+                            final order = await navigator.push<Data>(
+                              MaterialPageRoute<Data>(
                                 builder: (_) => CheckoutPage(
                                   cartVersion: cart['version'] as int,
+                                  returnPlacedOrder: true,
                                 ),
                               ),
                             );
-                            if (mounted) widget.reload();
+                            if (!mounted) return;
+                            if (order == null) {
+                              widget.reload();
+                              return;
+                            }
+                            final showOrders = widget.onOrderPlaced;
+                            if (showOrders != null) {
+                              showOrders(order);
+                            } else {
+                              navigator.pushReplacement(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => Scaffold(
+                                    appBar: AppBar(title: const Text('Orders')),
+                                    body: OrdersPage(recentOrder: order),
+                                  ),
+                                ),
+                              );
+                            }
+                            navigator.push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => OrderPage(field(order, 'id')),
+                              ),
+                            );
                           }
                         : null,
                     icon: Icons.arrow_forward_rounded,
@@ -571,15 +599,19 @@ class CheckoutPage extends StatefulWidget {
     required this.cartVersion,
     this.rfqId,
     this.acceptedQuoteId,
+    this.returnPlacedOrder = false,
   });
   final int cartVersion;
   final String? rfqId, acceptedQuoteId;
+  final bool returnPlacedOrder;
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
   Data? quote;
+  bool _placing = false;
+  String? _attemptedPlaceKey;
   String? addressId, siteId;
   String previewKey = requestKey(), placeKey = requestKey();
   final promo = TextEditingController();
@@ -589,10 +621,129 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
+  Future<void> _chooseSite(CustomerApi api) async {
+    final selectedAddress = addressId;
+    final sites = rows(await api.call('/api/v2/me/sites'));
+    if (!mounted || _placing || addressId != selectedAddress) return;
+    final choice = await showDialog<({String? id, bool create})>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Choose a construction site'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(dialogContext, (id: null, create: false)),
+            child: const Text('No linked site'),
+          ),
+          for (final site in sites)
+            if (site['active'] == true && site['addressId'] == selectedAddress)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(
+                    dialogContext, (id: field(site, 'id'), create: false)),
+                child: Text(field(site, 'name')),
+              ),
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(dialogContext, (id: null, create: true)),
+            child: const Text('Create a construction site'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted ||
+        _placing ||
+        choice == null ||
+        addressId != selectedAddress) {
+      return;
+    }
+    var selectedId = choice.id;
+    if (choice.create) {
+      final projects = rows(await api.call('/api/v2/me/projects'));
+      if (!mounted || _placing || addressId != selectedAddress) return;
+      final site = await Navigator.of(context).push<Data>(
+        MaterialPageRoute<Data>(
+          builder: (_) => NewSitePage(
+            projects: projects,
+            initialAddressId: selectedAddress,
+          ),
+        ),
+      );
+      if (!mounted || site == null || addressId != selectedAddress) return;
+      if (site['addressId'] != selectedAddress) {
+        notice(context, 'Site saved. Select its delivery address to link it.');
+        return;
+      }
+      selectedId = field(site, 'id');
+    }
+    setState(() {
+      siteId = selectedId;
+      quote = null;
+      previewKey = requestKey();
+    });
+  }
+
+  Future<void> _placeOrder(Future<Data> Function() submit) async {
+    if (_placing) return;
+    FocusScope.of(context).unfocus();
+    final route = ModalRoute.of(context);
+    setState(() => _placing = true);
+    try {
+      final order = await submit();
+      if (!mounted || route?.isCurrent != true) return;
+      final id = field(order, 'id');
+      if (id.isEmpty) {
+        throw const CustomerProblem(
+          'Order confirmation is unavailable. Retry to check your order.',
+        );
+      }
+      final navigator = Navigator.of(context);
+      if (widget.returnPlacedOrder) {
+        navigator.pop<Data>(order);
+      } else {
+        navigator.pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => OrderPage(id)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _placing = false);
+    }
+  }
+
+  Future<void> _placeCartOrder(CustomerApi api, Data currentQuote) async {
+    final key = placeKey;
+    final expiry = DateTime.tryParse(field(currentQuote, 'expiresAt'));
+    // Once submitted, replay the same request even after the quote expires:
+    // the server may have committed the order before its response was lost.
+    if (_attemptedPlaceKey != key &&
+        (expiry == null || !expiry.isAfter(DateTime.now()))) {
+      setState(() {
+        quote = null;
+        previewKey = requestKey();
+      });
+      throw const CustomerProblem(
+        'Your price quote expired. Check the latest price.',
+      );
+    }
+    await _placeOrder(() async {
+      _attemptedPlaceKey = key;
+      try {
+        return await api.place(field(currentQuote, 'id'), key);
+      } on CustomerProblem catch (problem) {
+        if (mounted && problem.code == 'CHECKOUT_QUOTE_EXPIRED') {
+          setState(() {
+            quote = null;
+            previewKey = requestKey();
+          });
+        }
+        rethrow;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = CustomerScope.of(context);
-    return RemotePage<List<Data>>(
+    final page = RemotePage<List<Data>>(
       title: 'Checkout',
       load: s.api.addresses,
       builder: (addresses, reload) => ListView(
@@ -664,46 +815,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               siteId == null
                   ? 'Link a construction site (optional)'
                   : 'Construction site linked',
-              () async {
-                final sites = rows(await s.api.call('/api/v2/me/sites'));
-                if (!context.mounted) return;
-                final selected = await showDialog<Data>(
-                  context: context,
-                  builder: (c) => SimpleDialog(
-                    title: const Text('Choose a construction site'),
-                    children: [
-                      SimpleDialogOption(
-                        onPressed: () => Navigator.pop(c, <String, dynamic>{}),
-                        child: const Text('No linked site'),
-                      ),
-                      ...sites
-                          .where(
-                            (a) =>
-                                a['active'] == true &&
-                                a['addressId'] == addressId,
-                          )
-                          .map(
-                            (a) => SimpleDialogOption(
-                              onPressed: () => Navigator.pop(c, a),
-                              child: Text(field(a, 'name')),
-                            ),
-                          ),
-                      if (sites.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text('Create sites from your profile.'),
-                        ),
-                    ],
-                  ),
-                );
-                if (selected != null) {
-                  setState(() {
-                    siteId = selected['id']?.toString();
-                    quote = null;
-                    previewKey = requestKey();
-                  });
-                }
-              },
+              () => _chooseSite(s.api),
               tonal: true,
             ),
           ],
@@ -728,33 +840,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ? null
                   : () async {
                       final requestedKey = previewKey;
-                      final Data result;
-                      try {
-                        result = await s.api.preview(
-                          addressId!,
-                          widget.cartVersion,
-                          requestedKey,
-                          site: siteId,
-                          promotion: promo.text.trim(),
-                        );
-                      } on CustomerProblem catch (problem) {
-                        if (!context.mounted || requestedKey != previewKey) {
-                          return;
-                        }
-                        if (!kReleaseMode &&
-                            s.api.origin.origin ==
-                                'https://buildto-v21-staging.onrender.com' &&
-                            problem.code ==
-                                'COMMISSION_POLICY_NOT_CONFIGURED') {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const _DemoOrderPage(),
-                            ),
-                          );
-                          return;
-                        }
-                        rethrow;
-                      }
+                      final result = await s.api.preview(
+                        addressId!,
+                        widget.cartVersion,
+                        requestedKey,
+                        site: siteId,
+                        promotion: promo.text.trim(),
+                      );
                       if (mounted && requestedKey == previewKey) {
                         setState(() {
                           if (quote?['id'] != result['id']) {
@@ -776,26 +868,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               const SizedBox(height: 20),
               ActionButton(
                 'Place order · ${money(quote!['totalPaise'])}',
-                () async {
-                  final expiry = DateTime.tryParse(field(quote!, 'expiresAt'));
-                  if (expiry == null || !expiry.isAfter(DateTime.now())) {
-                    setState(() => quote = null);
-                    throw const CustomerProblem(
-                      'Your price quote expired. Check the latest price.',
-                    );
-                  }
-                  final order = await s.api.place(
-                    field(quote!, 'id'),
-                    placeKey,
-                  );
-                  if (context.mounted) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => OrderPage(field(order, 'id')),
-                      ),
-                    );
-                  }
-                },
+                () => _placeCartOrder(s.api, quote!),
                 icon: Icons.lock_outline_rounded,
               ),
             ],
@@ -811,8 +884,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               'Place quoted order',
               addressId == null
                   ? null
-                  : () async {
-                      final order = object(
+                  : () => _placeOrder(() async => object(
                         await s.api.call(
                           '/api/v2/rfqs/${widget.rfqId}/quotes/${widget.acceptedQuoteId}/order',
                           method: 'POST',
@@ -822,76 +894,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             'clientRequestId': placeKey,
                           },
                         ),
-                      );
-                      if (context.mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (_) => OrderPage(field(order, 'id')),
-                          ),
-                        );
-                      }
-                    },
+                      )),
             ),
           ],
           const SizedBox(height: 30),
         ],
       ),
     );
+    return PopScope(
+      canPop: !_placing,
+      child: AbsorbPointer(absorbing: _placing, child: page),
+    );
   }
-}
-
-class _DemoOrderPage extends StatelessWidget {
-  const _DemoOrderPage();
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Order preview')),
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(22),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Panel(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const CircleAvatar(
-                        radius: 38,
-                        backgroundColor: Color(0xFFEAF2EE),
-                        child:
-                            Icon(Icons.check_rounded, color: green, size: 40),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'STAGING PREVIEW',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: green, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Order placed',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'This is a demo confirmation. Your cart is still saved. No real order or payment was created.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: muted),
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Back'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
 }

@@ -30,7 +30,9 @@ const created=(fn:(req:Request,res:Response)=>Promise<unknown>):RequestHandler=>
 export function registerPublicCatalog(app:Express,db:PrismaClient) {
  app.get('/api/v2/catalog/categories',handlers(()=>publicCategories(db)));
  app.get('/api/v2/catalog/brands',handlers(()=>publicBrands(db)));
- app.get('/api/v2/catalog/suppliers',handlers(req=>publicSuppliers(db,queryString(req.query.cursor,'cursor'))));
+ app.get('/api/v2/catalog/suppliers',handlers(req=>publicSuppliers(db,
+  queryString(req.query.cursor,'cursor'),queryString(req.query.latitude,'latitude'),
+  queryString(req.query.longitude,'longitude'))));
  app.get('/api/v2/catalog/units',handlers(()=>publicUnits(db)));
  app.get('/api/v2/catalog/products',handlers(req=>publicProducts(db,{
    categoryId:queryString(req.query.categoryId,'categoryId'),cursor:queryString(req.query.cursor,'cursor'),

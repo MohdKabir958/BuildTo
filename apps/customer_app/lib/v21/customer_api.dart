@@ -241,6 +241,8 @@ class CustomerApi {
         }
         final code = field(error, 'code');
         const messages = {
+          'COMMISSION_POLICY_NOT_CONFIGURED':
+              'Checkout is temporarily unavailable. Your cart is saved.',
           'CART_VERSION_CONFLICT':
               'Your cart changed on another device. Refresh and review it.',
           'QUOTE_EXPIRED':
@@ -292,6 +294,27 @@ class CustomerApi {
 
   Future<Data> me() async =>
       object(await call('/api/v2/me', clearSessionOnUnauthorized: false));
+  Future<List<Data>> suppliers({({double lat, double lng})? near}) async {
+    final suppliers = <Data>[];
+    String? cursor;
+    do {
+      final page = object(await call(
+        '/api/v2/catalog/suppliers',
+        authenticated: false,
+        query: {
+          if (cursor != null) 'cursor': cursor,
+          if (near != null) 'latitude': near.lat.toStringAsFixed(7),
+          if (near != null) 'longitude': near.lng.toStringAsFixed(7),
+        },
+      ));
+      suppliers.addAll(rows(page));
+      final next = page['nextCursor'] as String?;
+      if (next == cursor) break;
+      cursor = next;
+    } while (near != null && cursor != null);
+    return suppliers;
+  }
+
   Future<List<Data>> categories() async =>
       rows(await call('/api/v2/catalog/categories', authenticated: false));
   Future<Data> products({

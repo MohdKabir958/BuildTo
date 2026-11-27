@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:customer_app/v21/customer_catalog.dart';
 import 'package:customer_app/v21/customer_design.dart';
@@ -50,6 +54,73 @@ void main() {
       isTrue,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'supplier heart saves and restores the same supplier on this device', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final fixture = CustomerFixture();
+    addTearDown(fixture.dispose);
+    await pumpCustomer(tester, fixture, const SplyzoReferenceHome());
+    final save = find.byTooltip('Save Shree Shyam Enterprises');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    final remove =
+        find.byTooltip('Remove Shree Shyam Enterprises from saved suppliers');
+    expect(remove, findsOneWidget);
+    expect(find.text('Nearby Suppliers'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pumpCustomer(tester, fixture, const SplyzoReferenceHome());
+    expect(remove, findsOneWidget);
+    await tester.ensureVisible(remove);
+    await tester.tap(remove);
+    await tester.pumpAndSettle();
+    expect(save, findsOneWidget);
+  });
+
+  testWidgets(
+      'nearby directory uses the supplier photo and applies the 1 km radius', (
+    tester,
+  ) async {
+    final fixture = CustomerFixture();
+    addTearDown(fixture.dispose);
+    fixture.session.chooseAddress({
+      ...fixture.address,
+      'latitude': '17.403',
+      'longitude': '78.4',
+    });
+    await pumpCustomer(tester, fixture, const SplyzoReferenceHome());
+    final directory = find
+        .ancestor(
+          of: find.text('Nearby Suppliers'),
+          matching: find.byType(Row),
+        )
+        .first;
+    final seeAll =
+        find.descendant(of: directory, matching: find.text('See All'));
+    await tester.ensureVisible(seeAll);
+    await tester.tap(seeAll);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Within 1 km of your selected delivery address'),
+        findsOneWidget);
+    expect(find.text('Shree Shyam Enterprises'), findsOneWidget);
+    expect(find.text('ABC Building Materials'), findsNothing);
+    expect(find.text('334 m away'), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) {
+      final image = widget is Image ? widget.image : null;
+      return image is NetworkImage &&
+          image.url.endsWith('/api/v2/catalog/images/${id(72)}');
+    }), findsOneWidget);
+    final request = fixture.requests.lastWhere(
+      (r) => r.url.path.endsWith('/catalog/suppliers'),
+    );
+    expect(request.url.queryParameters['latitude'], '17.4030000');
   });
 
   testWidgets('reference home remains laid out at 320 pixel phone width', (
@@ -157,6 +228,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(fixture.auth.authActions, ['sendOtp', 'verifyOtp']);
     expect(fixture.session.signedIn, isTrue);
+  });
+
+  testWidgets('stalled Google sign-in can be cancelled and retried', (
+    tester,
+  ) async {
+    final fixture = CustomerFixture();
+    addTearDown(fixture.dispose);
+    fixture.session.user = null;
+    await fixture.auth.signOut();
+    final pending = Completer<({String step, String? attempt})>();
+    fixture.auth.formHandler = (action, _) {
+      expect(action, 'google');
+      return pending.future;
+    };
+    fixture.auth.onCancelSocialAuth = () async {
+      pending.completeError(PlatformException(code: 'AUTH_CANCELLED'));
+    };
+    await pumpCustomer(tester, fixture, const SplyzoReferenceAuthScreen());
+
+    final google = find.text('Google');
+    await tester.ensureVisible(google);
+    await tester.tap(google);
+    await tester.pumpAndSettle();
+    expect(find.text('Connecting to Google…'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    final cancel = find.text('Cancel sign-in');
+    await tester.ensureVisible(cancel);
+    await tester.tap(cancel);
+    await tester.pumpAndSettle();
+    expect(find.text('Connecting to Google…'), findsNothing);
+    expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Google'),
+            )
+            .onPressed,
+        isNotNull);
   });
 
   testWidgets('auth entry switches to signup and requires accepted terms', (

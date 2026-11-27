@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kraveo_ui/kraveo_ui.dart' show KSkeleton;
 
 import 'customer_api.dart';
 import 'customer_design.dart';
@@ -258,11 +261,72 @@ class _HomeContent {
 class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
   Future<_HomeContent>? _future;
   final search = TextEditingController();
+  final _savedSuppliers = <String>{};
+  final _savingSuppliers = <String>{};
+  String? _favoritePrefix;
+  bool _favoritesReady = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _future ??= _fetch();
+    final customer = CustomerScope.of(context).user;
+    final prefix = 'splyzo.savedSupplier.${customer?['id'] ?? 'guest'}.';
+    if (prefix != _favoritePrefix) {
+      _favoritePrefix = prefix;
+      _savedSuppliers.clear();
+      _savingSuppliers.clear();
+      _favoritesReady = false;
+      _loadFavorites(prefix);
+    }
+  }
+
+  Future<void> _loadFavorites(String prefix) async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      if (!mounted || prefix != _favoritePrefix) return;
+      setState(() {
+        _savedSuppliers.addAll(
+          preferences
+              .getKeys()
+              .where((key) =>
+                  key.startsWith(prefix) && preferences.getBool(key) == true)
+              .map((key) => key.substring(prefix.length)),
+        );
+        _favoritesReady = true;
+      });
+    } catch (_) {
+      if (mounted && prefix == _favoritePrefix) {
+        setState(() => _favoritesReady = true);
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite(String id) async {
+    final prefix = _favoritePrefix;
+    if (prefix == null || !_favoritesReady || _savingSuppliers.contains(id)) {
+      return;
+    }
+    final saved = !_savedSuppliers.contains(id);
+    setState(() => _savingSuppliers.add(id));
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      if (!await preferences.setBool('$prefix$id', saved)) {
+        throw StateError('Could not store supplier favorite');
+      }
+      if (mounted && prefix == _favoritePrefix) {
+        setState(
+            () => saved ? _savedSuppliers.add(id) : _savedSuppliers.remove(id));
+      }
+    } catch (_) {
+      if (mounted && prefix == _favoritePrefix) {
+        notice(context, 'Could not update your saved suppliers. Try again.');
+      }
+    } finally {
+      if (mounted && prefix == _favoritePrefix) {
+        setState(() => _savingSuppliers.remove(id));
+      }
+    }
   }
 
   Future<_HomeContent> _fetch() async {
@@ -467,10 +531,10 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                         ),
                         if (data == null &&
                             snapshot.connectionState != ConnectionState.done)
-                          const SizedBox(
-                            height: 115,
-                            child: Center(child: CircularProgressIndicator()),
-                          )
+                          const _HomeLoadingCards(
+                              height: 137,
+                              width: 180,
+                              label: 'Loading nearby suppliers')
                         else if (data == null || data.suppliers.isEmpty)
                           const _EmptyRow(
                             'Approved suppliers will appear here when available.',
@@ -484,8 +548,19 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                               itemCount: math.min(6, data.suppliers.length),
                               separatorBuilder: (_, __) =>
                                   const SizedBox(width: 9),
-                              itemBuilder: (context, index) =>
-                                  _SupplierCard(data.suppliers[index]),
+                              itemBuilder: (context, index) {
+                                final supplier = data.suppliers[index];
+                                final id = field(supplier, 'id');
+                                return _SupplierCard(
+                                  supplier,
+                                  saved: _savedSuppliers.contains(id),
+                                  onFavorite: !_favoritesReady ||
+                                          id.isEmpty ||
+                                          _savingSuppliers.contains(id)
+                                      ? null
+                                      : () => _toggleFavorite(id),
+                                );
+                              },
                             ),
                           ),
                         _SectionTitle(
@@ -512,10 +587,10 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
                         ),
                         if (data == null &&
                             snapshot.connectionState != ConnectionState.done)
-                          const SizedBox(
-                            height: 115,
-                            child: Center(child: CircularProgressIndicator()),
-                          )
+                          const _HomeLoadingCards(
+                              height: 138,
+                              width: 158,
+                              label: 'Loading best deals')
                         else if (data == null || data.products.isEmpty)
                           const _EmptyRow(
                             'Products and live prices will appear here.',
@@ -544,6 +619,33 @@ class _SplyzoReferenceHomeState extends State<SplyzoReferenceHome> {
       ),
     );
   }
+}
+
+class _HomeLoadingCards extends StatelessWidget {
+  const _HomeLoadingCards({
+    required this.height,
+    required this.width,
+    required this.label,
+  });
+
+  final double height, width;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: label,
+        child: SizedBox(
+          height: height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 6,
+            separatorBuilder: (_, __) => const SizedBox(width: 9),
+            itemBuilder: (_, __) =>
+                KSkeleton(width: width, height: height, radius: 16),
+          ),
+        ),
+      );
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -640,8 +742,12 @@ class _EmptyRow extends StatelessWidget {
 }
 
 class _SupplierCard extends StatelessWidget {
-  const _SupplierCard(this.supplier);
+  const _SupplierCard(this.supplier,
+      {this.saved, this.onFavorite, this.distance});
   final Data supplier;
+  final bool? saved;
+  final VoidCallback? onFavorite;
+  final double? distance;
 
   @override
   Widget build(BuildContext context) {
@@ -668,32 +774,33 @@ class _SupplierCard extends StatelessWidget {
                   SizedBox(
                     height: 78,
                     width: double.infinity,
-                    child: Image.asset(
-                      'assets/images/construction_engineer.jpg',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                    ),
+                    child: _SupplierPhoto(supplier),
                   ),
-                  Positioned(
-                    right: 6,
-                    top: 5,
-                    child: Material(
-                      color: Colors.white,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => push(context, const WishlistPage()),
-                        child: const Padding(
-                          padding: EdgeInsets.all(5),
-                          child: Icon(
-                            Icons.favorite_border_rounded,
-                            size: 19,
-                            color: SplyzoReferenceColors.navy,
-                          ),
+                  if (saved != null)
+                    Positioned(
+                      right: 3,
+                      top: 2,
+                      child: IconButton(
+                        tooltip: saved!
+                            ? 'Remove $name from saved suppliers'
+                            : 'Save $name',
+                        onPressed: onFavorite,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.white,
+                          minimumSize: const Size(44, 44),
+                        ),
+                        icon: Icon(
+                          saved!
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: saved!
+                              ? SplyzoReferenceColors.orange
+                              : SplyzoReferenceColors.navy,
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
               Padding(
@@ -715,12 +822,14 @@ class _SupplierCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Verified supplier',
+                        distance == null
+                            ? 'Verified supplier'
+                            : _formatSupplierDistance(distance!),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: SplyzoReferenceColors.secondary,
                           fontSize: 9,
                         ),
@@ -756,23 +865,180 @@ class _SupplierCard extends StatelessWidget {
   }
 }
 
-class _SupplierDirectory extends StatelessWidget {
-  const _SupplierDirectory();
+class _SupplierPhoto extends StatelessWidget {
+  const _SupplierPhoto(this.supplier);
+  final Data supplier;
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Nearby Suppliers')),
-        body: ListView(
-          padding: const EdgeInsets.all(18),
-          children: const [
-            Text(
-              'Browse verified supplier storefronts and available materials.',
-              style: TextStyle(color: SplyzoReferenceColors.secondary),
+  Widget build(BuildContext context) {
+    final photo = CustomerScope.of(context).api.imageUri(
+          field(supplier, 'profileImageUrl'),
+        );
+    final fallback = Image.asset(
+      'assets/images/construction_engineer.jpg',
+      fit: BoxFit.cover,
+      excludeFromSemantics: true,
+    );
+    return photo == null
+        ? fallback
+        : Image.network(
+            photo.toString(),
+            fit: BoxFit.cover,
+            excludeFromSemantics: true,
+            errorBuilder: (_, __, ___) => fallback,
+          );
+  }
+}
+
+typedef _SupplierCoordinates = ({double lat, double lng});
+
+_SupplierCoordinates? _coordinates(Data? data) {
+  if (data == null) return null;
+  final lat = double.tryParse(field(data, 'latitude'));
+  final lng = double.tryParse(field(data, 'longitude'));
+  if (lat == null ||
+      lng == null ||
+      !lat.isFinite ||
+      !lng.isFinite ||
+      lat.abs() > 90 ||
+      lng.abs() > 180) {
+    return null;
+  }
+  return (lat: lat, lng: lng);
+}
+
+String _formatSupplierDistance(double metres) => metres < 1000
+    ? '${metres.round()} m away'
+    : '${(metres / 1000).toStringAsFixed(1)} km away';
+
+class _SupplierDirectory extends StatefulWidget {
+  const _SupplierDirectory();
+
+  @override
+  State<_SupplierDirectory> createState() => _SupplierDirectoryState();
+}
+
+class _SupplierDirectoryState extends State<_SupplierDirectory> {
+  _SupplierCoordinates? _deviceLocation;
+
+  Future<void> _useDeviceLocation() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw const CustomerProblem('Turn on location services and try again.');
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw const CustomerProblem(
+          'Allow location access in Settings to find suppliers near you.');
+    }
+    final position = await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 12));
+    if (mounted) {
+      setState(() =>
+          _deviceLocation = (lat: position.latitude, lng: position.longitude));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = CustomerScope.of(context);
+    final location = _deviceLocation ?? _coordinates(scope.address);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nearby Suppliers')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  location == null
+                      ? 'Use your location to find suppliers within 1 km.'
+                      : _deviceLocation == null
+                          ? 'Within 1 km of your selected delivery address'
+                          : 'Within 1 km of your current location',
+                  style:
+                      const TextStyle(color: SplyzoReferenceColors.secondary),
+                ),
+                const SizedBox(height: 8),
+                ActionButton('Use my location', _useDeviceLocation,
+                    icon: Icons.my_location_rounded, tonal: true),
+              ],
             ),
-            SizedBox(height: 16),
-            SupplierStrip(),
-          ],
-        ),
-      );
+          ),
+          Expanded(
+            child: RemotePage<List<Data>>(
+              key: ValueKey(location),
+              load: () => scope.api.suppliers(near: location),
+              builder: (suppliers, _) {
+                final cards = <({Data supplier, double? distance})>[];
+                for (final supplier in suppliers) {
+                  final point = _coordinates(supplier);
+                  final metres = location == null || point == null
+                      ? null
+                      : Geolocator.distanceBetween(
+                          location.lat, location.lng, point.lat, point.lng);
+                  if (location == null || (metres != null && metres <= 1000)) {
+                    cards.add((supplier: supplier, distance: metres));
+                  }
+                }
+                if (location != null) {
+                  cards.sort((a, b) => a.distance!.compareTo(b.distance!));
+                }
+                return ListView(
+                  padding: const EdgeInsets.all(18),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    if (cards.isEmpty)
+                      EmptyState(
+                        location == null
+                            ? 'No suppliers available'
+                            : 'No suppliers found within 1 km',
+                        location == null
+                            ? 'Verified storefronts will appear when available.'
+                            : 'Only suppliers with a published storefront location are included.',
+                      )
+                    else
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const gap = 10.0;
+                          final columns =
+                              (constraints.maxWidth / 155).floor().clamp(1, 4);
+                          final width =
+                              (constraints.maxWidth - gap * (columns - 1)) /
+                                  columns;
+                          return Wrap(
+                            spacing: gap,
+                            runSpacing: gap,
+                            children: [
+                              for (final card in cards)
+                                SizedBox(
+                                  width: width,
+                                  height: 137 +
+                                      (MediaQuery.textScalerOf(context)
+                                                  .scale(13) -
+                                              13)
+                                          .clamp(0, 40),
+                                  child: _SupplierCard(card.supplier,
+                                      distance: card.distance),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Categories extends StatelessWidget {
@@ -809,9 +1075,17 @@ class _Categories extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const SizedBox(
-        height: 160,
-        child: Center(child: CircularProgressIndicator()),
+      return Semantics(
+        label: 'Loading categories',
+        child: GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 4,
+          childAspectRatio: .90,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          children: List.filled(_samples.length, const KSkeleton(radius: 14)),
+        ),
       );
     }
     return GridView.builder(

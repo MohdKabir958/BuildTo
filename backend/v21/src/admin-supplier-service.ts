@@ -2,6 +2,8 @@ import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {requireAdminPermission,isUuid} from './permissions';
 import {serializable} from './transaction';
+import {record,uuid as catalogUuid} from './catalog-validation';
+import {coordinates} from './delivery-validation';
 
 const STATES=['DRAFT','PENDING','UNDER_REVIEW','APPROVED','REJECTED','SUSPENDED'] as const;
 type State=typeof STATES[number];
@@ -188,6 +190,7 @@ export async function adminSupplierDetail(db:PrismaClient,actor:string,id:string
  const found=await db.supplier.findUnique({where:{id},select:{
   id:true,slug:true,legalName:true,displayName:true,approval:true,gstRegistration:true,gstin:true,verifiedAt:true,suspendedAt:true,createdAt:true,
   businessType:true,contactEmail:true,contactPhone:true,billingAddress:true,
+  ...storefrontSelect,
   members:{where:{role:'OWNER'},select:{userId:true,active:true,user:{select:{displayName:true,email:true}}}},
   documents:{select:{id:true,documentType:true,status:true,reviewNote:true,expiresAt:true,createdAt:true,
    media:{select:{id:true,mimeType:true,sizeBytes:true,sha256:true}}},orderBy:{createdAt:'asc'}}
@@ -195,6 +198,7 @@ export async function adminSupplierDetail(db:PrismaClient,actor:string,id:string
  if(!found)throw new ApiError(404,'NOT_FOUND','Supplier not found.');
  const {members,documents,businessType,contactEmail,contactPhone,billingAddress,...base}=found;
  return {...summary(base),businessType,contactEmail,contactPhone,billingAddress,
+  storefront:storefrontDTO(found),
   reviewPolicy:{stagingTestWithoutDocuments:await stagingDocumentBypassEnabled(db)},
   owners:members.map(x=>({userId:x.userId,active:x.active,displayName:x.user.displayName,email:x.user.email})),
   documents:documents.map(x=>({id:x.id,documentType:x.documentType,status:x.status,reviewNote:x.reviewNote,
@@ -274,5 +278,39 @@ export async function reviewSupplierApplication(db:PrismaClient,actor:string,id:
     {approval:old.approval},{approval:decision,reason:why,
      testOnly:true,productionVerificationNotCompleted:true});
   return summary(saved);
+ });
+}
+
+
+const storefrontSelect={profileImageId:true,publicLatitude:true,publicLongitude:true} as const;
+function storefrontDTO(row:{profileImageId:string|null;publicLatitude:Prisma.Decimal|null;publicLongitude:Prisma.Decimal|null}) {
+ return {
+  profileImageId:row.profileImageId,
+  latitude:row.publicLatitude?.toString()??null,
+  longitude:row.publicLongitude?.toString()??null
+ };
+}
+
+export async function updatePublicStorefront(db:PrismaClient,actor:string,supplierId:string,input:unknown){
+ const id=uuid(supplierId);
+ const d=record(input,['profileImageId','latitude','longitude','reason']);
+ const why=reason(d.reason);
+ const point=coordinates(d.latitude,d.longitude);
+ const imageId=d.profileImageId===undefined?undefined:
+  d.profileImageId===null?null:catalogUuid(d.profileImageId,'profileImageId');
+ if(imageId===undefined&&!('latitude' in point))
+  throw new ApiError(400,'EMPTY_PATCH','Provide a public photo or storefront coordinates.');
+ return serializable(db,async tx=>{
+  await reviewer(tx,actor,id);
+  await lockSupplier(tx,id);
+  const before=await tx.supplier.findUniqueOrThrow({where:{id},select:storefrontSelect});
+  if(typeof imageId==='string'&&!await tx.catalogImage.findUnique({where:{id:imageId},select:{id:true}}))
+   throw new ApiError(422,'IMAGE_NOT_FOUND','Select an uploaded public image.');
+  const saved=await tx.supplier.update({where:{id},data:{
+   ...(imageId!==undefined?{profileImageId:imageId}:{}),
+   ...('latitude' in point?{publicLatitude:point.latitude,publicLongitude:point.longitude}:{})
+  },select:storefrontSelect});
+  await audit(tx,actor,id,'SUPPLIER_STOREFRONT_UPDATED',storefrontDTO(before),{...storefrontDTO(saved),reason:why});
+  return storefrontDTO(saved);
  });
 }

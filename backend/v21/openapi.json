@@ -11272,6 +11272,80 @@
             }
           }
         ]
+      },
+      "patch": {
+        "operationId": "updatePublicSupplierStorefront",
+        "summary": "Publish or clear a supplier storefront photo and location with an audit reason",
+        "security": [
+          {
+            "clerkBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 400
+                  },
+                  "profileImageId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "latitude": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "longitude": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Storefront updated"
+          },
+          "400": {
+            "description": "Input invalid"
+          },
+          "401": {
+            "description": "Clerk identity required"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Supplier unavailable"
+          },
+          "422": {
+            "description": "Image unavailable"
+          }
+        }
       }
     },
     "/api/v2/admin/suppliers/{supplierId}/documents/{documentId}/review": {
@@ -13081,11 +13155,23 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "description": "Search origin latitude; supply with longitude.",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "description": "Search origin longitude; supply with latitude.",
+            "schema": {"type": "string"}
           }
         ],
         "responses": {
           "200": {
-            "description": "Public display names only, 20 items per page. data: {items: [{id,displayName}], nextCursor}. No contacts, KYC, warehouses or bank fields.",
+            "description": "Up to 20 approved storefronts per page. Items include ID, display name, nullable profile image URL, and nullable public coordinates. A location query limits results to the 1 km bounding box.",
             "content": {
               "application/json": {
                 "schema": {

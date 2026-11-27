@@ -26,6 +26,7 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
   final _confirm = TextEditingController();
   final _code = TextEditingController();
   bool busy = false;
+  String? _socialAction;
   bool agreed = false;
   bool _otp = false;
   String? _step;
@@ -73,7 +74,10 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    setState(() => busy = true);
+    setState(() {
+      busy = true;
+      _socialAction = action == 'google' || action == 'apple' ? action : null;
+    });
     final session = CustomerScope.of(context);
     try {
       final auth = session.auth;
@@ -100,6 +104,7 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
         Navigator.of(context).pop();
       }
     } catch (error) {
+      if (error is PlatformException && error.code == 'AUTH_CANCELLED') return;
       if (mounted) {
         notice(
           context,
@@ -112,7 +117,12 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() {
+          busy = false;
+          _socialAction = null;
+        });
+      }
     }
   }
 
@@ -490,7 +500,7 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                             borderRadius: BorderRadius.circular(17),
                           ),
                         ),
-                        child: busy
+                        child: busy && _socialAction == null
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
@@ -567,6 +577,32 @@ class _SplyzoReferenceAuthScreenState extends State<SplyzoReferenceAuthScreen> {
                           ),
                         ],
                       ),
+                    ],
+                    if (_socialAction != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        _socialAction == 'google'
+                            ? 'Connecting to Google…'
+                            : 'Connecting to Apple…',
+                        textAlign: TextAlign.center,
+                      ),
+                      if (CustomerScope.of(context).auth
+                          is CustomerSocialAuthCancellation)
+                        TextButton(
+                          onPressed: () async {
+                            final auth = CustomerScope.of(context).auth
+                                as CustomerSocialAuthCancellation;
+                            try {
+                              await auth.cancelSocialAuth();
+                            } on PlatformException {
+                              if (context.mounted) {
+                                notice(context,
+                                    'Could not cancel yet. Please try again.');
+                              }
+                            }
+                          },
+                          child: const Text('Cancel sign-in'),
+                        ),
                     ],
                     const SizedBox(height: 22),
                     Wrap(

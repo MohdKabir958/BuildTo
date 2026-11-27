@@ -1,4 +1,4 @@
-import {PrismaClient} from '../../generated/buildto-v21';
+import {Prisma,PrismaClient} from '../../generated/buildto-v21';
 import {ApiError} from './errors';
 import {uuid} from './catalog-validation';
 
@@ -96,8 +96,37 @@ export async function publicListings(db:PrismaClient,productId:string) {
 }
 
 /** Public storefront directory. Never returns contacts, KYC, bank or warehouse data. */
-export async function publicSuppliers(db:PrismaClient,cursor?:string){
+// A narrow bounding box limits the query. The app checks the exact 1 km
+// straight-line distance and sorts results from every matching page.
+function storefrontBounds(latitude?:string,longitude?:string):Prisma.SupplierWhereInput {
+ if(latitude===undefined&&longitude===undefined)return {};
+ const valid=(value:string|undefined)=>value!==undefined&&/^-?\d{1,3}(?:\.\d{1,7})?$/.test(value);
+ const lat=Number(latitude),lng=Number(longitude);
+ if(!valid(latitude)||!valid(longitude)||Math.abs(lat)>90||Math.abs(lng)>180)
+  throw new ApiError(400,'INVALID_COORDINATE','Provide valid latitude and longitude.');
+ // Storefront coordinates are published only for the supported market.
+ const deltaLat=0.0091;
+ if(lat<6-deltaLat||lat>38+deltaLat||lng<67.98||lng>98.02)
+  return {id:{in:[]}};
+ const deltaLng=deltaLat/Math.cos(lat*Math.PI/180);
+ return {
+  publicLatitude:{gte:lat-deltaLat,lte:lat+deltaLat},
+  publicLongitude:{gte:lng-deltaLng,lte:lng+deltaLng}
+ };
+}
+export async function publicSuppliers(db:PrismaClient,cursor?:string,latitude?:string,longitude?:string){
  if(cursor)uuid(cursor,'cursor');
- const rows=await db.supplier.findMany({where:{approval:'APPROVED',suspendedAt:null,listings:{some:LISTING_DISCOVERED}},select:{id:true,displayName:true},orderBy:{id:'asc'},take:21,...(cursor?{cursor:{id:cursor},skip:1}:{})});
- return {items:rows.slice(0,20),nextCursor:rows.length>20?rows[19].id:null};
+ const location=storefrontBounds(latitude,longitude);
+ const rows=await db.supplier.findMany({
+  where:{approval:'APPROVED',suspendedAt:null,listings:{some:LISTING_DISCOVERED},AND:[location,...(cursor?[{id:{gt:cursor}}]:[])]},
+  select:{id:true,displayName:true,profileImageId:true,publicLatitude:true,publicLongitude:true},
+  orderBy:{id:'asc'},take:21
+ });
+ const items=rows.slice(0,20).map(row=>({
+  id:row.id,displayName:row.displayName,
+  profileImageUrl:row.profileImageId?'/api/v2/catalog/images/'+row.profileImageId:null,
+  latitude:row.publicLatitude?.toString()??null,
+  longitude:row.publicLongitude?.toString()??null
+ }));
+ return {items,nextCursor:rows.length>20?rows[19].id:null};
 }
