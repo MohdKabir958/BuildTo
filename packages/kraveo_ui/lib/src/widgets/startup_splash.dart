@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+const _splashBackground = Color(0xFFE5EFFB);
+
 /// Shows the startup artwork while the app mounts and initializes underneath.
 class SplyzoStartup extends StatefulWidget {
   const SplyzoStartup({super.key, required this.child});
@@ -15,19 +17,37 @@ class SplyzoStartup extends StatefulWidget {
 class _SplyzoStartupState extends State<SplyzoStartup> {
   Timer? _minimum;
   bool _showSplash = true;
+  bool _waitingForArtwork = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.deferFirstFrame();
+  }
+
+  void _releaseFirstFrame() {
+    if (!_waitingForArtwork) return;
+    _waitingForArtwork = false;
+    WidgetsBinding.instance.allowFirstFrame();
+  }
 
   void _onImageReady() {
-    // Start the minimum after the image has been painted. Fast session checks
-    // can finish before the artwork decodes on the first launch.
-    if (!mounted) return;
-    _minimum ??= Timer(const Duration(milliseconds: 300), () {
-      setState(() => _showSplash = false);
+    if (!mounted || !_waitingForArtwork) return;
+    _releaseFirstFrame();
+    // Start counting once the banner frame can be presented.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _minimum = Timer(const Duration(milliseconds: 450), () {
+        setState(() => _showSplash = false);
+      });
     });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   @override
   void dispose() {
     _minimum?.cancel();
+    _releaseFirstFrame();
     super.dispose();
   }
 
@@ -64,7 +84,7 @@ class SplyzoSplashScreen extends StatelessWidget {
   Widget build(BuildContext context) => Directionality(
         textDirection: TextDirection.ltr,
         child: ColoredBox(
-          color: const Color(0xFFFFFFFF),
+          color: _splashBackground,
           child: Image.asset(
             'assets/brand/startup-splash.png',
             package: 'kraveo_ui',
